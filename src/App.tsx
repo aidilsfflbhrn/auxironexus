@@ -306,7 +306,7 @@ export default function Auxiron() {
     var inp = (text || hl).trim();
     if (!inp) return;
     setLoading(true); setErr(null); setResult(null);
-    fetch("https://api.anthropic.com/v1/messages", {
+    fetch("/api/analyze", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 1000, system: AI_SYS, messages: [{ role: "user", content: "Analyze: \"" + inp + "\"" }] })
@@ -325,7 +325,7 @@ export default function Auxiron() {
     setCtxLoading(true);
     var snap = mkt.filter(function(i) { return ["XAU/USD","DX","US10Y","US02Y","VIX","SPX","EUR/USD","WTI/USD","BTC/USD"].indexOf(i.s) >= 0; })
       .map(function(i) { return i.l + ": " + fmt(i.cur, i.b) + " (" + (i.pct >= 0 ? "+" : "") + i.pct.toFixed(2) + "%)"; }).join(", ");
-    fetch("https://api.anthropic.com/v1/messages", {
+    fetch("/api/analyze", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 800, system: CTX_SYS, messages: [{ role: "user", content: "Market snapshot: " + snap + ". Provide pre-session briefing." }] })
@@ -1050,4 +1050,3 @@ export default function Auxiron() {
     </div>
   );
 }
-
