@@ -9,15 +9,12 @@ export default async function handler(req, res) {
   const KEY = "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";
 
   try {
-    const body = await new Promise((resolve, reject) => {
-      let raw = "";
-      req.on("data", c => { raw += c; });
-      req.on("end", () => {
-        try { resolve(JSON.parse(raw)); }
-        catch(e) { reject(e); }
-      });
-      req.on("error", reject);
-    });
+    const buffers = [];
+    for await (const chunk of req) {
+      buffers.push(typeof chunk === "string" ? Buffer.from(chunk) : chunk);
+    }
+    const raw = Buffer.concat(buffers).toString("utf8");
+    const body = JSON.parse(raw);
 
     const r = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -29,9 +26,14 @@ export default async function handler(req, res) {
       body: JSON.stringify(body),
     });
 
-    const data = await r.json();
-    return res.status(200).json(data);
+    const text = await r.text();
+    try {
+      const data = JSON.parse(text);
+      return res.status(200).json(data);
+    } catch(e) {
+      return res.status(200).json({ raw: text });
+    }
   } catch(e) {
-    return res.status(500).json({ error: e.message });
+    return res.status(500).json({ error: e.message, stack: e.stack });
   }
 }
