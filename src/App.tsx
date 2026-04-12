@@ -322,7 +322,7 @@ export default function Auxiron() {
       setLoading(false);
     };
     xhr.onerror = function() { setErr("Network error. Try again."); setLoading(false); };
-    xhr.send(JSON.stringify({ model: "claude-sonnet-4-5-20251001", max_tokens: 1000, system: AI_SYS, messages: [{ role: "user", content: "Analyze: \"" + inp + "\"" }] }));
+    xhr.send(JSON.stringify({ model: "claude-3-5-sonnet-20241022", max_tokens: 1000, system: AI_SYS, messages: [{ role: "user", content: "Analyze: \"" + inp + "\"" }] }));
   }
 
   function fetchCtx() {
@@ -344,7 +344,7 @@ export default function Auxiron() {
       setCtxLoading(false);
     };
     xhr.onerror = function() { setCtxLoading(false); };
-    xhr.send(JSON.stringify({ model: "claude-sonnet-4-5-20251001", max_tokens: 800, system: CTX_SYS, messages: [{ role: "user", content: "Market snapshot: " + snap + ". Provide pre-session briefing." }] }));
+    xhr.send(JSON.stringify({ model: "claude-3-5-sonnet-20241022", max_tokens: 800, system: CTX_SYS, messages: [{ role: "user", content: "Market snapshot: " + snap + ". Provide pre-session briefing." }] }));
   }
 
   function toggleQuad(sym) {
