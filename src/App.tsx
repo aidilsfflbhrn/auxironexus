@@ -306,52 +306,45 @@ export default function Auxiron() {
     var inp = (text || hl).trim();
     if (!inp) return;
     setLoading(true); setErr(null); setResult(null);
-    fetch("/api/analyze", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ model: "claude-sonnet-4-5-20251001", max_tokens: 1000, system: AI_SYS, messages: [{ role: "user", content: "Analyze: \"" + inp + "\"" }] })
-    })
-    .then(function(r) {
-      if (!r.ok) throw new Error("HTTP " + r.status);
-      return r.json();
-    })
-    .then(function(d) {
-      if (d.error) throw new Error(d.error + (d.detail ? ": " + d.detail : ""));
-      var txt = (d.content || []).map(function(x) { return x.text || ""; }).join("");
-      if (!txt) throw new Error("Empty response");
+    var xhr = new XMLHttpRequest();
+    xhr.open("POST", "/api/analyze", true);
+    xhr.setRequestHeader("Content-Type", "application/json");
+    xhr.onload = function() {
       try {
+        var d = JSON.parse(xhr.responseText);
+        if (d.error) { setErr("Error: " + d.error); setLoading(false); return; }
+        var txt = (d.content || []).map(function(x) { return x.text || ""; }).join("");
+        if (!txt) { setErr("Empty response from AI"); setLoading(false); return; }
         var res = JSON.parse(txt.replace(/```json|```/g, "").trim());
         setResult(res);
         setHist(function(p) { return [{ headline: inp, result: res, ts: new Date() }].concat(p.slice(0, 7)); });
-      } catch(pe) {
-        throw new Error("Parse error: " + txt.slice(0, 80));
-      }
-    })
-   .catch(function(e) { setErr("Failed: " + JSON.stringify(e) + " | " + (e && e.message ? e.message : "no msg") + " | " + String(e)); })
-    .finally(function() { setLoading(false); });
+      } catch(e) { setErr("Parse error: " + e.message); }
+      setLoading(false);
+    };
+    xhr.onerror = function() { setErr("Network error. Try again."); setLoading(false); };
+    xhr.send(JSON.stringify({ model: "claude-sonnet-4-5-20251001", max_tokens: 1000, system: AI_SYS, messages: [{ role: "user", content: "Analyze: \"" + inp + "\"" }] }));
   }
 
   function fetchCtx() {
     setCtxLoading(true);
     var snap = mkt.filter(function(i) { return ["XAU/USD","DX","US10Y","US02Y","VIX","SPX","EUR/USD","WTI/USD","BTC/USD"].indexOf(i.s) >= 0; })
       .map(function(i) { return i.l + ": " + fmt(i.cur, i.b) + " (" + (i.pct >= 0 ? "+" : "") + i.pct.toFixed(2) + "%)"; }).join(", ");
-    fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": "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",
-        "anthropic-version": "2023-06-01",
-        "anthropic-dangerous-request-headers": "true"
-      },
-      body: JSON.stringify({ model: "claude-sonnet-4-5-20251001", max_tokens: 800, system: CTX_SYS, messages: [{ role: "user", content: "Market snapshot: " + snap + ". Provide pre-session briefing." }] })
-    }).then(function(r) { return r.json(); })
-      .then(function(d) {
+    var xhr = new XMLHttpRequest();
+    xhr.open("POST", "/api/analyze", true);
+    xhr.setRequestHeader("Content-Type", "application/json");
+    xhr.onload = function() {
+      try {
+        var d = JSON.parse(xhr.responseText);
+        if (d.error) { setCtxLoading(false); return; }
         var txt = (d.content || []).map(function(x) { return x.text || ""; }).join("");
+        if (!txt) { setCtxLoading(false); return; }
         setCtx(JSON.parse(txt.replace(/```json|```/g, "").trim()));
         setLastRefresh(new Date());
-      })
-      .catch(function() {})
-      .finally(function() { setCtxLoading(false); });
+      } catch(e) {}
+      setCtxLoading(false);
+    };
+    xhr.onerror = function() { setCtxLoading(false); };
+    xhr.send(JSON.stringify({ model: "claude-sonnet-4-5-20251001", max_tokens: 800, system: CTX_SYS, messages: [{ role: "user", content: "Market snapshot: " + snap + ". Provide pre-session briefing." }] }));
   }
 
   function toggleQuad(sym) {
