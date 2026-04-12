@@ -306,24 +306,29 @@ export default function Auxiron() {
     var inp = (text || hl).trim();
     if (!inp) return;
     setLoading(true); setErr(null); setResult(null);
-    fetch("https://api.anthropic.com/v1/messages", {
+    fetch("/api/analyze", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": "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",
-        "anthropic-version": "2023-06-01",
-        "anthropic-dangerous-request-headers": "true"
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ model: "claude-sonnet-4-5-20251001", max_tokens: 1000, system: AI_SYS, messages: [{ role: "user", content: "Analyze: \"" + inp + "\"" }] })
-    }).then(function(r) { return r.json(); })
-      .then(function(d) {
-        var txt = (d.content || []).map(function(x) { return x.text || ""; }).join("");
+    })
+    .then(function(r) {
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.json();
+    })
+    .then(function(d) {
+      if (d.error) throw new Error(d.error + (d.detail ? ": " + d.detail : ""));
+      var txt = (d.content || []).map(function(x) { return x.text || ""; }).join("");
+      if (!txt) throw new Error("Empty response");
+      try {
         var res = JSON.parse(txt.replace(/```json|```/g, "").trim());
         setResult(res);
         setHist(function(p) { return [{ headline: inp, result: res, ts: new Date() }].concat(p.slice(0, 7)); });
-      })
-      .catch(function() { setErr("Analysis failed. Try again."); })
-      .finally(function() { setLoading(false); });
+      } catch(pe) {
+        throw new Error("Parse error: " + txt.slice(0, 80));
+      }
+    })
+    .catch(function(e) { setErr("Failed: " + (e && e.message ? e.message : "unknown error")); })
+    .finally(function() { setLoading(false); });
   }
 
   function fetchCtx() {
