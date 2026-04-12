@@ -1,50 +1,37 @@
-const fetch = (...args) => import('node-fetch').then(({default: f}) => f(...args));
-
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-  if (req.method === "OPTIONS") {
-    return res.status(200).end();
-  }
+  if (req.method === "OPTIONS") return res.status(200).end();
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
-
-  const ANTHROPIC_KEY = "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";
+  const KEY = "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";
 
   try {
-    let body = req.body;
-
-    if (!body || Object.keys(body).length === 0) {
-      const rawBody = await new Promise((resolve, reject) => {
-        let data = "";
-        req.on("data", chunk => { data += chunk; });
-        req.on("end", () => resolve(data));
-        req.on("error", reject);
+    const body = await new Promise((resolve, reject) => {
+      let raw = "";
+      req.on("data", c => { raw += c; });
+      req.on("end", () => {
+        try { resolve(JSON.parse(raw)); }
+        catch(e) { reject(e); }
       });
-      body = JSON.parse(rawBody);
-    }
+      req.on("error", reject);
+    });
 
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
+    const r = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-api-key": ANTHROPIC_KEY,
+        "x-api-key": KEY,
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify(body),
     });
 
-    const data = await response.json();
+    const data = await r.json();
     return res.status(200).json(data);
-  } catch (error) {
-    return res.status(500).json({ 
-      error: "Anthropic proxy failed", 
-      detail: error.message,
-      bodyReceived: typeof req.body
-    });
+  } catch(e) {
+    return res.status(500).json({ error: e.message });
   }
 }
