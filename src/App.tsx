@@ -309,7 +309,7 @@ export default function Auxiron() {
     fetch("/api/analyze", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 1000, system: AI_SYS, messages: [{ role: "user", content: "Analyze: \"" + inp + "\"" }] })
+      body: JSON.stringify({ model: "claude-sonnet-4-20251001", max_tokens: 1000, system: AI_SYS, messages: [{ role: "user", content: "Analyze: \"" + inp + "\"" }] })
     }).then(function(r) { return r.json(); })
       .then(function(d) {
         var txt = (d.content || []).map(function(x) { return x.text || ""; }).join("");
@@ -328,7 +328,7 @@ export default function Auxiron() {
     fetch("/api/analyze", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 800, system: CTX_SYS, messages: [{ role: "user", content: "Market snapshot: " + snap + ". Provide pre-session briefing." }] })
+      body: JSON.stringify({ model: "claude-sonnet-4-20251001", max_tokens: 800, system: CTX_SYS, messages: [{ role: "user", content: "Market snapshot: " + snap + ". Provide pre-session briefing." }] })
     }).then(function(r) { return r.json(); })
       .then(function(d) {
         var txt = (d.content || []).map(function(x) { return x.text || ""; }).join("");
