@@ -327,7 +327,7 @@ export default function Auxiron() {
         throw new Error("Parse error: " + txt.slice(0, 80));
       }
     })
-    .catch(function(e) { setErr("Failed: " + (e && e.message ? e.message : "unknown error")); })
+   .catch(function(e) { setErr("Failed: " + JSON.stringify(e) + " | " + (e && e.message ? e.message : "no msg") + " | " + String(e)); })
     .finally(function() { setLoading(false); });
   }
 
