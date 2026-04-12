@@ -27,33 +27,3 @@
   <!-- Center horizontal bar -->
   <rect x="8" y="15.4" width="16" height="1.4" fill="white"/>
 </svg>
-
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <!-- Black background -->
-  <rect width="32" height="32" rx="4" fill="#000000"/>
-
-  <!-- Pentagon/shield shape: top point, top-right, bottom-right, bottom-left, top-left -->
-  <!-- Outer shape -->
-  <polygon points="16,1 30,10 26,28 6,28 2,10" fill="none" stroke="white" stroke-width="2"/>
-
-  <!-- Inner shape (hollow effect) -->
-  <polygon points="16,5 26,12 23,25 9,25 6,12" fill="black"/>
-
-  <!-- Vertical center line -->
-  <rect x="15.2" y="8" width="1.6" height="14" fill="white"/>
-
-  <!-- Top arrow pointing up -->
-  <polygon points="13,11 16,6 19,11" fill="#7c3aed"/>
-
-  <!-- Bottom arrow pointing down -->
-  <polygon points="13,21 16,26 19,21" fill="#7c3aed"/>
-
-  <!-- Left arrow pointing left -->
-  <polygon points="10,14 5,16.5 10,19" fill="white"/>
-
-  <!-- Right arrow pointing right -->
-  <polygon points="22,14 27,16.5 22,19" fill="white"/>
-
-  <!-- Center horizontal bar -->
-  <rect x="8" y="15.4" width="16" height="1.4" fill="white"/>
-</svg>
