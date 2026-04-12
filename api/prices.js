@@ -2,7 +2,6 @@ module.exports = async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-
   if (req.method === "OPTIONS") return res.status(200).end();
 
   const { symbol, interval, outputsize, endpoint } = req.query;
@@ -11,7 +10,7 @@ module.exports = async function handler(req, res) {
   try {
     let url = "";
     if (endpoint === "timeseries") {
-      url = "https://api.twelvedata.com/time_series?symbol=" + encodeURIComponent(symbol) + "&interval=" + (interval || "30min") + "&outputsize=" + (outputsize || "48") + "&apikey=" + KEY;
+      url = "https://api.twelvedata.com/time_series?symbol=" + encodeURIComponent(symbol) + "&interval=" + (interval||"30min") + "&outputsize=" + (outputsize||"48") + "&apikey=" + KEY;
     } else {
       url = "https://api.twelvedata.com/price?symbol=" + encodeURIComponent(symbol) + "&apikey=" + KEY;
     }
