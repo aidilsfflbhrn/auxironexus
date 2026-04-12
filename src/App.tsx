@@ -251,7 +251,7 @@ export default function Auxiron() {
 
   useEffect(function() {
     fetchPrices();
-    var id = setInterval(fetchPrices, 12000);
+    var id = setInterval(fetchPrices, 60000);
     return function() { clearInterval(id); };
   }, [fetchPrices]);
 
@@ -278,7 +278,7 @@ export default function Auxiron() {
     if (!inp) return;
     setLoading(true); setErr(null); setResult(null);
     callProxy(
-      { model:"claude-sonnet-4-5", max_tokens:1000, system:AI_SYS, messages:[{ role:"user", content:"Analyze this headline: " + inp }] },
+      { model:"claude-3-5-sonnet-20241022", max_tokens:1000, system:AI_SYS, messages:[{ role:"user", content:"Analyze this headline: " + inp }] },
       function(res) { setResult(res); setHist(function(p) { return [{ headline:inp, result:res, ts:new Date() }].concat(p.slice(0,7)); }); setLoading(false); },
       function(e) { setErr("Failed: " + e); setLoading(false); }
     );
@@ -289,7 +289,7 @@ export default function Auxiron() {
     var snap = mkt.filter(function(i) { return ["XAU/USD","DX","US10Y","US02Y","VIX","SPX","EUR/USD","WTI/USD","BTC/USD"].indexOf(i.s) >= 0; })
       .map(function(i) { return i.l + ": " + fmt(i.cur,i.b) + " (" + (i.pct>=0?"+":"") + i.pct.toFixed(2) + "%)"; }).join(", ");
     callProxy(
-      { model:"claude-sonnet-4-5", max_tokens:800, system:CTX_SYS, messages:[{ role:"user", content:"Market snapshot: " + snap + ". Provide pre-session briefing." }] },
+      { model:"claude-3-5-sonnet-20241022", max_tokens:800, system:CTX_SYS, messages:[{ role:"user", content:"Market snapshot: " + snap + ". Provide pre-session briefing." }] },
       function(res) { setCtx(res); setLastRefresh(new Date()); setCtxLoading(false); },
       function() { setCtxLoading(false); }
     );
