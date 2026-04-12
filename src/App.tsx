@@ -302,7 +302,37 @@ export default function Auxiron() {
     return function() { clearInterval(id); };
   }, [status]);
 
-  function analyze(text) {
+function analyze(text) {
+    var inp = (text || hl).trim();
+    if (!inp) return;
+    setLoading(true); setErr(null); setResult(null);
+
+    var requestBody = JSON.stringify({
+      model: "claude-sonnet-4-5-20251001",
+      max_tokens: 1000,
+      system: AI_SYS,
+      messages: [{ role: "user", content: "Analyze: \"" + inp + "\"" }]
+    });
+
+    fetch("/api/analyze", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: requestBody
+    })
+    .then(function(r) {
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.json();
+    })
+    .then(function(d) {
+      if (d.error) throw new Error(d.error);
+      var txt = (d.content || []).map(function(x) { return x.text || ""; }).join("");
+      if (!txt) throw new Error("Empty response");
+      var res = JSON.parse(txt.replace(/```json|```/g, "").trim());
+      setResult(res);
+      setHist(function(p) { return [{ headline: inp, result: res, ts: new Date() }].concat(p.slice(0, 7)); });
+    })
+    .catch(function(e) { setErr("Analysis failed: " + e.message); })
+    .finally(function() { setLoading(false); })
     var inp = (text || hl).trim();
     if (!inp) return;
     setLoading(true); setErr(null); setResult(null);
