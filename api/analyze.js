@@ -1,27 +1,44 @@
-export default async function handler(req, res) {
+const https = require("https");
+
+module.exports = function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-  if (req.method === "OPTIONS") return res.status(200).end();
-  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
-  try {
-    const buffers = [];
-    for await (const chunk of req) {
-      buffers.push(typeof chunk === "string" ? Buffer.from(chunk) : chunk);
-    }
-    const body = JSON.parse(Buffer.concat(buffers).toString("utf8"));
-    const r = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": "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",
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify(body),
+
+  if (req.method === "OPTIONS") { res.status(200).end(); return; }
+  if (req.method !== "POST") { res.status(405).json({ error: "Method not allowed" }); return; }
+
+  const KEY = "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";
+  const bodyData = JSON.stringify(req.body);
+
+  const options = {
+    hostname: "api.anthropic.com",
+    path: "/v1/messages",
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": KEY,
+      "anthropic-version": "2023-06-01",
+      "Content-Length": Buffer.byteLength(bodyData),
+    },
+  };
+
+  const request = https.request(options, function(response) {
+    let data = "";
+    response.on("data", function(chunk) { data += chunk; });
+    response.on("end", function() {
+      try {
+        res.status(200).json(JSON.parse(data));
+      } catch(e) {
+        res.status(500).json({ error: "Parse failed", raw: data.slice(0, 200) });
+      }
     });
-    const data = await r.json();
-    return res.status(200).json(data);
-  } catch(e) {
-    return res.status(500).json({ error: e.message });
-  }
-}
+  });
+
+  request.on("error", function(e) {
+    res.status(500).json({ error: e.message });
+  });
+
+  request.write(bodyData);
+  request.end();
+};
