@@ -302,44 +302,19 @@ export default function Auxiron() {
     return function() { clearInterval(id); };
   }, [status]);
 
-function analyze(text) {
+  function analyze(text) {
     var inp = (text || hl).trim();
     if (!inp) return;
     setLoading(true); setErr(null); setResult(null);
-
-    var requestBody = JSON.stringify({
-      model: "claude-sonnet-4-5-20251001",
-      max_tokens: 1000,
-      system: AI_SYS,
-      messages: [{ role: "user", content: "Analyze: \"" + inp + "\"" }]
-    });
-
-    fetch("/api/analyze", {
+    fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: requestBody
-    })
-    .then(function(r) {
-      if (!r.ok) throw new Error("HTTP " + r.status);
-      return r.json();
-    })
-    .then(function(d) {
-      if (d.error) throw new Error(d.error);
-      var txt = (d.content || []).map(function(x) { return x.text || ""; }).join("");
-      if (!txt) throw new Error("Empty response");
-      var res = JSON.parse(txt.replace(/```json|```/g, "").trim());
-      setResult(res);
-      setHist(function(p) { return [{ headline: inp, result: res, ts: new Date() }].concat(p.slice(0, 7)); });
-    })
-    .catch(function(e) { setErr("Analysis failed: " + e.message); })
-    .finally(function() { setLoading(false); })
-    var inp = (text || hl).trim();
-    if (!inp) return;
-    setLoading(true); setErr(null); setResult(null);
-    fetch("/api/analyze", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ model: "claude-sonnet-4-20251001", max_tokens: 1000, system: AI_SYS, messages: [{ role: "user", content: "Analyze: \"" + inp + "\"" }] })
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": "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",
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-request-headers": "true"
+      },
+      body: JSON.stringify({ model: "claude-sonnet-4-5-20251001", max_tokens: 1000, system: AI_SYS, messages: [{ role: "user", content: "Analyze: \"" + inp + "\"" }] })
     }).then(function(r) { return r.json(); })
       .then(function(d) {
         var txt = (d.content || []).map(function(x) { return x.text || ""; }).join("");
@@ -355,10 +330,15 @@ function analyze(text) {
     setCtxLoading(true);
     var snap = mkt.filter(function(i) { return ["XAU/USD","DX","US10Y","US02Y","VIX","SPX","EUR/USD","WTI/USD","BTC/USD"].indexOf(i.s) >= 0; })
       .map(function(i) { return i.l + ": " + fmt(i.cur, i.b) + " (" + (i.pct >= 0 ? "+" : "") + i.pct.toFixed(2) + "%)"; }).join(", ");
-    fetch("/api/analyze", {
+    fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ model: "claude-sonnet-4-20251001", max_tokens: 800, system: CTX_SYS, messages: [{ role: "user", content: "Market snapshot: " + snap + ". Provide pre-session briefing." }] })
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": "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",
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-request-headers": "true"
+      },
+      body: JSON.stringify({ model: "claude-sonnet-4-5-20251001", max_tokens: 800, system: CTX_SYS, messages: [{ role: "user", content: "Market snapshot: " + snap + ". Provide pre-session briefing." }] })
     }).then(function(r) { return r.json(); })
       .then(function(d) {
         var txt = (d.content || []).map(function(x) { return x.text || ""; }).join("");
