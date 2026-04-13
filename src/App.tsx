@@ -103,8 +103,11 @@ const SAMPLES = [
   "Elon Musk tweets support for Bitcoin, calls it digital gold",
 ];
 
-const AI_SYS = `You are an elite financial market analyst. Analyze the news headline and respond ONLY with a valid JSON object. No extra text, no markdown, just the raw JSON:
-{"impactScore":<0-100>,"impactLevel":"<NOISE|LOW|MODERATE|HIGH|CRITICAL>","marketSentiment":"<RISK-ON|RISK-OFF|NEUTRAL|MIXED>","sentimentShift":"<BULLISH|BEARISH|NEUTRAL>","affectedInstruments":[{"symbol":"<e.g.EUR/USD>","direction":"<BULLISH|BEARISH|NEUTRAL>","confidence":<0-100>,"reason":"<one sentence>"}],"noiseReason":"<if NOISE explain, else null>","keyDrivers":["<d1>","<d2>"],"traderNote":"<2-3 sentence actionable insight>","timeHorizon":"<INTRADAY|SHORT-TERM|MEDIUM-TERM|LONG-TERM>"}`;
+const AI_SYS = `You are an elite professional market analyst with deep expertise in macro economics, geopolitics and intermarket analysis. You will be given a news headline AND current live market prices. Analyze both together and respond ONLY with a valid JSON object. No extra text, no markdown, just raw JSON:\n{"impactScore":<0-100>,"impactLevel":"<NOISE|LOW|MODERATE|HIGH|CRITICAL>","marketSentiment":"<RISK-ON|RISK-OFF|NEUTRAL|MIXED>","sentimentShift":"<BULLISH|BEARISH|NEUTRAL>","immediateImpact":"<2-3 sentences on what happens to markets in next 1-4 hours based on current prices>","affectedInstruments":[{"symbol":"<e.g.EUR/USD>","direction":"<BULLISH|BEARISH|NEUTRAL>","confidence":<0-100>,"currentPrice":<from snapshot>,"targetLevel":<realistic target>,"reason":"<one sentence based on current conditions>"}],"noiseReason":"<if NOISE explain, else null>","keyDrivers":["<d1>","<d2>","<d3>"],"scenarios":[{"type":"BEARISH_EXTREME","title":"<worst case name>","probability":<0-100>,"description":"<what happens if situation worsens>","watchFor":"<price level or event that confirms this>","instruments":[{"symbol":"<sym>","move":"<e.g. +8% to $70>"}]},{"type":"BASE_CASE","title":"<most likely scenario>","probability":<0-100>,"description":"<most likely outcome based on current conditions>","watchFor":"<what to monitor>","instruments":[{"symbol":"<sym>","move":"<e.g. +3% to $66>"}]},{"type":"BULLISH_REVERSAL","title":"<best case or reversal>","probability":<0-100>,"description":"<what happens if situation resolves>","watchFor":"<what confirms reversal>","instruments":[{"symbol":"<sym>","move":"<e.g. -2% to $62>"}]}],"keyLevelsToWatch":[{"symbol":"<sym>","level":<price>,"significance":"<why this level matters now>"}],"traderNote":"<3-4 sentence actionable insight referencing current prices>","timeHorizon":"<INTRADAY|SHORT-TERM|MEDIUM-TERM|LONG-TERM>","nextCatalysts":["<event or data to watch that could change this analysis>"]}\nRules: Reference current prices in analysis. Scenario probabilities must sum to 100. List 2-4 affected instruments. List 2-3 key levels. List 2-3 next catalysts.`;
+
+const INST_SYS = `You are a professional market analyst. Given an instrument and its current market data, respond ONLY with a valid JSON object. No extra text, no markdown:
+{"drivers":["<key factor 1 currently affecting price>","<key factor 2>","<key factor 3>"],"shortTerm":{"outlook":"<BULLISH|BEARISH|NEUTRAL>","timeframe":"1-7 days","analysis":"<2 sentence analysis>","keyLevel":<price level>,"keyLevelType":"<SUPPORT|RESISTANCE>"},"nearTerm":{"outlook":"<BULLISH|BEARISH|NEUTRAL>","timeframe":"1-4 weeks","analysis":"<2 sentence analysis>","keyLevel":<price level>,"keyLevelType":"<SUPPORT|RESISTANCE>"},"longTerm":{"outlook":"<BULLISH|BEARISH|NEUTRAL>","timeframe":"1-3 months","analysis":"<2 sentence analysis>","keyLevel":<price level>,"keyLevelType":"<SUPPORT|RESISTANCE>"},"summary":"<3 sentence overall summary a retail trader can act on>","searchTerms":["<news search term 1 for this instrument>","<news search term 2>","<news search term 3>"]}
+Always reference the current price in your analysis. Search terms should be specific enough to find relevant news.`;
 
 const CTX_SYS = `You are a professional market analyst. Given current market data respond ONLY with a valid JSON object. No extra text, no markdown:
 {"sessionBias":"<RISK-ON|RISK-OFF|NEUTRAL|MIXED>","dxyImpact":"<1-2 sentence DXY analysis>","goldBias":"<BULLISH|BEARISH|NEUTRAL>","yieldCurve":"<brief 1 sentence>","keyLevels":[{"symbol":"<sym>","level":<number>,"type":"<RESISTANCE|SUPPORT>","note":"<why>"}],"watchlist":["<sym1>","<sym2>","<sym3>"],"sessionNote":"<2 sentence overall note>"}
@@ -176,6 +179,11 @@ function ChartTip(props) {
 
 export default function Auxiron() {
   var s1 = useState("markets"); var tab = s1[0]; var setTab = s1[1];
+  var sD1 = useState(null); var detailInst = sD1[0]; var setDetailInst = sD1[1];
+  var sD2 = useState(null); var instAnalysis = sD2[0]; var setInstAnalysis = sD2[1];
+  var sD3 = useState(false); var instLoading = sD3[0]; var setInstLoading = sD3[1];
+  var sD4 = useState([]); var instNews = sD4[0]; var setInstNews = sD4[1];
+  var sD5 = useState(false); var newsLoading = sD5[0]; var setNewsLoading = sD5[1];
   var s2 = useState(initMkt); var mkt = s2[0]; var setMkt = s2[1];
   var s3 = useState("XAU/USD"); var sel = s3[0]; var setSel = s3[1];
   var s4 = useState("single"); var cv = s4[0]; var setCv = s4[1];
@@ -201,32 +209,59 @@ export default function Auxiron() {
     return function() { clearInterval(id); };
   }, []);
 
+  // Priority forex pairs - fetch every 20 minutes (saves TD credits)
+  var TD_PRIORITY = ["EUR/USD","GBP/USD","USD/JPY","AUD/USD","USD/CAD","EUR/JPY","GBP/JPY","EUR/GBP"];
+  // Secondary forex - fetch every 2 hours
+  var TD_SECONDARY = ["USD/CHF","NZD/USD","EUR/AUD","EUR/NZD","EUR/CAD","EUR/CHF","GBP/AUD","GBP/NZD","GBP/CAD","GBP/CHF","AUD/JPY","AUD/NZD","AUD/CAD","AUD/CHF","NZD/JPY","NZD/CAD","NZD/CHF","CAD/JPY","CHF/JPY"];
+  // Non-TD instruments (Finnhub + FMP) - always fetch, no TD credit cost
+  var NON_TD = ["SPX","NDX","DJI","DAX","FTSE","NI225","DX","BTC/USD","ETH/USD","XAU/USD","XAG/USD","XPT/USD","WTI/USD","BRENT","US02Y","US10Y","US30Y","VIX","ES1!","NQ1!","YM1!","GC1!","SI1!","CL1!","NG1!"];
+
+  var fetchCycleRef = useRef(0);
+
+  var processPriceData = useCallback(function(combined) {
+    var updated = 0;
+    setMkt(function(prev) {
+      return prev.map(function(inst) {
+        var e = combined[inst.s];
+        if (!e || !e.price) return inst;
+        var cur = parseFloat(e.price);
+        if (isNaN(cur) || cur <= 0) return inst;
+        updated++;
+        var open = inst.live ? inst.open : parseFloat((cur * (1 + (Math.random() - 0.52) * inst.v * 2)).toFixed(dp(inst.b)));
+        var newCh = inst.ch.slice(-47).concat([{ t: new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}), p: parseFloat(cur.toFixed(dp(inst.b))) }]);
+        var src = e.source || "LIVE";
+        return Object.assign({}, inst, { cur:cur, open:open, chg:cur-open, pct:(cur-open)/open*100, ch:newCh, live:true, src:src });
+      });
+    });
+    if (updated > 0) { setStatus("live"); setLastRefresh(new Date()); }
+  }, []);
+
   var fetchPrices = useCallback(function() {
-    var syms = INSTRUMENTS.filter(function(i) { return TD_OK.has(i.s); }).map(function(i) { return i.s; });
+    fetchCycleRef.current++;
+    var cycle = fetchCycleRef.current;
+    var combined = {};
+
+    // Always fetch: non-TD instruments (Finnhub/FMP - free, no daily limit)
+    var toFetch = NON_TD.slice();
+
+    // Every cycle: priority TD pairs (8 symbols = 8 credits, every 20min = 24 credits/hour)
+    toFetch = toFetch.concat(TD_PRIORITY);
+
+    // Every 6th cycle (~2 hours at 20min interval): secondary TD pairs
+    if (cycle % 6 === 0) {
+      toFetch = toFetch.concat(TD_SECONDARY);
+    }
+
     var batches = [];
-    for (var i = 0; i < syms.length; i += 8) batches.push(syms.slice(i, i + 8));
+    for (var i = 0; i < toFetch.length; i += 8) batches.push(toFetch.slice(i, i + 8));
+
     Promise.allSettled(batches.map(function(b) {
       return fetch("/api/prices?symbol=" + encodeURIComponent(b.join(","))).then(function(r) { return r.json(); });
     })).then(function(results) {
-      var combined = {};
       results.forEach(function(r) { if (r.status === "fulfilled" && typeof r.value === "object") Object.assign(combined, r.value); });
-      var updated = 0;
-      setMkt(function(prev) {
-        return prev.map(function(inst) {
-          if (!TD_OK.has(inst.s)) return inst;
-          var e = combined[inst.s];
-          if (!e || e.status === "error" || !e.price) return inst;
-          var cur = parseFloat(e.price);
-          if (isNaN(cur) || cur <= 0) return inst;
-          updated++;
-          var open = inst.live ? inst.open : parseFloat((cur * (1 + (Math.random() - 0.52) * inst.v * 2)).toFixed(dp(inst.b)));
-          var newCh = inst.ch.slice(-47).concat([{ t: new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}), p: parseFloat(cur.toFixed(dp(inst.b))) }]);
-          return Object.assign({}, inst, { cur:cur, open:open, chg:cur-open, pct:(cur-open)/open*100, ch:newCh, live:true });
-        });
-      });
-      if (updated > 0) { setStatus("live"); setLastRefresh(new Date()); }
+      processPriceData(combined);
     }).catch(function() { setStatus("simulated"); });
-  }, []);
+  }, [processPriceData]);
 
   var fetchChart = useCallback(function(sym) {
     if (!TD_OK.has(sym)) return;
@@ -251,7 +286,7 @@ export default function Auxiron() {
 
   useEffect(function() {
     fetchPrices();
-    var id = setInterval(fetchPrices, 60000);
+    var id = setInterval(fetchPrices, 1200000); // 20 min interval - saves TD credits
     return function() { clearInterval(id); };
   }, [fetchPrices]);
 
@@ -277,8 +312,14 @@ export default function Auxiron() {
     var inp = (text || hl).trim();
     if (!inp) return;
     setLoading(true); setErr(null); setResult(null);
+    var snap = mkt.filter(function(i) {
+      return ["XAU/USD","WTI/USD","DX","SPX","NDX","US10Y","US02Y","VIX","EUR/USD","GBP/USD","USD/JPY","BTC/USD","BRENT","XAG/USD"].indexOf(i.s) >= 0;
+    }).map(function(i) {
+      return i.l + ": " + fmt(i.cur,i.b) + " (" + (i.pct>=0?"+":"") + i.pct.toFixed(2) + "%" + (i.cat==="Bonds"?" yield":"") + ")";
+    }).join(", ");
+    var userMsg = "LIVE MARKET SNAPSHOT:\n" + snap + "\n\nNEWS HEADLINE TO ANALYZE: " + inp;
     callProxy(
-      { model:"claude-haiku-4-5", max_tokens:1000, system:AI_SYS, messages:[{ role:"user", content:"Analyze this headline: " + inp }] },
+      { model:"claude-haiku-4-5", max_tokens:2000, system:AI_SYS, messages:[{ role:"user", content:userMsg }] },
       function(res) { setResult(res); setHist(function(p) { return [{ headline:inp, result:res, ts:new Date() }].concat(p.slice(0,7)); }); setLoading(false); },
       function(e) { setErr("Failed: " + e); setLoading(false); }
     );
@@ -293,6 +334,49 @@ export default function Auxiron() {
       function(res) { setCtx(res); setLastRefresh(new Date()); setCtxLoading(false); },
       function() { setCtxLoading(false); }
     );
+  }
+
+  function openDetail(inst) {
+    setDetailInst(inst);
+    setInstAnalysis(null);
+    setInstNews([]);
+    setInstLoading(true);
+    setNewsLoading(true);
+    // Fetch AI analysis for this instrument
+    var snap = mkt.filter(function(i) {
+      return ["XAU/USD","DX","US10Y","VIX","SPX","EUR/USD","WTI/USD"].indexOf(i.s) >= 0;
+    }).map(function(i) { return i.l + ": " + fmt(i.cur,i.b) + " (" + (i.pct>=0?"+":"") + i.pct.toFixed(2) + "%)"; }).join(", ");
+    var userMsg = "Instrument: " + inst.l + " (" + inst.s + ")" +
+      "\nCurrent Price: " + fmt(inst.cur, inst.b) + (inst.cat==="Bonds"?"%":"") +
+      "\nDaily Change: " + (inst.pct>=0?"+":"") + inst.pct.toFixed(2) + "%" +
+      "\nDay High: " + fmt(Math.max.apply(null, inst.ch.map(function(d){return d.p;})), inst.b) +
+      "\nDay Low: " + fmt(Math.min.apply(null, inst.ch.map(function(d){return d.p;})), inst.b) +
+      "\nMarket Snapshot: " + snap;
+    callProxy(
+      { model:"claude-haiku-4-5", max_tokens:1200, system:INST_SYS, messages:[{ role:"user", content:userMsg }] },
+      function(res) {
+        setInstAnalysis(res);
+        setInstLoading(false);
+        // News loads on demand - user taps button
+      },
+      function() { setInstLoading(false); setNewsLoading(false); }
+    );
+  }
+
+  function fetchInstNews(query) {
+    setNewsLoading(true);
+    // Use GNews free API to fetch relevant headlines
+    var url = "https://gnews.io/api/v4/search?q=" + encodeURIComponent(query) +
+      "&lang=en&max=6&apikey=" + "YOUR_GNEWS_KEY";
+    // Fallback: use a CORS proxy to search for news
+    fetch("/api/news?q=" + encodeURIComponent(query))
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        if (d.articles) setInstNews(d.articles);
+        else setInstNews([]);
+      })
+      .catch(function() { setInstNews([]); })
+      .finally(function() { setNewsLoading(false); });
   }
 
   function toggleQuad(sym) {
@@ -407,7 +491,7 @@ export default function Auxiron() {
                 <div style={{ fontSize:8, color:C.txt3, letterSpacing:".1em", marginBottom:6 }}>YIELD CURVE</div>
                 <div style={{ display:"flex", gap:6, overflowX:"auto" }}>
                   {[y2,y10,y30].map(function(m) {
-                    return <div key={m.s} className="tap" onClick={function() { setSel(m.s); setTab("charts"); fetchChart(m.s); }} style={{ background:C.bg2, border:"1px solid "+C.border, borderRadius:8, padding:"7px 12px", flexShrink:0, minWidth:88 }}>
+                    return <div key={m.s} className="tap" onClick={function() { openDetail(m); }} style={{ background:C.bg2, border:"1px solid "+C.border, borderRadius:8, padding:"7px 12px", flexShrink:0, minWidth:88 }}>
                       <div style={{ fontSize:8, color:C.bond, marginBottom:2 }}>{m.l}</div>
                       <div style={{ fontSize:15, fontWeight:600, color:C.txt0, fontVariantNumeric:"tabular-nums" }}>{m.cur.toFixed(3)}<span style={{ fontSize:9, color:C.txt2 }}>%</span></div>
                       <div style={{ fontSize:9, color:m.chg>=0?C.dn:C.up, fontVariantNumeric:"tabular-nums" }}>{m.chg>=0?"+":""}{m.chg.toFixed(3)}</div>
@@ -449,13 +533,13 @@ export default function Auxiron() {
               {displayed.map(function(m) {
                 var up = m.pct>=0; var isVix = m.s==="VIX"; var isBond = m.cat==="Bonds";
                 var lc = isVix?C.vix:isBond?C.bond:up?C.up:C.dn;
-                return <div key={m.s} className="tap" onClick={function() { setSel(m.s); setTab("charts"); fetchChart(m.s); }} style={{ background:C.bg1, border:"1px solid "+C.border, borderRadius:10, padding:"10px 13px", display:"flex", alignItems:"center", gap:10 }}>
+                return <div key={m.s} className="tap" onClick={function() { openDetail(m); }} style={{ background:C.bg1, border:"1px solid "+C.border, borderRadius:10, padding:"10px 13px", display:"flex", alignItems:"center", gap:10 }}>
                   <div style={{ flex:1 }}>
                     <div style={{ fontSize:12, fontWeight:500, color:C.txt0 }}>{m.l}</div>
                     <div style={{ fontSize:8, color:C.txt2, marginTop:1 }}>
                       {m.s}{m.grp && <span style={{ marginLeft:5, color:C.txt3 }}>{m.grp}</span>}
-                      {m.live && <span style={{ marginLeft:5, color:C.up, fontSize:7 }}>● LIVE</span>}
-                      {!TD_OK.has(m.s) && <span style={{ marginLeft:5, color:C.txt3, fontSize:7 }}>SIM</span>}
+                      {m.live && <span style={{ marginLeft:5, color:C.up, fontSize:7 }}>● {m.src||"LIVE"}</span>}
+                      {!m.live && <span style={{ marginLeft:5, color:C.txt3, fontSize:7 }}>SIM</span>}
                     </div>
                   </div>
                   <div style={{ width:55, height:22 }}>
@@ -763,6 +847,71 @@ export default function Auxiron() {
                     })}
                   </div>
                 </div>}
+                {/* IMMEDIATE IMPACT */}
+                {result.immediateImpact && <div style={{ background:"rgba(72,144,248,0.07)", border:"1px solid rgba(72,144,248,0.2)", borderRadius:8, padding:"10px 12px", marginBottom:8 }}>
+                  <div style={{ fontSize:7, color:C.blue, letterSpacing:".1em", marginBottom:4 }}>⚡ IMMEDIATE MARKET IMPACT</div>
+                  <div style={{ fontSize:11, color:C.txt1, lineHeight:1.75 }}>{result.immediateImpact}</div>
+                </div>}
+
+                {/* SCENARIOS */}
+                {result.scenarios && result.scenarios.length > 0 && <div style={{ marginBottom:8 }}>
+                  <div style={{ fontSize:7, color:C.txt3, letterSpacing:".1em", marginBottom:6 }}>SCENARIO ANALYSIS</div>
+                  <div style={{ display:"grid", gap:5 }}>
+                    {result.scenarios.map(function(sc, i) {
+                      var scClr = sc.type==="BEARISH_EXTREME"?C.dn:sc.type==="BASE_CASE"?C.amber:C.up;
+                      var scBg = sc.type==="BEARISH_EXTREME"?"rgba(240,64,64,0.07)":sc.type==="BASE_CASE"?"rgba(240,144,32,0.07)":"rgba(40,204,120,0.07)";
+                      return <div key={i} style={{ background:scBg, border:"1px solid "+scClr+"33", borderRadius:8, padding:"10px 12px" }}>
+                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:5 }}>
+                          <div>
+                            <span style={{ fontSize:9, fontWeight:600, color:scClr, letterSpacing:".06em" }}>
+                              {sc.type==="BEARISH_EXTREME"?"▼ WORST CASE":sc.type==="BASE_CASE"?"◆ BASE CASE":"▲ BEST CASE"}
+                            </span>
+                            <span style={{ marginLeft:7, fontSize:10, color:C.txt0, fontWeight:500 }}>{sc.title}</span>
+                          </div>
+                          <span style={{ fontSize:10, fontWeight:600, color:scClr }}>{sc.probability}%</span>
+                        </div>
+                        <div style={{ fontSize:10, color:C.txt1, lineHeight:1.65, marginBottom:6 }}>{sc.description}</div>
+                        {sc.instruments && sc.instruments.length > 0 && <div style={{ display:"flex", flexWrap:"wrap", gap:4, marginBottom:5 }}>
+                          {sc.instruments.map(function(inst, j) {
+                            return <span key={j} style={{ background:"rgba(0,0,0,0.25)", border:"1px solid "+C.border, borderRadius:4, padding:"2px 8px", fontSize:9, color:C.txt1 }}>
+                              <span style={{ color:scClr }}>{inst.symbol}</span> {inst.move}
+                            </span>;
+                          })}
+                        </div>}
+                        <div style={{ fontSize:9, color:C.txt2 }}>👁 Watch for: {sc.watchFor}</div>
+                      </div>;
+                    })}
+                  </div>
+                </div>}
+
+                {/* KEY LEVELS */}
+                {result.keyLevelsToWatch && result.keyLevelsToWatch.length > 0 && <div style={{ marginBottom:8 }}>
+                  <div style={{ fontSize:7, color:C.txt3, letterSpacing:".1em", marginBottom:5 }}>KEY LEVELS TO WATCH</div>
+                  <div style={{ display:"grid", gap:4 }}>
+                    {result.keyLevelsToWatch.map(function(kl, i) {
+                      return <div key={i} style={{ display:"flex", alignItems:"center", gap:8, background:"rgba(12,17,24,0.5)", border:"1px solid "+C.border, borderRadius:7, padding:"7px 10px" }}>
+                        <span style={{ fontSize:10, fontWeight:600, color:C.txt0, minWidth:60 }}>{kl.symbol}</span>
+                        <span style={{ fontSize:11, fontWeight:600, color:C.goldL, minWidth:55, fontVariantNumeric:"tabular-nums" }}>{kl.level}</span>
+                        <span style={{ flex:1, fontSize:9, color:C.txt2 }}>{kl.significance}</span>
+                      </div>;
+                    })}
+                  </div>
+                </div>}
+
+                {/* NEXT CATALYSTS */}
+                {result.nextCatalysts && result.nextCatalysts.length > 0 && <div style={{ marginBottom:8 }}>
+                  <div style={{ fontSize:7, color:C.txt3, letterSpacing:".1em", marginBottom:5 }}>NEXT CATALYSTS TO MONITOR</div>
+                  <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
+                    {result.nextCatalysts.map(function(cat, i) {
+                      return <div key={i} style={{ display:"flex", alignItems:"flex-start", gap:7, background:"rgba(12,17,24,0.4)", border:"1px solid "+C.border, borderRadius:6, padding:"7px 10px" }}>
+                        <span style={{ color:C.amber, fontSize:10, flexShrink:0 }}>→</span>
+                        <span style={{ fontSize:10, color:C.txt1 }}>{cat}</span>
+                      </div>;
+                    })}
+                  </div>
+                </div>}
+
+                {/* TRADER NOTE */}
                 <div style={{ background:"rgba(12,17,24,0.5)", border:"1px solid "+C.border, borderRadius:8, padding:"10px 12px" }}>
                   <div style={{ fontSize:7, color:C.gold, letterSpacing:".1em", marginBottom:3, opacity:0.8 }}>◈ TRADER NOTE</div>
                   <div style={{ fontSize:11, color:C.txt1, lineHeight:1.8 }}>{result.traderNote}</div>
@@ -794,6 +943,171 @@ export default function Auxiron() {
       <div style={{ textAlign:"center", padding:"8px", fontSize:8, color:C.txt3, letterSpacing:".06em", borderTop:"1px solid "+C.border, background:C.bg0 }}>
         © 2025 AUXIRON. ALL RIGHTS RESERVED.
       </div>
+
+      {/* INSTRUMENT DETAIL MODAL */}
+      {detailInst && (
+        <div style={{ position:"fixed", top:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:480, height:"100%", background:C.bg0, zIndex:500, display:"flex", flexDirection:"column", overflowY:"auto" }}>
+
+          {/* Modal Header */}
+          <div style={{ background:C.bg1, borderBottom:"1px solid "+C.border, padding:"12px 14px", display:"flex", alignItems:"center", justifyContent:"space-between", flexShrink:0, position:"sticky", top:0, zIndex:10 }}>
+            <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+              <button className="tap" onClick={function() { setDetailInst(null); setInstAnalysis(null); setInstNews([]); }}
+                style={{ background:C.bg2, border:"1px solid "+C.border, borderRadius:8, padding:"6px 12px", color:C.txt1, fontSize:11 }}>← Back</button>
+              <div>
+                <div style={{ fontFamily:"'Syne',sans-serif", fontSize:14, fontWeight:700, color:C.txt0 }}>{detailInst.l}</div>
+                <div style={{ fontSize:8, color:C.txt2, marginTop:1 }}>{detailInst.s} · {detailInst.cat}</div>
+              </div>
+            </div>
+            <div style={{ textAlign:"right" }}>
+              <div style={{ fontFamily:"'Syne',sans-serif", fontSize:18, fontWeight:700, color:detailInst.pct>=0?C.up:C.dn, fontVariantNumeric:"tabular-nums" }}>{fmt(detailInst.cur, detailInst.b)}{detailInst.cat==="Bonds"?"%":""}</div>
+              <div style={{ fontSize:11, color:detailInst.pct>=0?C.up:C.dn, fontVariantNumeric:"tabular-nums" }}>{detailInst.pct>=0?"+":""}{detailInst.pct.toFixed(2)}% {detailInst.pct>=0?"▲":"▼"}</div>
+            </div>
+          </div>
+
+          <div style={{ padding:"12px", paddingBottom:80 }}>
+
+            {/* Chart */}
+            <div style={{ background:C.bg1, border:"1px solid "+C.border, borderRadius:12, padding:"14px", marginBottom:12 }}>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr 1fr", gap:5, marginBottom:12 }}>
+                {[
+                  ["HIGH", Math.max.apply(null, detailInst.ch.map(function(d){return d.p;})), C.up],
+                  ["LOW",  Math.min.apply(null, detailInst.ch.map(function(d){return d.p;})), C.dn],
+                  ["OPEN", detailInst.open, C.txt1],
+                  ["RANGE", ((Math.max.apply(null,detailInst.ch.map(function(d){return d.p;}))-Math.min.apply(null,detailInst.ch.map(function(d){return d.p;})))/detailInst.open*100).toFixed(2)+"%", C.amber],
+                ].map(function(item) {
+                  return <div key={item[0]} style={{ background:C.bg2, border:"1px solid "+C.border, borderRadius:7, padding:"6px 7px", textAlign:"center" }}>
+                    <div style={{ fontSize:7, color:C.txt3, letterSpacing:".1em", marginBottom:1 }}>{item[0]}</div>
+                    <div style={{ fontSize:9, fontWeight:500, color:item[2], fontVariantNumeric:"tabular-nums" }}>{typeof item[1]==="string"?item[1]:fmt(item[1],detailInst.b)}</div>
+                  </div>;
+                })}
+              </div>
+              <ResponsiveContainer width="100%" height={180}>
+                <AreaChart data={detailInst.ch} margin={{ top:4, right:4, bottom:4, left:0 }}>
+                  <defs>
+                    <linearGradient id="dcg" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={detailInst.pct>=0?C.up:C.dn} stopOpacity={0.15}/>
+                      <stop offset="95%" stopColor={detailInst.pct>=0?C.up:C.dn} stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <XAxis dataKey="t" tick={{ fill:C.txt3, fontSize:8 }} tickLine={false} axisLine={false} interval={8}/>
+                  <YAxis domain={["auto","auto"]} tick={{ fill:C.txt3, fontSize:8 }} tickLine={false} axisLine={false} width={56} tickFormatter={function(v){return fmt(v,detailInst.b);}}/>
+                  <Tooltip content={<ChartTip/>}/>
+                  <ReferenceLine y={detailInst.open} stroke={C.border2} strokeDasharray="3 3"/>
+                  <Area type="monotone" dataKey="p" stroke={detailInst.pct>=0?C.up:C.dn} strokeWidth={2} fill="url(#dcg)" dot={false}/>
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* AI Analysis Loading */}
+            {instLoading && <div style={{ background:C.bg1, border:"1px solid "+C.border, borderRadius:12, padding:"20px", textAlign:"center", marginBottom:12 }}>
+              <div className="sp" style={{ width:20, height:20, border:"2px solid "+C.border2, borderTopColor:C.gold, borderRadius:"50%", margin:"0 auto 8px" }}></div>
+              <div style={{ fontSize:10, color:C.txt2, letterSpacing:".08em" }}>GENERATING AI ANALYSIS…</div>
+            </div>}
+
+            {/* AI Analysis Results */}
+            {instAnalysis && !instLoading && (
+              <div className="fu">
+
+                {/* Key Drivers */}
+                {instAnalysis.drivers && instAnalysis.drivers.length > 0 && <div style={{ background:C.bg1, border:"1px solid "+C.border, borderRadius:12, padding:"13px", marginBottom:10 }}>
+                  <div style={{ fontSize:8, color:C.txt3, letterSpacing:".1em", marginBottom:8 }}>CURRENT PRICE DRIVERS</div>
+                  {instAnalysis.drivers.map(function(d, i) {
+                    return <div key={i} style={{ display:"flex", alignItems:"flex-start", gap:8, marginBottom: i<instAnalysis.drivers.length-1?7:0, padding:"7px 10px", background:C.bg2, borderRadius:7, border:"1px solid "+C.border }}>
+                      <span style={{ color:C.gold, fontSize:11, flexShrink:0 }}>{"0123456789"[i+1]}</span>
+                      <span style={{ fontSize:11, color:C.txt1, lineHeight:1.6 }}>{d}</span>
+                    </div>;
+                  })}
+                </div>}
+
+                {/* Outlook - Short / Near / Long */}
+                <div style={{ background:C.bg1, border:"1px solid "+C.border, borderRadius:12, padding:"13px", marginBottom:10 }}>
+                  <div style={{ fontSize:8, color:C.txt3, letterSpacing:".1em", marginBottom:10 }}>MARKET OUTLOOK</div>
+                  <div style={{ display:"grid", gap:8 }}>
+                    {[
+                      { key:"shortTerm",  label:"SHORT TERM",  emoji:"⚡" },
+                      { key:"nearTerm",   label:"NEAR TERM",   emoji:"📈" },
+                      { key:"longTerm",   label:"LONG TERM",   emoji:"🎯" },
+                    ].map(function(item) {
+                      var outlook = instAnalysis[item.key];
+                      if (!outlook) return null;
+                      var outClr = outlook.outlook==="BULLISH"?C.up:outlook.outlook==="BEARISH"?C.dn:C.amber;
+                      return <div key={item.key} style={{ background:C.bg2, border:"1px solid "+C.border, borderRadius:10, padding:"11px 13px" }}>
+                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
+                          <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                            <span style={{ fontSize:12 }}>{item.emoji}</span>
+                            <div>
+                              <div style={{ fontSize:8, color:C.txt3, letterSpacing:".1em" }}>{item.label}</div>
+                              <div style={{ fontSize:9, color:C.txt2, marginTop:1 }}>{outlook.timeframe}</div>
+                            </div>
+                          </div>
+                          <span style={{ fontSize:11, fontWeight:700, color:outClr, background:"rgba(0,0,0,0.2)", border:"1px solid "+outClr+"44", borderRadius:5, padding:"3px 9px" }}>{outlook.outlook}</span>
+                        </div>
+                        <div style={{ fontSize:11, color:C.txt1, lineHeight:1.65, marginBottom:6 }}>{outlook.analysis}</div>
+                        {outlook.keyLevel && <div style={{ display:"flex", alignItems:"center", gap:6, background:"rgba(0,0,0,0.2)", borderRadius:6, padding:"5px 8px" }}>
+                          <span style={{ fontSize:8, color:C.txt3, letterSpacing:".08em" }}>{outlook.keyLevelType}</span>
+                          <span style={{ fontSize:11, fontWeight:600, color:outlook.keyLevelType==="RESISTANCE"?C.dn:C.up, fontVariantNumeric:"tabular-nums" }}>{fmt(outlook.keyLevel, detailInst.b)}</span>
+                        </div>}
+                      </div>;
+                    })}
+                  </div>
+                </div>
+
+                {/* Summary */}
+                {instAnalysis.summary && <div style={{ background:"rgba(200,168,64,0.07)", border:"1px solid rgba(200,168,64,0.2)", borderRadius:12, padding:"13px", marginBottom:10 }}>
+                  <div style={{ fontSize:8, color:C.gold, letterSpacing:".1em", marginBottom:5, opacity:0.8 }}>◈ TRADER SUMMARY</div>
+                  <div style={{ fontSize:12, color:C.txt1, lineHeight:1.75 }}>{instAnalysis.summary}</div>
+                </div>}
+              </div>
+            )}
+
+            {/* News Section */}
+            <div style={{ background:C.bg1, border:"1px solid "+C.border, borderRadius:12, padding:"13px", marginBottom:12 }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
+                <div style={{ fontSize:8, color:C.txt3, letterSpacing:".1em" }}>RELATED NEWS HEADLINES</div>
+                {!newsLoading && instNews.length === 0 && <button className="tap" onClick={function() {
+                  if (instAnalysis && instAnalysis.searchTerms && instAnalysis.searchTerms.length > 0) {
+                    fetchInstNews(instAnalysis.searchTerms[0] + " " + detailInst.l);
+                  } else {
+                    fetchInstNews(detailInst.l);
+                  }
+                }} style={{ background:C.blue, border:"none", borderRadius:7, padding:"5px 12px", color:"#fff", fontSize:9, fontWeight:500, letterSpacing:".06em" }}>
+                  🔍 LOAD NEWS
+                </button>}
+                {instNews.length > 0 && <button className="tap" onClick={function() {
+                  setInstNews([]);
+                }} style={{ background:C.bg2, border:"1px solid "+C.border, borderRadius:7, padding:"5px 10px", color:C.txt2, fontSize:9 }}>
+                  ✕ Clear
+                </button>}
+              </div>
+              {newsLoading && <div style={{ textAlign:"center", padding:"16px" }}>
+                <div className="sp" style={{ width:16, height:16, border:"2px solid "+C.border2, borderTopColor:C.blue, borderRadius:"50%", margin:"0 auto 6px" }}></div>
+                <div style={{ fontSize:9, color:C.txt2 }}>Fetching latest news…</div>
+              </div>}
+              {!newsLoading && instNews.length === 0 && <div style={{ textAlign:"center", padding:"14px" }}>
+                <div style={{ fontSize:10, color:C.txt3 }}>Tap LOAD NEWS to fetch latest headlines</div>
+                <div style={{ fontSize:9, color:C.txt3, marginTop:3, opacity:0.6 }}>Uses GNews · 100 free requests/day</div>
+              </div>}
+              {!newsLoading && instNews.length > 0 && <div style={{ display:"grid", gap:6 }}>
+                {instNews.map(function(article, i) {
+                  return <a key={i} href={article.url} target="_blank" rel="noopener noreferrer"
+                    style={{ display:"block", background:C.bg2, border:"1px solid "+C.border, borderRadius:9, padding:"10px 12px", textDecoration:"none" }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:8, marginBottom:4 }}>
+                      <div style={{ fontSize:11, fontWeight:500, color:C.txt0, lineHeight:1.5, flex:1 }}>{article.title}</div>
+                      <span style={{ fontSize:9, color:C.blue, flexShrink:0 }}>→</span>
+                    </div>
+                    <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                      <span style={{ fontSize:9, color:C.gold }}>{article.source && article.source.name}</span>
+                      <span style={{ fontSize:8, color:C.txt3 }}>{article.publishedAt && new Date(article.publishedAt).toLocaleDateString()}</span>
+                    </div>
+                    {article.description && <div style={{ fontSize:10, color:C.txt2, marginTop:4, lineHeight:1.5 }}>{article.description.slice(0,120)}…</div>}
+                  </a>;
+                })}
+              </div>}
+            </div>
+
+          </div>
+        </div>
+      )}
 
       {/* BOTTOM NAV */}
       <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:480, background:C.bg1, borderTop:"1px solid "+C.border, display:"flex", zIndex:300, paddingBottom:"env(safe-area-inset-bottom,0px)" }}>
