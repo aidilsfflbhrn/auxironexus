@@ -209,59 +209,36 @@ export default function Auxiron() {
     return function() { clearInterval(id); };
   }, []);
 
-  // Priority forex pairs - fetch every 20 minutes (saves TD credits)
-  var TD_PRIORITY = ["EUR/USD","GBP/USD","USD/JPY","AUD/USD","USD/CAD","EUR/JPY","GBP/JPY","EUR/GBP"];
-  // Secondary forex - fetch every 2 hours
-  var TD_SECONDARY = ["USD/CHF","NZD/USD","EUR/AUD","EUR/NZD","EUR/CAD","EUR/CHF","GBP/AUD","GBP/NZD","GBP/CAD","GBP/CHF","AUD/JPY","AUD/NZD","AUD/CAD","AUD/CHF","NZD/JPY","NZD/CAD","NZD/CHF","CAD/JPY","CHF/JPY"];
-  // Non-TD instruments (Finnhub + FMP) - always fetch, no TD credit cost
-  var NON_TD = ["SPX","NDX","DJI","DAX","FTSE","NI225","DX","BTC/USD","ETH/USD","XAU/USD","XAG/USD","XPT/USD","WTI/USD","BRENT","US02Y","US10Y","US30Y","VIX","ES1!","NQ1!","YM1!","GC1!","SI1!","CL1!","NG1!"];
-
-  var fetchCycleRef = useRef(0);
-
-  var processPriceData = useCallback(function(combined) {
-    var updated = 0;
-    setMkt(function(prev) {
-      return prev.map(function(inst) {
-        var e = combined[inst.s];
-        if (!e || !e.price) return inst;
-        var cur = parseFloat(e.price);
-        if (isNaN(cur) || cur <= 0) return inst;
-        updated++;
-        var open = inst.live ? inst.open : parseFloat((cur * (1 + (Math.random() - 0.52) * inst.v * 2)).toFixed(dp(inst.b)));
-        var newCh = inst.ch.slice(-47).concat([{ t: new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}), p: parseFloat(cur.toFixed(dp(inst.b))) }]);
-        var src = e.source || "LIVE";
-        return Object.assign({}, inst, { cur:cur, open:open, chg:cur-open, pct:(cur-open)/open*100, ch:newCh, live:true, src:src });
-      });
-    });
-    if (updated > 0) { setStatus("live"); setLastRefresh(new Date()); }
-  }, []);
-
   var fetchPrices = useCallback(function() {
-    fetchCycleRef.current++;
-    var cycle = fetchCycleRef.current;
-    var combined = {};
-
-    // Always fetch: non-TD instruments (Finnhub/FMP - free, no daily limit)
-    var toFetch = NON_TD.slice();
-
-    // Every cycle: priority TD pairs (8 symbols = 8 credits, every 20min = 24 credits/hour)
-    toFetch = toFetch.concat(TD_PRIORITY);
-
-    // Every 6th cycle (~2 hours at 20min interval): secondary TD pairs
-    if (cycle % 6 === 0) {
-      toFetch = toFetch.concat(TD_SECONDARY);
-    }
-
+    // Fetch all instruments - proxy handles routing to TD/Finnhub/FMP
+    var allSyms = INSTRUMENTS.map(function(i) { return i.s; });
     var batches = [];
-    for (var i = 0; i < toFetch.length; i += 8) batches.push(toFetch.slice(i, i + 8));
-
+    for (var i = 0; i < allSyms.length; i += 8) batches.push(allSyms.slice(i, i + 8));
+    var combined = {};
     Promise.allSettled(batches.map(function(b) {
       return fetch("/api/prices?symbol=" + encodeURIComponent(b.join(","))).then(function(r) { return r.json(); });
     })).then(function(results) {
-      results.forEach(function(r) { if (r.status === "fulfilled" && typeof r.value === "object") Object.assign(combined, r.value); });
-      processPriceData(combined);
+      results.forEach(function(r) {
+        if (r.status === "fulfilled" && r.value && typeof r.value === "object") {
+          Object.assign(combined, r.value);
+        }
+      });
+      var updated = 0;
+      setMkt(function(prev) {
+        return prev.map(function(inst) {
+          var e = combined[inst.s];
+          if (!e || !e.price) return inst;
+          var cur = parseFloat(e.price);
+          if (isNaN(cur) || cur <= 0) return inst;
+          updated++;
+          var open = inst.live ? inst.open : parseFloat((cur * (1 + (Math.random() - 0.52) * inst.v * 2)).toFixed(dp(inst.b)));
+          var newCh = inst.ch.slice(-47).concat([{ t: new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}), p: parseFloat(cur.toFixed(dp(inst.b))) }]);
+          return Object.assign({}, inst, { cur:cur, open:open, chg:cur-open, pct:(cur-open)/open*100, ch:newCh, live:true, src:e.source||"LIVE" });
+        });
+      });
+      if (updated > 0) { setStatus("live"); setLastRefresh(new Date()); }
     }).catch(function() { setStatus("simulated"); });
-  }, [processPriceData]);
+  }, []);
 
   var fetchChart = useCallback(function(sym) {
     if (!TD_OK.has(sym)) return;
@@ -286,7 +263,7 @@ export default function Auxiron() {
 
   useEffect(function() {
     fetchPrices();
-    var id = setInterval(fetchPrices, 1200000); // 20 min interval - saves TD credits
+    var id = setInterval(fetchPrices, 60000);
     return function() { clearInterval(id); };
   }, [fetchPrices]);
 
