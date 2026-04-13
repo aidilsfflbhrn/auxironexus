@@ -109,9 +109,9 @@ const INST_SYS = `You are a professional market analyst. Given an instrument and
 {"drivers":["<key factor 1 currently affecting price>","<key factor 2>","<key factor 3>"],"shortTerm":{"outlook":"<BULLISH|BEARISH|NEUTRAL>","timeframe":"1-7 days","analysis":"<2 sentence analysis>","keyLevel":<price level>,"keyLevelType":"<SUPPORT|RESISTANCE>"},"nearTerm":{"outlook":"<BULLISH|BEARISH|NEUTRAL>","timeframe":"1-4 weeks","analysis":"<2 sentence analysis>","keyLevel":<price level>,"keyLevelType":"<SUPPORT|RESISTANCE>"},"longTerm":{"outlook":"<BULLISH|BEARISH|NEUTRAL>","timeframe":"1-3 months","analysis":"<2 sentence analysis>","keyLevel":<price level>,"keyLevelType":"<SUPPORT|RESISTANCE>"},"summary":"<3 sentence overall summary a retail trader can act on>","searchTerms":["<news search term 1 for this instrument>","<news search term 2>","<news search term 3>"]}
 Always reference the current price in your analysis. Search terms should be specific enough to find relevant news.`;
 
-const CTX_SYS = `You are a professional market analyst. Given current market data respond ONLY with a valid JSON object. No extra text, no markdown:
-{"sessionBias":"<RISK-ON|RISK-OFF|NEUTRAL|MIXED>","dxyImpact":"<1-2 sentence DXY analysis>","goldBias":"<BULLISH|BEARISH|NEUTRAL>","yieldCurve":"<brief 1 sentence>","keyLevels":[{"symbol":"<sym>","level":<number>,"type":"<RESISTANCE|SUPPORT>","note":"<why>"}],"watchlist":["<sym1>","<sym2>","<sym3>"],"sessionNote":"<2 sentence overall note>"}
-Provide exactly 3 keyLevels and 3 watchlist items.`;
+const CTX_SYS = `You are a professional market analyst and macro strategist. Given current live market data respond ONLY with a valid JSON object. No extra text, no markdown:
+{"sessionBias":"<RISK-ON|RISK-OFF|NEUTRAL|MIXED>","sessionNote":"<2-3 sentence overall market summary for today>","dxyDominance":{"status":"<LEADING|LAGGING|NEUTRAL>","analysis":"<2 sentence analysis of DXY vs other markets - is DXY leading price action or following?>","vsGold":"<INVERSE|CORRELATED|DECOUPLED>","vsBonds":"<Is DXY moving with or against bond yields today? 1 sentence>"},"yieldCurve":{"status":"<NORMAL|INVERTED|FLATTENING|STEEPENING>","twoTen":"<2s10s spread analysis 1 sentence>","marketSignal":"<what is the yield curve telling us today? 1 sentence>"},"topMovers":[{"symbol":"<sym>","direction":"<BULLISH|BEARISH>","potentialMove":"<e.g. +2.5% or -80 pips>","reason":"<why this has most potential to move today>"}],"watchlist":[{"symbol":"<sym>","bias":"<BULLISH|BEARISH|NEUTRAL>","entryZone":"<price range to watch>","reason":"<why this is on watchlist today>"}],"keyLevels":[{"symbol":"<sym>","level":<number>,"type":"<RESISTANCE|SUPPORT>","significance":"<why this level matters today>"}],"riskEvents":["<upcoming event or risk to watch today>"],"goldBias":"<BULLISH|BEARISH|NEUTRAL>","oilOutlook":"<1 sentence oil outlook given current conditions>"}
+Rules: Provide exactly 3 topMovers, 3 watchlist items, 3 keyLevels, 2 riskEvents. Reference current prices in all analysis. TopMovers should be instruments with highest probability of significant movement today based on current conditions.`;
 
 const dp = function(b) { return b >= 1000 ? 2 : b >= 10 ? 3 : 4; };
 const fmt = function(v, b) {
@@ -730,51 +730,132 @@ export default function Auxiron() {
               <div style={{ fontSize:10, color:C.txt3, letterSpacing:".1em" }}>TAP GENERATE FOR AI SESSION BRIEFING</div>
             </div>}
             {ctx && <div className="fu">
+
+              {/* SESSION BIAS */}
               <div style={{ background:C.bg1, border:"1px solid "+C.border, borderRadius:10, padding:"12px", marginBottom:8 }}>
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
                   <div style={{ fontSize:8, color:C.txt3, letterSpacing:".1em" }}>SESSION BIAS</div>
-                  <span style={{ fontSize:12, fontWeight:700, color:SC[ctx.sessionBias]||C.txt1, background:"rgba(0,0,0,0.2)", border:"1px solid rgba(200,200,200,0.1)", borderRadius:6, padding:"3px 10px" }}>{ctx.sessionBias}</span>
+                  <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                    <span style={{ fontSize:12, fontWeight:700, color:SC[ctx.sessionBias]||C.txt1, background:"rgba(0,0,0,0.2)", border:"1px solid rgba(200,200,200,0.1)", borderRadius:6, padding:"3px 10px" }}>{ctx.sessionBias}</span>
+                    {lastRefresh && <span style={{ fontSize:8, color:C.txt3 }}>{lastRefresh.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</span>}
+                  </div>
                 </div>
-                <div style={{ fontSize:11, color:C.txt1, lineHeight:1.7, marginBottom:8 }}>{ctx.sessionNote}</div>
-                <div style={{ fontSize:8, color:C.txt3, letterSpacing:".08em", marginBottom:4 }}>DXY</div>
-                <div style={{ fontSize:11, color:C.txt2, lineHeight:1.6 }}>{ctx.dxyImpact}</div>
+                <div style={{ fontSize:11, color:C.txt1, lineHeight:1.75 }}>{ctx.sessionNote}</div>
               </div>
-              {ctx.keyLevels&&ctx.keyLevels.length>0 && <div style={{ background:C.bg1, border:"1px solid "+C.border, borderRadius:10, padding:"12px", marginBottom:8 }}>
-                <div style={{ fontSize:8, color:C.txt3, letterSpacing:".1em", marginBottom:7 }}>KEY LEVELS</div>
-                {ctx.keyLevels.map(function(kl,i) {
-                  return <div key={i} style={{ display:"flex", alignItems:"center", gap:8, marginBottom:i<ctx.keyLevels.length-1?6:0, background:C.bg2, borderRadius:7, padding:"8px 10px", border:"1px solid "+C.border }}>
-                    <div style={{ fontSize:9, fontWeight:600, color:C.txt0, minWidth:60 }}>{kl.symbol}</div>
-                    <div style={{ fontSize:11, fontWeight:600, color:kl.type==="RESISTANCE"?C.dn:C.up, minWidth:58, fontVariantNumeric:"tabular-nums" }}>{kl.level}</div>
-                    <div style={{ fontSize:8, color:kl.type==="RESISTANCE"?C.dn:C.up, minWidth:72 }}>{kl.type}</div>
-                    <div style={{ flex:1, fontSize:9, color:C.txt2 }}>{kl.note}</div>
-                  </div>;
-                })}
+
+              {/* DXY DOMINANCE */}
+              {ctx.dxyDominance && <div style={{ background:C.bg1, border:"1px solid "+C.border, borderRadius:10, padding:"12px", marginBottom:8 }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
+                  <div style={{ fontSize:8, color:C.txt3, letterSpacing:".1em" }}>DXY DOMINANCE</div>
+                  <span style={{ fontSize:10, fontWeight:700, letterSpacing:".06em", color:ctx.dxyDominance.status==="LEADING"?C.dn:ctx.dxyDominance.status==="LAGGING"?C.up:C.amber, background:"rgba(0,0,0,0.2)", border:"1px solid rgba(200,200,200,0.1)", borderRadius:5, padding:"2px 8px" }}>{ctx.dxyDominance.status}</span>
+                </div>
+                <div style={{ fontSize:11, color:C.txt1, lineHeight:1.7, marginBottom:8 }}>{ctx.dxyDominance.analysis}</div>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6 }}>
+                  <div style={{ background:C.bg2, border:"1px solid "+C.border, borderRadius:7, padding:"7px 10px" }}>
+                    <div style={{ fontSize:7, color:C.txt3, letterSpacing:".1em", marginBottom:3 }}>DXY vs GOLD</div>
+                    <div style={{ fontSize:10, fontWeight:600, color:ctx.dxyDominance.vsGold==="INVERSE"?C.amber:ctx.dxyDominance.vsGold==="CORRELATED"?C.up:C.txt2 }}>{ctx.dxyDominance.vsGold}</div>
+                  </div>
+                  <div style={{ background:C.bg2, border:"1px solid "+C.border, borderRadius:7, padding:"7px 10px" }}>
+                    <div style={{ fontSize:7, color:C.txt3, letterSpacing:".1em", marginBottom:3 }}>DXY vs BONDS</div>
+                    <div style={{ fontSize:9, color:C.txt1, lineHeight:1.5 }}>{ctx.dxyDominance.vsBonds}</div>
+                  </div>
+                </div>
               </div>}
-              {ctx.watchlist&&ctx.watchlist.length>0 && <div style={{ background:C.bg1, border:"1px solid "+C.border, borderRadius:10, padding:"12px", marginBottom:8 }}>
-                <div style={{ fontSize:8, color:C.txt3, letterSpacing:".1em", marginBottom:7 }}>AI WATCHLIST</div>
-                <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
-                  {ctx.watchlist.map(function(sym,i) {
-                    var m=mkt.find(function(d){return d.s===sym||d.l===sym;});
-                    return <button key={i} className="tap" onClick={function(){if(m){setSel(m.s);setTab("charts");fetchChart(m.s);}}} style={{ background:C.bg2, border:"1px solid rgba(200,168,64,0.3)", color:C.goldL, borderRadius:8, padding:"7px 12px", fontSize:10, fontWeight:500 }}>
-                      {sym}{m&&<span style={{ marginLeft:5, fontSize:9, color:m.pct>=0?C.up:C.dn }}>{m.pct>=0?"+":""}{m.pct.toFixed(2)}%</span>}
-                    </button>;
+
+              {/* YIELD CURVE */}
+              {ctx.yieldCurve && <div style={{ background:C.bg1, border:"1px solid "+C.border, borderRadius:10, padding:"12px", marginBottom:8 }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
+                  <div style={{ fontSize:8, color:C.txt3, letterSpacing:".1em" }}>YIELD CURVE</div>
+                  <span style={{ fontSize:10, fontWeight:700, color:ctx.yieldCurve.status==="INVERTED"?C.dn:ctx.yieldCurve.status==="NORMAL"?C.up:C.amber, background:"rgba(0,0,0,0.2)", border:"1px solid rgba(200,200,200,0.1)", borderRadius:5, padding:"2px 8px" }}>{ctx.yieldCurve.status}</span>
+                </div>
+                <div style={{ fontSize:11, color:C.txt1, lineHeight:1.65, marginBottom:6 }}>{ctx.yieldCurve.twoTen}</div>
+                <div style={{ fontSize:10, color:C.txt2, lineHeight:1.6, fontStyle:"italic" }}>{ctx.yieldCurve.marketSignal}</div>
+              </div>}
+
+              {/* TOP MOVERS - highest potential today */}
+              {ctx.topMovers && ctx.topMovers.length > 0 && <div style={{ background:C.bg1, border:"1px solid "+C.border, borderRadius:10, padding:"12px", marginBottom:8 }}>
+                <div style={{ fontSize:8, color:C.txt3, letterSpacing:".1em", marginBottom:8 }}>🔥 TOP MOVERS TODAY</div>
+                <div style={{ display:"grid", gap:6 }}>
+                  {ctx.topMovers.map(function(m, i) {
+                    var inst = mkt.find(function(d) { return d.s === m.symbol || d.l === m.symbol; });
+                    var isUp = m.direction === "BULLISH";
+                    return <div key={i} className="tap" onClick={function() { if(inst) { openDetail(inst); } }}
+                      style={{ background:C.bg2, border:"1px solid "+(isUp?C.upD:C.dnD), borderRadius:8, padding:"10px 12px", cursor:"pointer" }}>
+                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
+                        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                          <span style={{ fontSize:12, fontWeight:600, color:C.txt0 }}>{m.symbol}</span>
+                          <span style={{ fontSize:9, fontWeight:600, color:isUp?C.up:C.dn, background:isUp?"rgba(40,204,120,0.1)":"rgba(240,64,64,0.1)", borderRadius:4, padding:"2px 7px" }}>{isUp?"▲":"▼"} {m.direction}</span>
+                        </div>
+                        <span style={{ fontSize:12, fontWeight:700, color:isUp?C.up:C.dn }}>{m.potentialMove}</span>
+                      </div>
+                      <div style={{ fontSize:10, color:C.txt2, lineHeight:1.5 }}>{m.reason}</div>
+                      {inst && <div style={{ fontSize:9, color:C.txt3, marginTop:4, fontVariantNumeric:"tabular-nums" }}>Current: {fmt(inst.cur, inst.b)} ({inst.pct>=0?"+":""}{inst.pct.toFixed(2)}%)</div>}
+                    </div>;
                   })}
                 </div>
               </div>}
+
+              {/* WATCHLIST */}
+              {ctx.watchlist && ctx.watchlist.length > 0 && <div style={{ background:C.bg1, border:"1px solid "+C.border, borderRadius:10, padding:"12px", marginBottom:8 }}>
+                <div style={{ fontSize:8, color:C.txt3, letterSpacing:".1em", marginBottom:8 }}>◈ AI WATCHLIST — COMPARE WITH EDGEFINDER</div>
+                <div style={{ display:"grid", gap:5 }}>
+                  {ctx.watchlist.map(function(item, i) {
+                    var inst = mkt.find(function(d) { return d.s === item.symbol || d.l === item.symbol; });
+                    var isUp = item.bias === "BULLISH";
+                    return <div key={i} className="tap" onClick={function() { if(inst) { openDetail(inst); } }}
+                      style={{ background:C.bg2, border:"1px solid "+C.border, borderRadius:8, padding:"10px 12px" }}>
+                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
+                        <div style={{ display:"flex", alignItems:"center", gap:7 }}>
+                          <span style={{ fontSize:12, fontWeight:600, color:C.txt0 }}>{item.symbol}</span>
+                          <span style={{ fontSize:9, fontWeight:600, color:item.bias==="BULLISH"?C.up:item.bias==="BEARISH"?C.dn:C.amber }}>{item.bias}</span>
+                        </div>
+                        {inst && <span style={{ fontSize:10, color:inst.pct>=0?C.up:C.dn, fontVariantNumeric:"tabular-nums" }}>{fmt(inst.cur,inst.b)}</span>}
+                      </div>
+                      <div style={{ fontSize:9, color:C.gold, marginBottom:3 }}>Entry zone: {item.entryZone}</div>
+                      <div style={{ fontSize:10, color:C.txt2, lineHeight:1.5 }}>{item.reason}</div>
+                    </div>;
+                  })}
+                </div>
+              </div>}
+
+              {/* KEY LEVELS */}
+              {ctx.keyLevels && ctx.keyLevels.length > 0 && <div style={{ background:C.bg1, border:"1px solid "+C.border, borderRadius:10, padding:"12px", marginBottom:8 }}>
+                <div style={{ fontSize:8, color:C.txt3, letterSpacing:".1em", marginBottom:7 }}>KEY LEVELS TO WATCH</div>
+                {ctx.keyLevels.map(function(kl, i) {
+                  return <div key={i} style={{ display:"flex", alignItems:"center", gap:8, marginBottom:i<ctx.keyLevels.length-1?6:0, background:C.bg2, borderRadius:7, padding:"8px 10px", border:"1px solid "+C.border }}>
+                    <div style={{ fontSize:9, fontWeight:600, color:C.txt0, minWidth:65 }}>{kl.symbol}</div>
+                    <div style={{ fontSize:11, fontWeight:600, color:kl.type==="RESISTANCE"?C.dn:C.up, minWidth:60, fontVariantNumeric:"tabular-nums" }}>{kl.level}</div>
+                    <div style={{ fontSize:8, color:kl.type==="RESISTANCE"?C.dn:C.up, minWidth:68 }}>{kl.type}</div>
+                    <div style={{ flex:1, fontSize:9, color:C.txt2 }}>{kl.significance}</div>
+                  </div>;
+                })}
+              </div>}
+
+              {/* RISK EVENTS */}
+              {ctx.riskEvents && ctx.riskEvents.length > 0 && <div style={{ background:C.bg1, border:"1px solid "+C.border, borderRadius:10, padding:"12px", marginBottom:8 }}>
+                <div style={{ fontSize:8, color:C.txt3, letterSpacing:".1em", marginBottom:7 }}>⚠ RISK EVENTS TO MONITOR</div>
+                {ctx.riskEvents.map(function(ev, i) {
+                  return <div key={i} style={{ display:"flex", alignItems:"flex-start", gap:7, marginBottom:i<ctx.riskEvents.length-1?5:0, background:"rgba(240,144,32,0.07)", border:"1px solid rgba(240,144,32,0.2)", borderRadius:7, padding:"7px 10px" }}>
+                    <span style={{ color:C.amber, fontSize:10, flexShrink:0 }}>→</span>
+                    <span style={{ fontSize:10, color:C.txt1, lineHeight:1.6 }}>{ev}</span>
+                  </div>;
+                })}
+              </div>}
+
+              {/* GOLD + OIL OUTLOOK */}
               <div style={{ background:C.bg1, border:"1px solid "+C.border, borderRadius:10, padding:"12px" }}>
-                <div style={{ fontSize:8, color:C.txt3, letterSpacing:".1em", marginBottom:4 }}>YIELD CURVE NOTE</div>
-                <div style={{ fontSize:11, color:C.txt1, lineHeight:1.7 }}>{ctx.yieldCurve}</div>
-                <div style={{ display:"flex", justifyContent:"space-between", marginTop:8 }}>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
                   <div>
-                    <div style={{ fontSize:8, color:C.txt3, marginBottom:2 }}>GOLD BIAS</div>
-                    <div style={{ fontSize:11, fontWeight:600, color:DC[ctx.goldBias]||C.txt1 }}>{ctx.goldBias}</div>
+                    <div style={{ fontSize:7, color:C.txt3, letterSpacing:".1em", marginBottom:3 }}>GOLD BIAS</div>
+                    <div style={{ fontSize:12, fontWeight:700, color:DC[ctx.goldBias]||C.txt1, marginBottom:4 }}>{ctx.goldBias}</div>
                   </div>
-                  {lastRefresh && <div style={{ textAlign:"right" }}>
-                    <div style={{ fontSize:8, color:C.txt3, marginBottom:2 }}>GENERATED</div>
-                    <div style={{ fontSize:9, color:C.txt2 }}>{lastRefresh.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</div>
+                  {ctx.oilOutlook && <div>
+                    <div style={{ fontSize:7, color:C.txt3, letterSpacing:".1em", marginBottom:3 }}>OIL OUTLOOK</div>
+                    <div style={{ fontSize:9, color:C.txt2, lineHeight:1.5 }}>{ctx.oilOutlook}</div>
                   </div>}
                 </div>
               </div>
+
             </div>}
           </div>
         )}
