@@ -182,30 +182,53 @@ export default function Auxiron() {
 
   var fetchPrices = useCallback(function() {
     var allSyms = INSTRUMENTS.map(function(i) { return i.s; });
+    // Fetch in small batches of 8
     var batches = [];
     for (var i = 0; i < allSyms.length; i += 8) batches.push(allSyms.slice(i, i + 8));
-    var combined = {};
     Promise.allSettled(batches.map(function(b) {
       return fetch("/api/prices?symbol=" + encodeURIComponent(b.join(","))).then(function(r) { return r.json(); });
     })).then(function(results) {
+      var combined = {};
       results.forEach(function(r) {
-        if (r.status === "fulfilled" && r.value && typeof r.value === "object") Object.assign(combined, r.value);
+        if (r.status === "fulfilled" && r.value && typeof r.value === "object") {
+          Object.assign(combined, r.value);
+        }
       });
-      var updated = 0;
+      var keys = Object.keys(combined);
+      if (keys.length === 0) return;
       setMkt(function(prev) {
-        return prev.map(function(inst) {
+        var anyUpdated = false;
+        var next = prev.map(function(inst) {
           var e = combined[inst.s];
           if (!e || !e.price) return inst;
           var cur = parseFloat(e.price);
           if (isNaN(cur) || cur <= 0) return inst;
-          updated++;
-          var open = inst.live ? inst.open : parseFloat((cur * (1 + (Math.random() - 0.52) * inst.v * 2)).toFixed(dp(inst.b)));
-          var newCh = inst.ch.slice(-47).concat([{ t: new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}), p: parseFloat(cur.toFixed(dp(inst.b))) }]);
-          return Object.assign({}, inst, { cur:cur, open:open, chg:cur-open, pct:(cur-open)/open*100, ch:newCh, live:true, src:e.source||"LIVE" });
+          anyUpdated = true;
+          var isFirstLive = !inst.live;
+          var open = isFirstLive
+            ? parseFloat((cur * (1 + (Math.random() - 0.52) * inst.v * 2)).toFixed(dp(inst.b)))
+            : inst.open;
+          var ts = new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"});
+          var newCh = inst.ch.slice(-47).concat([{ t:ts, p:parseFloat(cur.toFixed(dp(inst.b))) }]);
+          return Object.assign({}, inst, {
+            cur: cur,
+            open: open,
+            chg: cur - open,
+            pct: (cur - open) / open * 100,
+            ch: newCh,
+            live: true,
+            src: e.source || "LIVE"
+          });
         });
+        if (anyUpdated) {
+          setStatus("live");
+          setLastRefresh(new Date());
+        }
+        return next;
       });
-      if (updated > 0) { setStatus("live"); setLastRefresh(new Date()); }
-    }).catch(function() {});
+    }).catch(function(e) {
+      console.log("fetchPrices error:", e);
+    });
   }, []);
 
   var fetchChart = useCallback(function(sym) {
