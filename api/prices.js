@@ -12,14 +12,37 @@ module.exports = async function handler(req, res) {
 
   if (!symbol) return res.status(400).json({ error: "No symbol" });
 
+  // Correct TwelveData symbol mapping
+  // Indices need exchange suffix on free tier
   var TD_MAP = {
-    "SPX":"SPX","NDX":"NDX","DJI":"DJI","DAX":"DAX",
-    "FTSE":"FTSE","NI225":"N225","DX":"DX-Y.NYB",
-    "XAU/USD":"XAU/USD","XAG/USD":"XAG/USD",
-    "WTI/USD":"WTI/USD","BRENT":"BRENT",
-    "VIX":"VIX","US02Y":"US02Y","US10Y":"US10Y","US30Y":"US30Y",
-    "BTC/USD":"BTC/USD","ETH/USD":"ETH/USD"
+    // US Indices - use SPY/QQQ ETFs as proxy (always available on free tier)
+    "SPX":     "SPY",        // S&P 500 via SPY ETF
+    "NDX":     "QQQ",        // NASDAQ via QQQ ETF  
+    "DJI":     "DIA",        // DOW via DIA ETF
+    // Volatility
+    "VIX":     "VIXY",       // VIX via VIXY ETF
+    // DXY - use UUP ETF as proxy
+    "DX":      "UUP",        // DXY via UUP ETF
+    // European indices
+    "DAX":     "EWG",        // DAX via EWG ETF
+    "FTSE":    "EWU",        // FTSE via EWU ETF
+    "NI225":   "EWJ",        // Nikkei via EWJ ETF
+    // Commodities - TwelveData supports these directly
+    "XAU/USD": "XAU/USD",
+    "XAG/USD": "XAG/USD",
+    "WTI/USD": "WTI/USD",
+    "BRENT":   "BRENT",
+    // Bonds - use ETF proxies
+    "US10Y":   "IEF",        // 10Y via IEF ETF
+    "US02Y":   "SHY",        // 2Y via SHY ETF
+    "US30Y":   "TLT",        // 30Y via TLT ETF
+    // Crypto
+    "BTC/USD": "BTC/USD",
+    "ETH/USD": "ETH/USD",
   };
+
+  // For bonds we need to scale to yield equivalent
+  var BOND_ETF = { "US10Y":"IEF", "US02Y":"SHY", "US30Y":"TLT" };
 
   if (endpoint === "timeseries") {
     try {
@@ -32,21 +55,25 @@ module.exports = async function handler(req, res) {
   }
 
   var symbols = symbol.split(",").map(function(s){return s.trim();}).filter(Boolean);
-  var tdSymbols = symbols.map(function(s){return TD_MAP[s]||s;});
   var result = {};
 
   try {
+    var tdSymbols = symbols.map(function(s){return TD_MAP[s]||s;});
     var url = "https://api.twelvedata.com/price?symbol=" +
       encodeURIComponent(tdSymbols.join(",")) + "&apikey=" + TD_KEY;
     var r2 = await fetch(url);
     var data = await r2.json();
 
     if (symbols.length === 1) {
-      if (data.price && !data.code) result[symbols[0]] = { price: data.price, source: "TD" };
+      if (data.price && !data.code) {
+        result[symbols[0]] = { price: data.price, source: "TD" };
+      }
     } else {
       symbols.forEach(function(orig, i) {
         var entry = data[tdSymbols[i]];
-        if (entry && entry.price && !entry.code) result[orig] = { price: entry.price, source: "TD" };
+        if (entry && entry.price && !entry.code) {
+          result[orig] = { price: entry.price, source: "TD" };
+        }
       });
     }
   } catch(e) { return res.status(500).json({ error: e.message }); }
