@@ -9,6 +9,10 @@
     <meta name="apple-mobile-web-app-title" content="Auxiron" />
     <meta name="description" content="Auxiron — AI-powered trading intelligence." />
     <meta name="copyright" content="© 2025 Auxiron. All rights reserved." />
+    <!-- Prevent caching of HTML so new deployments load immediately -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
     <title>Auxiron</title>
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="apple-touch-icon" sizes="512x512" href="/apple-touch-icon.png" />
@@ -21,5 +25,29 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // Register service worker for auto-updates
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js').then(function(reg) {
+          // Check for updates every time page loads
+          reg.update();
+          // When new service worker is waiting, activate it immediately
+          reg.addEventListener('updatefound', function() {
+            var newWorker = reg.installing;
+            newWorker.addEventListener('statechange', function() {
+              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                // New version available - reload automatically
+                newWorker.postMessage('skipWaiting');
+                window.location.reload();
+              }
+            });
+          });
+        });
+        // Handle controller change (after skipWaiting)
+        navigator.serviceWorker.addEventListener('controllerchange', function() {
+          window.location.reload();
+        });
+      }
+    </script>
   </body>
 </html>
