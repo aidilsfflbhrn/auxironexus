@@ -380,7 +380,7 @@ export default function Auxiron(){
           </div>
 
           {(catF==="All"||catF==="Bonds")&&y2&&y10&&<div style={{padding:"8px 12px",borderBottom:"1px solid "+C.border}}>
-            <div style={{fontSize:8,color:C.txt3,letterSpacing:".1em",marginBottom:6}}>YIELD CURVE</div>
+            <div style={{fontSize:12,color:C.txt1,letterSpacing:".1em",marginBottom:6}}>YIELD CURVE</div>
             <div style={{display:"flex",gap:6,overflowX:"auto"}}>
               {[y2,y10].map(function(m){
                 return <div key={m.s} className="tap" onClick={function(){openDetail(m);}} style={{background:C.bg2,border:"1px solid "+C.border,borderRadius:8,padding:"7px 12px",flexShrink:0,minWidth:88}}>
@@ -398,7 +398,7 @@ export default function Auxiron(){
           </div>}
 
           {(catF==="All"||catF==="Volatility")&&vixI&&<div style={{padding:"8px 12px",borderBottom:"1px solid "+C.border}}>
-            <div style={{fontSize:8,color:C.txt3,letterSpacing:".1em",marginBottom:6}}>VOLATILITY — VIX</div>
+            <div style={{fontSize:12,color:C.txt1,letterSpacing:".1em",marginBottom:6}}>VOLATILITY — VIX</div>
             <div className="tap" onClick={function(){openDetail(vixI);}} style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,padding:"12px 14px",display:"flex",alignItems:"center",gap:12}}>
               <div style={{flex:1}}>
                 <div style={{fontSize:26,fontWeight:700,color:vixClr(vixI.cur),fontFamily:"'Syne',sans-serif"}}>{vixI.cur.toFixed(2)}</div>
@@ -413,7 +413,7 @@ export default function Auxiron(){
                   })}
                   <div style={{position:"absolute",left:Math.min(vixI.cur/50*100,98)+"%",top:-2,width:3,height:12,background:vixClr(vixI.cur),borderRadius:2}}></div>
                 </div>
-                <div style={{display:"flex",justifyContent:"space-between",fontSize:7,color:C.txt3}}>
+                <div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:C.txt1}}>
                   <span>0</span><span>15</span><span>20</span><span>30</span><span>50+</span>
                 </div>
               </div>
@@ -426,8 +426,8 @@ export default function Auxiron(){
               var lc=isVix?C.vix:isBond?C.bond:up?C.up:C.dn;
               return <div key={m.s} className="tap" onClick={function(){openDetail(m);}} style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,padding:"10px 13px",display:"flex",alignItems:"center",gap:10}}>
                 <div style={{flex:1}}>
-                  <div style={{fontSize:12,fontWeight:500,color:C.txt0}}>{m.l}</div>
-                  <div style={{fontSize:8,color:C.txt2,marginTop:1,display:"flex",alignItems:"center",gap:5}}>
+                  <div style={{fontSize:14,fontWeight:500,color:C.txt0}}>{m.l}</div>
+                  <div style={{fontSize:10,color:C.txt1,marginTop:1,display:"flex",alignItems:"center",gap:5}}>
                     <span>{m.s}</span>
                     {m.live?<span style={{color:C.up,fontSize:7}}>● LIVE</span>:<span style={{color:C.txt3,fontSize:7}}>SIM</span>}
                     {m.tier===1&&<span style={{color:C.gold,fontSize:7}}>10m</span>}
@@ -442,8 +442,8 @@ export default function Auxiron(){
                   </ResponsiveContainer>
                 </div>
                 <div style={{textAlign:"right",minWidth:80}}>
-                  <div style={{fontSize:12,fontWeight:500,color:isVix?vixClr(m.cur):isBond?C.bond:C.txt0,fontVariantNumeric:"tabular-nums"}}>{fmt(m.cur,m.b)}{isBond?"%":""}</div>
-                  <div style={{fontSize:10,fontWeight:500,marginTop:1,fontVariantNumeric:"tabular-nums",color:isVix?(up?C.dn:C.up):up?C.up:C.dn}}>{up?"+":""}{m.pct.toFixed(2)}% {up?"▲":"▼"}</div>
+                  <div style={{fontSize:14,fontWeight:600,color:isVix?vixClr(m.cur):isBond?C.bond:C.txt0,fontVariantNumeric:"tabular-nums"}}>{fmt(m.cur,m.b)}{isBond?"%":""}</div>
+                  <div style={{fontSize:12,fontWeight:500,marginTop:1,fontVariantNumeric:"tabular-nums",color:isVix?(up?C.dn:C.up):up?C.up:C.dn}}>{up?"+":""}{m.pct.toFixed(2)}% {up?"▲":"▼"}</div>
                 </div>
               </div>;
             })}
@@ -459,7 +459,7 @@ export default function Auxiron(){
             {cv==="quad"&&<button className="tap" onClick={function(){setEditQ(!editQ);}} style={{background:editQ?"rgba(72,144,248,0.12)":C.bg2,border:editQ?"1px solid rgba(72,144,248,0.4)":"1px solid "+C.border,color:editQ?C.blue:C.txt2,borderRadius:20,padding:"4px 12px",fontSize:9,marginLeft:"auto"}}>✎ EDIT</button>}
           </div>
           {cv==="quad"&&editQ&&<div style={{padding:"10px 12px",background:C.bg2,borderBottom:"1px solid "+C.border}}>
-            <div style={{fontSize:8,color:C.txt2,letterSpacing:".1em",marginBottom:7}}>PICK UP TO 4 — {quad.length}/4</div>
+            <div style={{fontSize:11,color:C.txt1,letterSpacing:".1em",marginBottom:7}}>PICK UP TO 4 — {quad.length}/4</div>
             <div style={{display:"flex",flexWrap:"wrap",gap:4,maxHeight:160,overflowY:"auto"}}>
               {mkt.map(function(m){
                 var isSel=quad.indexOf(m.s)>=0;
@@ -476,7 +476,7 @@ export default function Auxiron(){
           {cv==="single"&&selI&&<div style={{padding:"12px"}}>
             <div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:12,padding:"14px"}}>
               <div style={{marginBottom:10}}>
-                <div style={{fontSize:8,color:C.txt2,letterSpacing:".1em",marginBottom:2}}>{selI.s} · {selI.cat} · {selI.live?"● LIVE":"SIM"}</div>
+                <div style={{fontSize:11,color:C.txt1,letterSpacing:".1em",marginBottom:2}}>{selI.s} · {selI.cat} · {selI.live?"● LIVE":"SIM"}</div>
                 <div style={{fontFamily:"'Syne',sans-serif",fontSize:26,fontWeight:700,color:C.txt0,fontVariantNumeric:"tabular-nums"}}>{fmt(selI.cur,selI.b)}{selI.cat==="Bonds"?"%":""}</div>
                 <div style={{display:"flex",gap:10,marginTop:3}}>
                   <span style={{fontSize:12,color:selI.pct>=0?C.up:C.dn}}>{selI.pct>=0?"+":""}{selI.pct.toFixed(2)}%</span>
@@ -506,7 +506,7 @@ export default function Auxiron(){
                   ["RANGE",((Math.max.apply(null,selI.ch.map(function(d){return d.p;}))-Math.min.apply(null,selI.ch.map(function(d){return d.p;})))/selI.open*100).toFixed(2)+"%",C.amber],
                 ].map(function(item){
                   return <div key={item[0]} style={{background:C.bg2,border:"1px solid "+C.border,borderRadius:7,padding:"6px 7px",textAlign:"center"}}>
-                    <div style={{fontSize:7,color:C.txt3,letterSpacing:".1em",marginBottom:1}}>{item[0]}</div>
+                    <div style={{fontSize:12,color:C.txt1,letterSpacing:".1em",marginBottom:1}}>{item[0]}</div>
                     <div style={{fontSize:9,fontWeight:500,color:item[2],fontVariantNumeric:"tabular-nums"}}>{typeof item[1]==="string"?item[1]:fmt(item[1],selI.b)}</div>
                   </div>;
                 })}
@@ -571,7 +571,7 @@ export default function Auxiron(){
 
           {/* Snapshot */}
           <div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,padding:"12px",marginBottom:10}}>
-            <div style={{fontSize:8,color:C.txt3,letterSpacing:".1em",marginBottom:8}}>LIVE SNAPSHOT</div>
+            <div style={{fontSize:12,color:C.txt1,letterSpacing:".1em",marginBottom:8}}>LIVE SNAPSHOT</div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
               {["XAU/USD","DX","US10Y","VIX","SPX","NDX","WTI/USD","GBP/USD"].map(function(sym){
                 var m=mkt.find(function(d){return d.s===sym;}); if(!m)return null;
@@ -579,7 +579,7 @@ export default function Auxiron(){
                 return <div key={sym} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:C.bg2,borderRadius:7,padding:"7px 10px",border:"1px solid "+C.border}}>
                   <div>
                     <div style={{fontSize:8,color:C.txt2}}>{m.l}</div>
-                    <div style={{fontSize:12,fontWeight:500,color:isVix?vixClr(m.cur):isBond?C.bond:C.txt0,fontVariantNumeric:"tabular-nums"}}>{fmt(m.cur,m.b)}{isBond?"%":""}</div>
+                    <div style={{fontSize:14,fontWeight:600,color:isVix?vixClr(m.cur):isBond?C.bond:C.txt0,fontVariantNumeric:"tabular-nums"}}>{fmt(m.cur,m.b)}{isBond?"%":""}</div>
                   </div>
                   <div style={{fontSize:10,fontWeight:500,color:isVix?(up?C.dn:C.up):up?C.up:C.dn}}>{up?"+":""}{m.pct.toFixed(2)}%</div>
                 </div>;
@@ -590,7 +590,7 @@ export default function Auxiron(){
           {/* Yield Curve Visual */}
           {y2&&y10&&<div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,padding:"12px",marginBottom:10}}>
             <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
-              <div style={{fontSize:8,color:C.txt3,letterSpacing:".1em"}}>YIELD CURVE</div>
+              <div style={{fontSize:12,color:C.txt1,letterSpacing:".1em"}}>YIELD CURVE</div>
               <div style={{fontSize:8,color:inverted?C.dn:C.up,fontWeight:600}}>{inverted?"▼ INVERTED":"▲ NORMAL"} {spread!==null&&(spread>0?"+":"")+spread+"%"}</div>
             </div>
             <div style={{display:"flex",alignItems:"flex-end",gap:6,height:60}}>
@@ -599,7 +599,7 @@ export default function Auxiron(){
                 return <div key={m.s} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
                   <div style={{fontSize:9,fontWeight:600,color:C.bond}}>{m.cur.toFixed(2)}%</div>
                   <div style={{width:"100%",height:h,background:"rgba(64,200,208,0.20)",border:"1px solid "+C.bond,borderRadius:3}}></div>
-                  <div style={{fontSize:7,color:C.txt3}}>{["2Y","10Y"][i]}</div>
+                  <div style={{fontSize:12,color:C.txt1}}>{["2Y","10Y"][i]}</div>
                 </div>;
               })}
             </div>
@@ -615,33 +615,33 @@ export default function Auxiron(){
             {/* Session Bias */}
             <div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,padding:"12px",marginBottom:8}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-                <div style={{fontSize:8,color:C.txt3,letterSpacing:".1em"}}>SESSION BIAS</div>
+                <div style={{fontSize:12,color:C.txt1,letterSpacing:".1em"}}>SESSION BIAS</div>
                 <div style={{display:"flex",alignItems:"center",gap:8}}>
                   <span style={{fontSize:12,fontWeight:700,color:SC[ctx.sessionBias]||C.txt1,background:"rgba(0,0,0,0.2)",border:"1px solid rgba(200,200,200,0.1)",borderRadius:6,padding:"3px 10px"}}>{ctx.sessionBias}</span>
-                  {lastRefresh&&<span style={{fontSize:8,color:C.txt3}}>{lastRefresh.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</span>}
+                  {lastRefresh&&<span style={{fontSize:12,color:C.txt1}}>{lastRefresh.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</span>}
                 </div>
               </div>
-              <div style={{fontSize:11,color:C.txt1,lineHeight:1.75,marginBottom:8}}>{ctx.sessionNote}</div>
+              <div style={{fontSize:13,color:C.txt0,lineHeight:1.75,marginBottom:8}}>{ctx.sessionNote}</div>
               {ctx.moneyFlow&&<div style={{background:C.bg2,border:"1px solid "+C.border,borderRadius:7,padding:"8px 10px"}}>
-                <div style={{fontSize:7,color:C.txt3,letterSpacing:".1em",marginBottom:3}}>💰 MONEY FLOW</div>
-                <div style={{fontSize:10,color:C.txt1,lineHeight:1.6}}>{ctx.moneyFlow}</div>
+                <div style={{fontSize:12,color:C.txt1,letterSpacing:".1em",marginBottom:3}}>💰 MONEY FLOW</div>
+                <div style={{fontSize:12,color:C.txt0,lineHeight:1.6}}>{ctx.moneyFlow}</div>
               </div>}
             </div>
 
             {/* DXY Dominance */}
             {ctx.dxyDominance&&<div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,padding:"12px",marginBottom:8}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-                <div style={{fontSize:8,color:C.txt3,letterSpacing:".1em"}}>DXY DOMINANCE</div>
+                <div style={{fontSize:12,color:C.txt1,letterSpacing:".1em"}}>DXY DOMINANCE</div>
                 <span style={{fontSize:10,fontWeight:700,color:ctx.dxyDominance.status==="LEADING"?C.dn:ctx.dxyDominance.status==="LAGGING"?C.up:C.amber,background:"rgba(0,0,0,0.2)",border:"1px solid rgba(200,200,200,0.1)",borderRadius:5,padding:"2px 8px"}}>{ctx.dxyDominance.status}</span>
               </div>
-              <div style={{fontSize:11,color:C.txt1,lineHeight:1.7,marginBottom:8}}>{ctx.dxyDominance.analysis}</div>
+              <div style={{fontSize:13,color:C.txt0,lineHeight:1.7,marginBottom:8}}>{ctx.dxyDominance.analysis}</div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
                 <div style={{background:C.bg2,border:"1px solid "+C.border,borderRadius:7,padding:"7px 10px"}}>
-                  <div style={{fontSize:7,color:C.txt3,letterSpacing:".1em",marginBottom:3}}>vs GOLD</div>
+                  <div style={{fontSize:12,color:C.txt1,letterSpacing:".1em",marginBottom:3}}>vs GOLD</div>
                   <div style={{fontSize:10,fontWeight:600,color:ctx.dxyDominance.vsGold==="INVERSE"?C.amber:ctx.dxyDominance.vsGold==="CORRELATED"?C.up:C.txt2}}>{ctx.dxyDominance.vsGold}</div>
                 </div>
                 <div style={{background:C.bg2,border:"1px solid "+C.border,borderRadius:7,padding:"7px 10px"}}>
-                  <div style={{fontSize:7,color:C.txt3,letterSpacing:".1em",marginBottom:3}}>vs BONDS</div>
+                  <div style={{fontSize:12,color:C.txt1,letterSpacing:".1em",marginBottom:3}}>vs BONDS</div>
                   <div style={{fontSize:9,color:C.txt1,lineHeight:1.5}}>{ctx.dxyDominance.vsBonds}</div>
                 </div>
               </div>
@@ -650,21 +650,21 @@ export default function Auxiron(){
             {/* Yield Curve AI */}
             {ctx.yieldCurve&&<div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,padding:"12px",marginBottom:8}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-                <div style={{fontSize:8,color:C.txt3,letterSpacing:".1em"}}>YIELD CURVE SIGNAL</div>
+                <div style={{fontSize:12,color:C.txt1,letterSpacing:".1em"}}>YIELD CURVE SIGNAL</div>
                 <span style={{fontSize:10,fontWeight:700,color:ctx.yieldCurve.status==="INVERTED"?C.dn:ctx.yieldCurve.status==="NORMAL"?C.up:C.amber,background:"rgba(0,0,0,0.2)",border:"1px solid rgba(200,200,200,0.1)",borderRadius:5,padding:"2px 8px"}}>{ctx.yieldCurve.status}</span>
               </div>
-              <div style={{fontSize:11,color:C.txt1,lineHeight:1.65}}>{ctx.yieldCurve.analysis}</div>
+              <div style={{fontSize:13,color:C.txt0,lineHeight:1.65}}>{ctx.yieldCurve.analysis}</div>
             </div>}
 
             {/* Weekly Outlook */}
             {ctx.weeklyOutlook&&<div style={{background:"rgba(72,144,248,0.07)",border:"1px solid rgba(72,144,248,0.2)",borderRadius:10,padding:"12px",marginBottom:8}}>
               <div style={{fontSize:8,color:C.blue,letterSpacing:".1em",marginBottom:5}}>📅 WEEKLY OUTLOOK</div>
-              <div style={{fontSize:11,color:C.txt1,lineHeight:1.75}}>{ctx.weeklyOutlook}</div>
+              <div style={{fontSize:13,color:C.txt0,lineHeight:1.75}}>{ctx.weeklyOutlook}</div>
             </div>}
 
             {/* Top Movers */}
             {ctx.topMovers&&ctx.topMovers.length>0&&<div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,padding:"12px",marginBottom:8}}>
-              <div style={{fontSize:8,color:C.txt3,letterSpacing:".1em",marginBottom:8}}>🔥 TOP MOVERS TODAY</div>
+              <div style={{fontSize:12,color:C.txt1,letterSpacing:".1em",marginBottom:8}}>🔥 TOP MOVERS TODAY</div>
               <div style={{display:"grid",gap:6}}>
                 {ctx.topMovers.map(function(m,i){
                   var inst=mkt.find(function(d){return d.s===m.symbol||d.l===m.symbol;});
@@ -677,7 +677,7 @@ export default function Auxiron(){
                       </div>
                       <span style={{fontSize:12,fontWeight:700,color:isUp?C.up:C.dn}}>{m.potentialMove}</span>
                     </div>
-                    <div style={{fontSize:10,color:C.txt2,lineHeight:1.5}}>{m.reason}</div>
+                    <div style={{fontSize:12,color:C.txt1,lineHeight:1.5}}>{m.reason}</div>
                     {inst&&<div style={{fontSize:9,color:C.txt3,marginTop:3}}>Now: {fmt(inst.cur,inst.b)} ({inst.pct>=0?"+":""}{inst.pct.toFixed(2)}%)</div>}
                   </div>;
                 })}
@@ -686,7 +686,7 @@ export default function Auxiron(){
 
             {/* Watchlist */}
             {ctx.watchlist&&ctx.watchlist.length>0&&<div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,padding:"12px",marginBottom:8}}>
-              <div style={{fontSize:8,color:C.txt3,letterSpacing:".1em",marginBottom:8}}>◈ WATCHLIST — CROSS-CHECK WITH EDGEFINDER</div>
+              <div style={{fontSize:12,color:C.txt1,letterSpacing:".1em",marginBottom:8}}>◈ WATCHLIST — CROSS-CHECK WITH EDGEFINDER</div>
               <div style={{display:"grid",gap:5}}>
                 {ctx.watchlist.map(function(item,i){
                   var inst=mkt.find(function(d){return d.s===item.symbol||d.l===item.symbol;});
@@ -698,8 +698,8 @@ export default function Auxiron(){
                       </div>
                       {inst&&<span style={{fontSize:10,color:inst.pct>=0?C.up:C.dn}}>{fmt(inst.cur,inst.b)}</span>}
                     </div>
-                    <div style={{fontSize:9,color:C.gold,marginBottom:3}}>Entry zone: {item.entryZone}</div>
-                    <div style={{fontSize:10,color:C.txt2,lineHeight:1.5}}>{item.reason}</div>
+                    <div style={{fontSize:11,color:C.gold,marginBottom:3}}>Entry zone: {item.entryZone}</div>
+                    <div style={{fontSize:12,color:C.txt1,lineHeight:1.5}}>{item.reason}</div>
                   </div>;
                 })}
               </div>
@@ -707,7 +707,7 @@ export default function Auxiron(){
 
             {/* Key Levels */}
             {ctx.keyLevels&&ctx.keyLevels.length>0&&<div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,padding:"12px",marginBottom:8}}>
-              <div style={{fontSize:8,color:C.txt3,letterSpacing:".1em",marginBottom:7}}>KEY LEVELS</div>
+              <div style={{fontSize:12,color:C.txt1,letterSpacing:".1em",marginBottom:7}}>KEY LEVELS</div>
               {ctx.keyLevels.map(function(kl,i){
                 return <div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:i<ctx.keyLevels.length-1?6:0,background:C.bg2,borderRadius:7,padding:"8px 10px",border:"1px solid "+C.border}}>
                   <div style={{fontSize:9,fontWeight:600,color:C.txt0,minWidth:65}}>{kl.symbol}</div>
@@ -721,21 +721,21 @@ export default function Auxiron(){
             {/* Risk Events + Gold/Oil */}
             <div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,padding:"12px"}}>
               {ctx.riskEvents&&ctx.riskEvents.length>0&&<div style={{marginBottom:10}}>
-                <div style={{fontSize:8,color:C.txt3,letterSpacing:".1em",marginBottom:6}}>⚠ RISK EVENTS THIS WEEK</div>
+                <div style={{fontSize:12,color:C.txt1,letterSpacing:".1em",marginBottom:6}}>⚠ RISK EVENTS THIS WEEK</div>
                 {ctx.riskEvents.map(function(ev,i){
                   return <div key={i} style={{display:"flex",alignItems:"flex-start",gap:7,marginBottom:i<ctx.riskEvents.length-1?5:0,background:"rgba(240,144,32,0.07)",border:"1px solid rgba(240,144,32,0.2)",borderRadius:7,padding:"7px 10px"}}>
                     <span style={{color:C.amber,fontSize:10,flexShrink:0}}>→</span>
-                    <span style={{fontSize:10,color:C.txt1,lineHeight:1.6}}>{ev}</span>
+                    <span style={{fontSize:12,color:C.txt0,lineHeight:1.6}}>{ev}</span>
                   </div>;
                 })}
               </div>}
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
                 <div>
-                  <div style={{fontSize:7,color:C.txt3,letterSpacing:".1em",marginBottom:3}}>GOLD BIAS</div>
+                  <div style={{fontSize:12,color:C.txt1,letterSpacing:".1em",marginBottom:3}}>GOLD BIAS</div>
                   <div style={{fontSize:12,fontWeight:700,color:DC[ctx.goldBias]||C.txt1}}>{ctx.goldBias}</div>
                 </div>
                 {ctx.oilOutlook&&<div>
-                  <div style={{fontSize:7,color:C.txt3,letterSpacing:".1em",marginBottom:3}}>OIL OUTLOOK</div>
+                  <div style={{fontSize:12,color:C.txt1,letterSpacing:".1em",marginBottom:3}}>OIL OUTLOOK</div>
                   <div style={{fontSize:9,color:C.txt2,lineHeight:1.5}}>{ctx.oilOutlook}</div>
                 </div>}
               </div>
@@ -746,7 +746,7 @@ export default function Auxiron(){
         {/* AI FILTER TAB */}
         {tab==="filter"&&<div style={{padding:"12px"}}>
           <div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:12,padding:"13px",marginBottom:10}}>
-            <div style={{fontSize:8,color:C.txt3,letterSpacing:".12em",marginBottom:4}}>PASTE HEADLINE, NEWS OR GEOPOLITICAL EVENT</div>
+            <div style={{fontSize:12,color:C.txt1,letterSpacing:".12em",marginBottom:4}}>PASTE HEADLINE, NEWS OR GEOPOLITICAL EVENT</div>
             <div style={{fontSize:9,color:C.txt3,marginBottom:8,opacity:0.7}}>AI will analyze market transmission chain, money flow and scenarios</div>
             <textarea value={hl} onChange={function(e){setHl(e.target.value);}} placeholder="e.g. Iran closes Strait of Hormuz following US airstrike…" rows={3} style={{width:"100%",background:"transparent",border:"none",color:C.txt0,fontSize:13,resize:"none",lineHeight:1.7,fontFamily:"inherit"}}/>
             <button onClick={function(){analyze();}} disabled={loading||!hl.trim()} style={{width:"100%",marginTop:10,background:loading?C.bg2:C.gold,color:loading?C.txt2:"#0c1118",border:"none",borderRadius:8,padding:"11px",fontSize:11,fontWeight:500,letterSpacing:".1em",display:"flex",alignItems:"center",justifyContent:"center",gap:7}}>
@@ -755,7 +755,7 @@ export default function Auxiron(){
           </div>
 
           <div style={{marginBottom:12}}>
-            <div style={{fontSize:8,color:C.txt3,letterSpacing:".1em",marginBottom:5}}>QUICK SAMPLES</div>
+            <div style={{fontSize:12,color:C.txt1,letterSpacing:".1em",marginBottom:5}}>QUICK SAMPLES</div>
             {SAMPLES.map(function(s,i){
               return <button key={i} className="tap" onClick={function(){setHl(s);analyze(s);}} style={{display:"block",width:"100%",background:C.bg1,border:"1px solid "+C.border,color:C.txt2,borderRadius:8,padding:"9px 12px",fontSize:11,textAlign:"left",marginBottom:4}}>{s}</button>;
             })}
@@ -776,7 +776,7 @@ export default function Auxiron(){
                 </div>
               </div>
               <div style={{textAlign:"right"}}>
-                <div style={{fontSize:7,color:C.txt3,letterSpacing:".1em",marginBottom:3}}>IMPACT</div>
+                <div style={{fontSize:12,color:C.txt1,letterSpacing:".1em",marginBottom:3}}>IMPACT</div>
                 <div style={{display:"flex",alignItems:"center",gap:5}}>
                   <div style={{width:70,height:4,background:C.bg2,borderRadius:2,overflow:"hidden"}}>
                     <div style={{width:result.impactScore+"%",height:"100%",background:cfg.bar,borderRadius:2}}></div>
@@ -788,33 +788,33 @@ export default function Auxiron(){
 
             {result.immediateImpact&&<div style={{background:"rgba(72,144,248,0.07)",border:"1px solid rgba(72,144,248,0.2)",borderRadius:8,padding:"10px 12px",marginBottom:8}}>
               <div style={{fontSize:7,color:C.blue,letterSpacing:".1em",marginBottom:4}}>⚡ IMMEDIATE IMPACT (1-4 HOURS)</div>
-              <div style={{fontSize:11,color:C.txt1,lineHeight:1.75}}>{result.immediateImpact}</div>
+              <div style={{fontSize:13,color:C.txt0,lineHeight:1.75}}>{result.immediateImpact}</div>
             </div>}
 
             {result.moneyFlow&&<div style={{background:"rgba(200,168,64,0.07)",border:"1px solid rgba(200,168,64,0.2)",borderRadius:8,padding:"10px 12px",marginBottom:8}}>
               <div style={{fontSize:7,color:C.gold,letterSpacing:".1em",marginBottom:4}}>💰 MONEY FLOW</div>
-              <div style={{fontSize:11,color:C.txt1,lineHeight:1.75}}>{result.moneyFlow}</div>
+              <div style={{fontSize:13,color:C.txt0,lineHeight:1.75}}>{result.moneyFlow}</div>
             </div>}
 
             {result.geopoliticalCascade&&<div style={{background:"rgba(184,88,240,0.07)",border:"1px solid rgba(184,88,240,0.2)",borderRadius:8,padding:"10px 12px",marginBottom:8}}>
               <div style={{fontSize:7,color:C.vix,letterSpacing:".1em",marginBottom:4}}>🌐 MARKET TRANSMISSION CHAIN</div>
-              <div style={{fontSize:11,color:C.txt1,lineHeight:1.75}}>{result.geopoliticalCascade}</div>
+              <div style={{fontSize:13,color:C.txt0,lineHeight:1.75}}>{result.geopoliticalCascade}</div>
             </div>}
 
             {result.edgeFinderOverride&&result.edgeFinderOverride.triggered&&<div style={{background:"rgba(240,64,64,0.08)",border:"1px solid rgba(240,64,64,0.3)",borderRadius:8,padding:"10px 12px",marginBottom:8}}>
               <div style={{fontSize:7,color:C.dn,letterSpacing:".1em",marginBottom:4}}>⚠ EDGEFINDER SCORE OVERRIDE ALERT</div>
-              <div style={{fontSize:11,color:C.txt1,lineHeight:1.75}}>{result.edgeFinderOverride.reason}</div>
+              <div style={{fontSize:13,color:C.txt0,lineHeight:1.75}}>{result.edgeFinderOverride.reason}</div>
             </div>}
 
             {result.keyDrivers&&result.keyDrivers.length>0&&<div style={{marginBottom:8}}>
-              <div style={{fontSize:7,color:C.txt3,letterSpacing:".1em",marginBottom:4}}>KEY DRIVERS</div>
+              <div style={{fontSize:12,color:C.txt1,letterSpacing:".1em",marginBottom:4}}>KEY DRIVERS</div>
               <div style={{display:"flex",flexWrap:"wrap",gap:3}}>
                 {result.keyDrivers.map(function(d,i){return <span key={i} style={{background:C.bg2,border:"1px solid "+C.border,borderRadius:5,padding:"2px 7px",fontSize:9,color:C.txt1}}>{d}</span>;})}
               </div>
             </div>}
 
             {result.affectedInstruments&&result.affectedInstruments.length>0&&<div style={{marginBottom:8}}>
-              <div style={{fontSize:7,color:C.txt3,letterSpacing:".1em",marginBottom:5}}>AFFECTED INSTRUMENTS</div>
+              <div style={{fontSize:12,color:C.txt1,letterSpacing:".1em",marginBottom:5}}>AFFECTED INSTRUMENTS</div>
               <div style={{display:"grid",gap:4}}>
                 {result.affectedInstruments.map(function(inst,i){
                   var live=mkt.find(function(d){return d.s===inst.symbol||d.l===inst.symbol;});
@@ -830,14 +830,14 @@ export default function Auxiron(){
                     <div style={{width:"100%",height:2,background:C.bg2,borderRadius:1,overflow:"hidden",marginBottom:4}}>
                       <div style={{width:inst.confidence+"%",height:"100%",background:DC[inst.direction]||C.txt2,borderRadius:1}}></div>
                     </div>
-                    <div style={{fontSize:10,color:C.txt2}}>{inst.reason}</div>
+                    <div style={{fontSize:12,color:C.txt1}}>{inst.reason}</div>
                   </div>;
                 })}
               </div>
             </div>}
 
             {result.scenarios&&result.scenarios.length>0&&<div style={{marginBottom:8}}>
-              <div style={{fontSize:7,color:C.txt3,letterSpacing:".1em",marginBottom:6}}>SCENARIO ANALYSIS</div>
+              <div style={{fontSize:12,color:C.txt1,letterSpacing:".1em",marginBottom:6}}>SCENARIO ANALYSIS</div>
               <div style={{display:"grid",gap:5}}>
                 {result.scenarios.map(function(sc,i){
                   var scClr=sc.type==="BEARISH_EXTREME"?C.dn:sc.type==="BASE_CASE"?C.amber:C.up;
@@ -850,10 +850,10 @@ export default function Auxiron(){
                       </div>
                       <div style={{textAlign:"right"}}>
                         <div style={{fontSize:10,fontWeight:600,color:scClr}}>{sc.probability}%</div>
-                        {sc.timeline&&<div style={{fontSize:8,color:C.txt3}}>{sc.timeline}</div>}
+                        {sc.timeline&&<div style={{fontSize:12,color:C.txt1}}>{sc.timeline}</div>}
                       </div>
                     </div>
-                    <div style={{fontSize:10,color:C.txt1,lineHeight:1.65,marginBottom:5}}>{sc.description}</div>
+                    <div style={{fontSize:12,color:C.txt0,lineHeight:1.65,marginBottom:5}}>{sc.description}</div>
                     {sc.instruments&&<div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:4}}>
                       {sc.instruments.map(function(inst,j){
                         return <span key={j} style={{background:"rgba(0,0,0,0.25)",border:"1px solid "+C.border,borderRadius:4,padding:"2px 8px",fontSize:9,color:C.txt1}}>
@@ -868,7 +868,7 @@ export default function Auxiron(){
             </div>}
 
             {result.keyLevelsToWatch&&result.keyLevelsToWatch.length>0&&<div style={{marginBottom:8}}>
-              <div style={{fontSize:7,color:C.txt3,letterSpacing:".1em",marginBottom:5}}>KEY LEVELS</div>
+              <div style={{fontSize:12,color:C.txt1,letterSpacing:".1em",marginBottom:5}}>KEY LEVELS</div>
               {result.keyLevelsToWatch.map(function(kl,i){
                 return <div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:4,background:"rgba(12,17,24,0.5)",border:"1px solid "+C.border,borderRadius:7,padding:"7px 10px"}}>
                   <span style={{fontSize:10,fontWeight:600,color:C.txt0,minWidth:60}}>{kl.symbol}</span>
@@ -879,29 +879,29 @@ export default function Auxiron(){
             </div>}
 
             {result.nextCatalysts&&result.nextCatalysts.length>0&&<div style={{marginBottom:8}}>
-              <div style={{fontSize:7,color:C.txt3,letterSpacing:".1em",marginBottom:5}}>NEXT CATALYSTS</div>
+              <div style={{fontSize:12,color:C.txt1,letterSpacing:".1em",marginBottom:5}}>NEXT CATALYSTS</div>
               {result.nextCatalysts.map(function(cat,i){
                 return <div key={i} style={{display:"flex",alignItems:"flex-start",gap:7,marginBottom:4,background:"rgba(12,17,24,0.4)",border:"1px solid "+C.border,borderRadius:6,padding:"7px 10px"}}>
                   <span style={{color:C.amber,fontSize:10,flexShrink:0}}>→</span>
-                  <span style={{fontSize:10,color:C.txt1}}>{cat}</span>
+                  <span style={{fontSize:12,color:C.txt0}}>{cat}</span>
                 </div>;
               })}
             </div>}
 
             <div style={{background:"rgba(12,17,24,0.5)",border:"1px solid "+C.border,borderRadius:8,padding:"10px 12px"}}>
-              <div style={{fontSize:7,color:C.gold,letterSpacing:".1em",marginBottom:3,opacity:0.8}}>◈ TRADER NOTE</div>
-              <div style={{fontSize:11,color:C.txt1,lineHeight:1.8}}>{result.traderNote}</div>
+              <div style={{fontSize:10,color:C.gold,letterSpacing:".1em",marginBottom:3,opacity:0.9}}>◈ TRADER NOTE</div>
+              <div style={{fontSize:13,color:C.txt0,lineHeight:1.8}}>{result.traderNote}</div>
             </div>
           </div>}
 
           {hist.length>0&&<div>
-            <div style={{fontSize:8,color:C.txt3,letterSpacing:".1em",marginBottom:5}}>RECENT ANALYSES</div>
+            <div style={{fontSize:12,color:C.txt1,letterSpacing:".1em",marginBottom:5}}>RECENT ANALYSES</div>
             {hist.map(function(h,i){
               var c=ICFG[h.result.impactLevel]||ICFG.NOISE;
               return <div key={i} className="tap" onClick={function(){setHl(h.headline);setResult(h.result);}} style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:8,padding:"8px 11px",display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
                 <span style={{fontSize:9,fontWeight:500,color:c.color,minWidth:66}}>{h.result.impactLevel}</span>
-                <span style={{flex:1,fontSize:10,color:C.txt2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{h.headline}</span>
-                <span style={{fontSize:8,color:C.txt3}}>{h.ts.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</span>
+                <span style={{flex:1,fontSize:12,color:C.txt1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{h.headline}</span>
+                <span style={{fontSize:12,color:C.txt1}}>{h.ts.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</span>
               </div>;
             })}
           </div>}
@@ -938,7 +938,7 @@ export default function Auxiron(){
                 ["RANGE",((Math.max.apply(null,detailInst.ch.map(function(d){return d.p;}))-Math.min.apply(null,detailInst.ch.map(function(d){return d.p;})))/detailInst.open*100).toFixed(2)+"%",C.amber],
               ].map(function(item){
                 return <div key={item[0]} style={{background:C.bg2,border:"1px solid "+C.border,borderRadius:7,padding:"6px 7px",textAlign:"center"}}>
-                  <div style={{fontSize:7,color:C.txt3,letterSpacing:".1em",marginBottom:1}}>{item[0]}</div>
+                  <div style={{fontSize:12,color:C.txt1,letterSpacing:".1em",marginBottom:1}}>{item[0]}</div>
                   <div style={{fontSize:9,fontWeight:500,color:item[2],fontVariantNumeric:"tabular-nums"}}>{typeof item[1]==="string"?item[1]:fmt(item[1],detailInst.b)}</div>
                 </div>;
               })}
@@ -962,22 +962,22 @@ export default function Auxiron(){
 
           {instLoading&&<div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:12,padding:"20px",textAlign:"center",marginBottom:12}}>
             <div className="sp" style={{width:20,height:20,border:"2px solid "+C.border2,borderTopColor:C.gold,borderRadius:"50%",margin:"0 auto 8px"}}></div>
-            <div style={{fontSize:10,color:C.txt2,letterSpacing:".08em"}}>GENERATING AI ANALYSIS…</div>
+            <div style={{fontSize:12,color:C.txt1,letterSpacing:".08em"}}>GENERATING AI ANALYSIS…</div>
           </div>}
 
           {instAnalysis&&!instLoading&&<div className="fu">
             {instAnalysis.drivers&&instAnalysis.drivers.length>0&&<div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:12,padding:"13px",marginBottom:10}}>
-              <div style={{fontSize:8,color:C.txt3,letterSpacing:".1em",marginBottom:8}}>PRICE DRIVERS</div>
+              <div style={{fontSize:12,color:C.txt1,letterSpacing:".1em",marginBottom:8}}>PRICE DRIVERS</div>
               {instAnalysis.drivers.map(function(d,i){
                 return <div key={i} style={{display:"flex",alignItems:"flex-start",gap:8,marginBottom:i<instAnalysis.drivers.length-1?7:0,padding:"7px 10px",background:C.bg2,borderRadius:7,border:"1px solid "+C.border}}>
                   <span style={{color:C.gold,fontSize:11,flexShrink:0}}>{i+1}</span>
-                  <span style={{fontSize:11,color:C.txt1,lineHeight:1.6}}>{d}</span>
+                  <span style={{fontSize:13,color:C.txt0,lineHeight:1.6}}>{d}</span>
                 </div>;
               })}
             </div>}
 
             <div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:12,padding:"13px",marginBottom:10}}>
-              <div style={{fontSize:8,color:C.txt3,letterSpacing:".1em",marginBottom:10}}>MARKET OUTLOOK</div>
+              <div style={{fontSize:12,color:C.txt1,letterSpacing:".1em",marginBottom:10}}>MARKET OUTLOOK</div>
               <div style={{display:"grid",gap:8}}>
                 {[
                   {key:"shortTerm", label:"SHORT TERM",   emoji:"⚡"},
@@ -991,15 +991,15 @@ export default function Auxiron(){
                       <div style={{display:"flex",alignItems:"center",gap:6}}>
                         <span style={{fontSize:12}}>{item.emoji}</span>
                         <div>
-                          <div style={{fontSize:8,color:C.txt3,letterSpacing:".1em"}}>{item.label}</div>
+                          <div style={{fontSize:12,color:C.txt1,letterSpacing:".1em"}}>{item.label}</div>
                           <div style={{fontSize:9,color:C.txt2,marginTop:1}}>{outlook.timeframe}</div>
                         </div>
                       </div>
                       <span style={{fontSize:11,fontWeight:700,color:outClr,background:"rgba(0,0,0,0.2)",border:"1px solid "+outClr+"44",borderRadius:5,padding:"3px 9px"}}>{outlook.outlook}</span>
                     </div>
-                    <div style={{fontSize:11,color:C.txt1,lineHeight:1.65,marginBottom:6}}>{outlook.analysis}</div>
+                    <div style={{fontSize:13,color:C.txt0,lineHeight:1.65,marginBottom:6}}>{outlook.analysis}</div>
                     {outlook.keyLevel&&<div style={{display:"flex",alignItems:"center",gap:6,background:"rgba(0,0,0,0.2)",borderRadius:6,padding:"5px 8px"}}>
-                      <span style={{fontSize:8,color:C.txt3,letterSpacing:".08em"}}>{outlook.keyLevelType}</span>
+                      <span style={{fontSize:12,color:C.txt1,letterSpacing:".08em"}}>{outlook.keyLevelType}</span>
                       <span style={{fontSize:11,fontWeight:600,color:outlook.keyLevelType==="RESISTANCE"?C.dn:C.up,fontVariantNumeric:"tabular-nums"}}>{fmt(outlook.keyLevel,detailInst.b)}</span>
                     </div>}
                   </div>;
@@ -1008,27 +1008,27 @@ export default function Auxiron(){
             </div>
 
             {(instAnalysis.monthlyOutlook||instAnalysis.quarterlyOutlook)&&<div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:12,padding:"13px",marginBottom:10}}>
-              <div style={{fontSize:8,color:C.txt3,letterSpacing:".1em",marginBottom:10}}>MACRO OUTLOOK</div>
+              <div style={{fontSize:12,color:C.txt1,letterSpacing:".1em",marginBottom:10}}>MACRO OUTLOOK</div>
               {instAnalysis.monthlyOutlook&&<div style={{marginBottom:8}}>
                 <div style={{fontSize:7,color:C.blue,letterSpacing:".1em",marginBottom:3}}>📅 MONTHLY</div>
-                <div style={{fontSize:11,color:C.txt1,lineHeight:1.65}}>{instAnalysis.monthlyOutlook}</div>
+                <div style={{fontSize:13,color:C.txt0,lineHeight:1.65}}>{instAnalysis.monthlyOutlook}</div>
               </div>}
               {instAnalysis.quarterlyOutlook&&<div>
                 <div style={{fontSize:7,color:C.vix,letterSpacing:".1em",marginBottom:3}}>📊 QUARTERLY</div>
-                <div style={{fontSize:11,color:C.txt1,lineHeight:1.65}}>{instAnalysis.quarterlyOutlook}</div>
+                <div style={{fontSize:13,color:C.txt0,lineHeight:1.65}}>{instAnalysis.quarterlyOutlook}</div>
               </div>}
             </div>}
 
             {instAnalysis.summary&&<div style={{background:"rgba(200,168,64,0.07)",border:"1px solid rgba(200,168,64,0.2)",borderRadius:12,padding:"13px"}}>
               <div style={{fontSize:8,color:C.gold,letterSpacing:".1em",marginBottom:5,opacity:0.8}}>◈ TRADER SUMMARY</div>
-              <div style={{fontSize:12,color:C.txt1,lineHeight:1.75}}>{instAnalysis.summary}</div>
+              <div style={{fontSize:13,color:C.txt0,lineHeight:1.75}}>{instAnalysis.summary}</div>
             </div>}
           </div>}
         </div>
       </div>}
 
       {/* COPYRIGHT */}
-      <div style={{textAlign:"center",padding:"8px",fontSize:8,color:C.txt3,letterSpacing:".06em",borderTop:"1px solid "+C.border,background:C.bg0}}>
+      <div style={{textAlign:"center",padding:"8px",fontSize:12,color:C.txt1,letterSpacing:".06em",borderTop:"1px solid "+C.border,background:C.bg0}}>
         © 2025 AUXIRON. ALL RIGHTS RESERVED.
       </div>
 
