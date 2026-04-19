@@ -100,24 +100,37 @@ const vixLbl=function(v){return v<15?"CALM":v<20?"NORMAL":v<30?"ELEVATED":"HIGH 
 const impactClr=function(i){return i==="HIGH"?"#f04040":i==="MEDIUM"?"#f09020":"#486080";};
 
 function genFB(base,vol,pts){
-  pts=pts||48;var data=[];
-  // Start from a random offset (-1% to +1%) so chart shows meaningful movement
-  var startOffset=(Math.random()-0.5)*0.02;
-  var p=base*(1+startOffset);
-  var now=Date.now();
-  // Add trend component so price walks naturally
-  var trend=(Math.random()-0.5)*0.0003;
-  for(var i=pts-1;i>=0;i--){
-    // Random walk with drift — larger step size for visible movement
-    var step=(Math.random()-0.5)*vol*2.5+trend;
-    p=p*(1+step);
-    // Keep within 2% of base
-    if(p>base*1.02)p=base*1.02;
-    if(p<base*0.98)p=base*0.98;
-    data.push({t:new Date(now-i*30*60*1000).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}),p:parseFloat(p.toFixed(dp(base)))});
+  pts=pts||48;var data=[];var now=Date.now();
+  // Generate realistic daily-style price movement
+  // Daily range: instruments move 0.3%-2% on a typical day
+  var dailyRange=Math.max(vol*3, 0.003); // minimum 0.3% daily range
+  // Random overall trend for the period: bullish or bearish
+  var trendDir=Math.random()>0.5?1:-1;
+  var trendStrength=dailyRange*(0.3+Math.random()*0.7);
+  // Start price offset from base
+  var startPct=trendDir*(-trendStrength*0.8);
+  var p=base*(1+startPct);
+  var momentum=0;
+  for(var i=0;i<pts;i++){
+    // Add momentum (trending behaviour)
+    momentum=momentum*0.85+(Math.random()-0.48)*dailyRange*0.4;
+    // Cap momentum so it doesn't run away
+    var maxMom=dailyRange*0.6;
+    if(momentum>maxMom)momentum=maxMom;
+    if(momentum<-maxMom)momentum=-maxMom;
+    // Apply move
+    p=p*(1+momentum);
+    // Soft bounds: allow up to 1.5x dailyRange from base
+    var maxDev=base*(dailyRange*1.5);
+    if(p>base+maxDev)p=base+maxDev-Math.random()*base*0.001;
+    if(p<base-maxDev)p=base-maxDev+Math.random()*base*0.001;
+    data.push({
+      t:new Date(now-(pts-1-i)*30*60*1000).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}),
+      p:parseFloat(p.toFixed(dp(base)))
+    });
   }
-  // Last point anchored near base price
-  data[data.length-1].p=parseFloat((base*(1+(Math.random()-0.5)*vol*0.5)).toFixed(dp(base)));
+  // Anchor last point near base (live price)
+  data[data.length-1].p=parseFloat((base*(1+(Math.random()-0.5)*0.001)).toFixed(dp(base)));
   return data;
 }
 
@@ -681,7 +694,7 @@ export default function Auxiron(){
                     </linearGradient>
                   </defs>
                   <XAxis dataKey="t" tick={{fill:C.txt3,fontSize:8}} tickLine={false} axisLine={false} interval={8}/>
-                  <YAxis domain={[function(dataMin){return parseFloat((dataMin*(1-0.0008)).toFixed(dp(selI.b)));},function(dataMax){return parseFloat((dataMax*(1+0.0008)).toFixed(dp(selI.b)));}]} tick={{fill:C.txt3,fontSize:8}} tickLine={false} axisLine={false} width={56} tickFormatter={function(v){return fmt(v,selI.b);}}/>
+                  <YAxis domain={["auto","auto"]} padding={{top:8,bottom:8}} tick={{fill:C.txt3,fontSize:8}} tickLine={false} axisLine={false} width={56} tickFormatter={function(v){return fmt(v,selI.b);}}/>
                   <Tooltip content={<ChartTip/>}/>
                   <ReferenceLine y={selI.open} stroke={C.border2} strokeDasharray="3 3"/>
                   <Area type="monotone" dataKey="p" stroke={selI.pct>=0?C.up:C.dn} strokeWidth={2} fill="url(#cg)" dot={false}/>
@@ -1578,7 +1591,7 @@ export default function Auxiron(){
                   </linearGradient>
                 </defs>
                 <XAxis dataKey="t" tick={{fill:C.txt3,fontSize:8}} tickLine={false} axisLine={false} interval={8}/>
-                <YAxis domain={[function(dataMin){return parseFloat((dataMin*(1-0.0008)).toFixed(dp(detailInst.b)));},function(dataMax){return parseFloat((dataMax*(1+0.0008)).toFixed(dp(detailInst.b)));}]} tick={{fill:C.txt3,fontSize:8}} tickLine={false} axisLine={false} width={56} tickFormatter={function(v){return fmt(v,detailInst.b);}}/>
+                <YAxis domain={["auto","auto"]} padding={{top:8,bottom:8}} tick={{fill:C.txt3,fontSize:8}} tickLine={false} axisLine={false} width={56} tickFormatter={function(v){return fmt(v,detailInst.b);}}/>
                 <Tooltip content={<ChartTip/>}/>
                 <ReferenceLine y={detailInst.open} stroke={C.border2} strokeDasharray="3 3"/>
                 <Area type="monotone" dataKey="p" stroke={detailInst.pct>=0?C.up:C.dn} strokeWidth={2} fill="url(#dcg)" dot={false}/>
