@@ -1612,7 +1612,6 @@ export default function Auxiron(){
           </div>}
         </div>
       </div>}
-        </div>
       </div>
 
       {/* BOTTOM NAV - mobile only */}
