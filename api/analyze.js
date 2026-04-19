@@ -2,32 +2,46 @@ export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  if (req.method === "OPTIONS") return res.status(200).end();
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
-  if (req.method === "OPTIONS") {
-    return res.status(200).end();
-  }
-
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
-
-  const ANTHROPIC_KEY = "YOUR_ANTHROPIC_API_KEY"; // ← paste your Anthropic key here
+  const KEY = process.env.ANTHROPIC_KEY;
+  if (!KEY) return res.status(500).json({ error: "No API key configured" });
 
   try {
+    const body = req.body;
+    const useWebSearch = body.useWebSearch || false;
+
+    const requestBody = {
+      model: useWebSearch ? "claude-sonnet-4-20250514" : (body.model || "claude-haiku-4-5"),
+      max_tokens: body.max_tokens || 1000,
+      system: body.system,
+      messages: body.messages,
+    };
+
+    if (useWebSearch) {
+      requestBody.tools = [{ type: "web_search_20250305", name: "web_search" }];
+    }
+
+    const headers = {
+      "Content-Type": "application/json",
+      "x-api-key": KEY,
+      "anthropic-version": "2023-06-01",
+    };
+
+    if (useWebSearch) {
+      headers["anthropic-beta"] = "web-search-2025-03-05";
+    }
+
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": ANTHROPIC_KEY,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify(req.body),
+      headers,
+      body: JSON.stringify(requestBody),
     });
 
     const data = await response.json();
     return res.status(200).json(data);
-  } catch (error) {
-    return res.status(500).json({ error: "Anthropic proxy failed", detail: error.message });
+  } catch (e) {
+    return res.status(500).json({ error: e.message });
   }
 }
-
