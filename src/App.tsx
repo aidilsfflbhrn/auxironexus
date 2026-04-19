@@ -60,8 +60,8 @@ const SAMPLES=[
 ];
 
 const AI_SYS=`You are an elite macro financial analyst and geopolitical strategist. Respond ONLY with valid JSON:
-{"impactScore":<0-100>,"impactLevel":"<NOISE|LOW|MODERATE|HIGH|CRITICAL>","marketSentiment":"<RISK-ON|RISK-OFF|NEUTRAL|MIXED>","sentimentShift":"<BULLISH|BEARISH|NEUTRAL>","immediateImpact":"<2-3 sentences>","moneyFlow":"<2 sentences on institutional money movement>","geopoliticalCascade":"<2-3 sentences: full transmission chain>","affectedInstruments":[{"symbol":"<sym>","direction":"<BULLISH|BEARISH|NEUTRAL>","confidence":<0-100>,"currentPrice":<number>,"targetLevel":<number>,"reason":"<one sentence>"}],"keyDrivers":["<d1>","<d2>","<d3>"],"edgeFinderOverride":{"triggered":<true|false>,"reason":"<why geopolitical conditions override scoring model>"},"scenarios":[{"type":"BEARISH_EXTREME","title":"<n>","probability":<0-100>,"timeline":"<e.g. 2-5 days>","description":"<2 sentences>","watchFor":"<trigger>","instruments":[{"symbol":"<sym>","move":"<e.g.+8%>"}]},{"type":"BASE_CASE","title":"<n>","probability":<0-100>,"timeline":"<e.g. 1-3 days>","description":"<2 sentences>","watchFor":"<trigger>","instruments":[{"symbol":"<sym>","move":"<e.g.+3%>"}]},{"type":"BULLISH_REVERSAL","title":"<n>","probability":<0-100>,"timeline":"<e.g. 1 week>","description":"<2 sentences>","watchFor":"<trigger>","instruments":[{"symbol":"<sym>","move":"<e.g.-2%>"}]}],"keyLevelsToWatch":[{"symbol":"<sym>","level":<number>,"significance":"<why critical now>"}],"traderNote":"<3-4 sentences actionable>","timeHorizon":"<INTRADAY|SHORT-TERM|MEDIUM-TERM|LONG-TERM>","nextCatalysts":["<event1>","<event2>"]}
-Probabilities sum to 100. List 3-5 affected instruments. List 3 key levels. Always explain full transmission chain.`;
+{"impactScore":<0-100>,"impactLevel":"<NOISE|LOW|MODERATE|HIGH|CRITICAL>","marketSentiment":"<RISK-ON|RISK-OFF|NEUTRAL|MIXED>","sentimentShift":"<BULLISH|BEARISH|NEUTRAL>","immediateImpact":"<2-3 sentences>","moneyFlow":"<2 sentences on institutional money movement>","geopoliticalCascade":"<2-3 sentences: full transmission chain>","affectedInstruments":[{"symbol":"<sym>","direction":"<BULLISH|BEARISH|NEUTRAL>","confidence":<0-100>,"currentPrice":<number>,"targetLevel":<number>,"reason":"<one sentence>"}],"keyDrivers":["<d1>","<d2>","<d3>"],"edgeFinderOverride":{"triggered":<true|false>,"reason":"<why geopolitical conditions override scoring model>"},"edgeFinderCrossCheck":{"hasData":<true|false>,"cotAlignment":"<CONFIRMS|CONTRADICTS|MIXED|N/A>","cotNote":"<1-2 sentences: what COT data shows vs the event, or N/A>","setupAlignment":"<CONFIRMS|CONTRADICTS|MIXED|N/A>","setupNote":"<1-2 sentences: what top setups show vs event direction, or N/A>","keyContradiction":"<the single most important conflict between EdgeFinder data and the news event, or null>","resolution":"<2 sentences: how to reconcile conflicting signals, which to prioritize and why>","tradeVerdict":"<EDGEFINDER WINS|NEWS WINS|WAIT FOR CONFIRMATION|SPLIT — explain briefly>"},"scenarios":[{"type":"BEARISH_EXTREME","title":"<n>","probability":<0-100>,"timeline":"<e.g. 2-5 days>","description":"<2 sentences>","watchFor":"<trigger>","instruments":[{"symbol":"<sym>","move":"<e.g.+8%>"}]},{"type":"BASE_CASE","title":"<n>","probability":<0-100>,"timeline":"<e.g. 1-3 days>","description":"<2 sentences>","watchFor":"<trigger>","instruments":[{"symbol":"<sym>","move":"<e.g.+3%>"}]},{"type":"BULLISH_REVERSAL","title":"<n>","probability":<0-100>,"timeline":"<e.g. 1 week>","description":"<2 sentences>","watchFor":"<trigger>","instruments":[{"symbol":"<sym>","move":"<e.g.-2%>"}]}],"keyLevelsToWatch":[{"symbol":"<sym>","level":<number>,"significance":"<why critical now>"}],"traderNote":"<3-4 sentences actionable>","timeHorizon":"<INTRADAY|SHORT-TERM|MEDIUM-TERM|LONG-TERM>","nextCatalysts":["<event1>","<event2>"]}
+Probabilities sum to 100. List 3-5 affected instruments. List 3 key levels. Always explain full transmission chain. If EdgeFinder screenshots are attached, read the COT data, top setups, and any positioning data shown, then fill edgeFinderCrossCheck.hasData=true and provide a full cross-analysis highlighting contradictions. If no images provided, set hasData=false and all alignment fields to "N/A".`;
 
 const CTX_SYS=`You are a professional macro market analyst. Respond ONLY with valid JSON:
 {"sessionBias":"<RISK-ON|RISK-OFF|NEUTRAL|MIXED>","sessionNote":"<2-3 sentences>","dxyDominance":{"status":"<LEADING|LAGGING|NEUTRAL>","analysis":"<2 sentences>","vsGold":"<INVERSE|CORRELATED|DECOUPLED>","vsBonds":"<1 sentence>"},"yieldCurve":{"status":"<NORMAL|INVERTED|FLATTENING|STEEPENING>","analysis":"<2 sentences>"},"moneyFlow":"<2 sentences on institutional positioning>","topMovers":[{"symbol":"<sym>","direction":"<BULLISH|BEARISH>","potentialMove":"<e.g.+2%>","reason":"<1 sentence>"}],"watchlist":[{"symbol":"<sym>","bias":"<BULLISH|BEARISH|NEUTRAL>","entryZone":"<price range>","reason":"<1 sentence>"}],"keyLevels":[{"symbol":"<sym>","level":<number>,"type":"<RESISTANCE|SUPPORT>","note":"<why>"}],"weeklyOutlook":"<2-3 sentences>","riskEvents":["<event1>","<event2>"],"goldBias":"<BULLISH|BEARISH|NEUTRAL>","oilOutlook":"<1 sentence>"}
@@ -103,19 +103,15 @@ function genFB(base,vol,pts){
   pts=pts||48;var data=[];var now=Date.now();
   // Generate realistic daily-style price movement
   // Daily range: instruments move 0.3%-2% on a typical day
-  var dailyRange=Math.max(vol*3, 0.003); // minimum 0.3% daily range
-  // Random overall trend for the period: bullish or bearish
+  var dailyRange=Math.max(vol*2, 0.002);
   var trendDir=Math.random()>0.5?1:-1;
   var trendStrength=dailyRange*(0.3+Math.random()*0.7);
-  // Start price offset from base
   var startPct=trendDir*(-trendStrength*0.8);
   var p=base*(1+startPct);
   var momentum=0;
   for(var i=0;i<pts;i++){
-    // Add momentum (trending behaviour)
-    momentum=momentum*0.85+(Math.random()-0.48)*dailyRange*0.4;
-    // Cap momentum so it doesn't run away
-    var maxMom=dailyRange*0.6;
+    momentum=momentum*0.92+(Math.random()-0.5)*dailyRange*0.12;
+    var maxMom=dailyRange*0.3;
     if(momentum>maxMom)momentum=maxMom;
     if(momentum<-maxMom)momentum=-maxMom;
     // Apply move
@@ -153,6 +149,8 @@ function callProxy(body,onSuccess,onError){
       var txt=(d.content||[]).map(function(x){return x.type==="text"?x.text:"";}).join("");
       if(!txt){onError("Empty response");return;}
       var clean=txt.split("```json").join("").split("```").join("").trim();
+      var s=clean.indexOf("{"),ef=clean.lastIndexOf("}");
+      if(s!==-1&&ef>s)clean=clean.slice(s,ef+1);
       onSuccess(JSON.parse(clean));
     }catch(e){onError("Parse error: "+e.message);}
   };
@@ -185,12 +183,15 @@ export default function Auxiron(){
   var [nowStr,setNowStr]=useState("");
   var [ctx,setCtx]=useState(null);
   var [ctxLoading,setCtxLoading]=useState(false);
+  var [ctxErr,setCtxErr]=useState(null);
   var [lastRefresh,setLastRefresh]=useState(null);
   var [detailInst,setDetailInst]=useState(null);
   var [instAnalysis,setInstAnalysis]=useState(null);
   var [instLoading,setInstLoading]=useState(false);
   var [macroAnalysis,setMacroAnalysis]=useState(null);
   var [macroLoading,setMacroLoading]=useState(false);
+  var [macroErr,setMacroErr]=useState(null);
+  var [intelErr,setIntelErr]=useState(null);
   var [macroQuery,setMacroQuery]=useState("");
   var [activeScenario,setActiveScenario]=useState(null);
   var [intel,setIntel]=useState(null);
@@ -199,6 +200,7 @@ export default function Auxiron(){
   var [calTab,setCalTab]=useState("week");
   var [brief,setBrief]=useState(null);
   var [briefLoading,setBriefLoading]=useState(false);
+  var [edgeImages,setEdgeImages]=useState<{name:string;base64:string;mediaType:string}[]>([]);
   var cycleRef=useRef(0);
 
   useEffect(function(){
@@ -297,12 +299,40 @@ export default function Auxiron(){
     }).join(", ");
   }
 
-  function analyze(text){
+  function handleEdgeUpload(e:React.ChangeEvent<HTMLInputElement>){
+    var files=Array.from(e.target.files||[]);
+    files.forEach(function(file){
+      var reader=new FileReader();
+      reader.onload=function(ev){
+        var dataUrl=ev.target?.result as string;
+        var base64=dataUrl.split(",")[1];
+        var mediaType=file.type||"image/jpeg";
+        setEdgeImages(function(prev){
+          if(prev.length>=3)return prev;
+          return prev.concat([{name:file.name,base64,mediaType}]);
+        });
+      };
+      reader.readAsDataURL(file);
+    });
+    e.target.value="";
+  }
+
+  function analyze(text:string|undefined){
     var inp=(text||hl).trim();if(!inp)return;
     setLoading(true);setErr(null);setResult(null);
+    var snap=getSnap();
+    var userContent:any;
+    if(edgeImages.length>0){
+      userContent=[
+        ...edgeImages.map(function(img){return{type:"image",source:{type:"base64",media_type:img.mediaType,data:img.base64}};}),
+        {type:"text",text:"LIVE MARKET DATA:\n"+snap+"\n\nEVENT:\n"+inp+"\n\nEdgeFinder screenshots are attached above. Please read the COT data, Top Setups, and any positioning signals shown, then cross-analyze against the news event and fill the edgeFinderCrossCheck section in your JSON response."}
+      ];
+    } else {
+      userContent="LIVE MARKET DATA:\n"+snap+"\n\nEVENT:\n"+inp;
+    }
     callProxy(
-      {model:"claude-haiku-4-5",max_tokens:2500,system:AI_SYS,
-       messages:[{role:"user",content:"LIVE MARKET DATA:\n"+getSnap()+"\n\nEVENT:\n"+inp}]},
+      {model:"claude-haiku-4-5",max_tokens:3000,system:AI_SYS,
+       messages:[{role:"user",content:userContent}]},
       function(res){setResult(res);setHist(function(p){return[{headline:inp,result:res,ts:new Date()}].concat(p.slice(0,7));});setLoading(false);},
       function(e){setErr("Failed: "+e);setLoading(false);}
     );
@@ -313,8 +343,8 @@ export default function Auxiron(){
     callProxy(
       {model:"claude-haiku-4-5",max_tokens:1800,system:CTX_SYS,
        messages:[{role:"user",content:"Live market: "+getSnap()+"\nGenerate session briefing."}]},
-      function(res){setCtx(res);setLastRefresh(new Date());setCtxLoading(false);},
-      function(){setCtxLoading(false);}
+      function(res){setCtx(res);setLastRefresh(new Date());setCtxLoading(false);setCtxErr(null);},
+      function(e){setCtxErr("Failed: "+e);setCtxLoading(false);}
     );
   }
 
@@ -334,8 +364,8 @@ export default function Auxiron(){
     callProxy(
       {model:"claude-haiku-4-5",max_tokens:3000,system:MACRO_SYS,
        messages:[{role:"user",content:"LIVE MARKET DATA:\n"+getSnap()+"\n\nMACRO ANALYSIS REQUEST:\n"+(query||"Provide comprehensive macro risk analysis of current market environment.")}]},
-      function(res){setMacroAnalysis(res);setMacroLoading(false);},
-      function(e){console.log("Macro error:",e);setMacroLoading(false);}
+      function(res){setMacroAnalysis(res);setMacroLoading(false);setMacroErr(null);},
+      function(e){setMacroErr("Failed: "+e);setMacroLoading(false);}
     );
   }
 
@@ -349,21 +379,11 @@ export default function Auxiron(){
       "\n\nSearch for: latest market news overnight geopolitical events Fed speakers US economic data today Gold Oil price drivers SPX NDX sector rotation mega-cap movers investor sentiment put call ratio market breadth institutional flows bank forecasts."+
       "\n\nGenerate a comprehensive "+label+" intelligence report with: overnight digest, geopolitical events, dynamic market movers (AI picks most relevant today), Fed watch, economic events SGT times, COMMODITIES DEEP DIVE (Gold + Oil each with what moving now + buy/sell rumor detection + risk scenarios + price targets + futures curve), INDICES DEEP DIVE (SPX + NDX each with what moving + rumor detection + top 5 mega-caps + sector rotation inflows/outflows + investor sentiment put/call breadth institutional vs retail), key levels, instrument bias, trade focus for tonight.";
     callProxy(
-      {model:"claude-sonnet-4-20250514",max_tokens:4000,system:INTEL_SYS,
+      {model:"claude-sonnet-4-6",max_tokens:4000,system:INTEL_SYS,
        messages:[{role:"user",content:msg}],
        useWebSearch:true},
-      function(res){setIntel(res);setIntelLoading(false);},
-      function(e){console.log("Intel error:",e);setIntelLoading(false);}
-    );
-  }
-
-    function fetchMacro(query){
-    setMacroLoading(true);setMacroAnalysis(null);
-    callProxy(
-      {model:"claude-haiku-4-5",max_tokens:3000,system:MACRO_SYS,
-       messages:[{role:"user",content:"LIVE MARKET DATA:\n"+getSnap()+"\n\nMACRO ANALYSIS REQUEST:\n"+(query||"Provide comprehensive macro risk analysis of current market environment.")}]},
-      function(res){setMacroAnalysis(res);setMacroLoading(false);},
-      function(e){console.log("Macro error:",e);setMacroLoading(false);}
+      function(res){setIntel(res);setIntelLoading(false);setIntelErr(null);},
+      function(e){setIntelErr("Failed: "+e);setIntelLoading(false);}
     );
   }
 
@@ -375,7 +395,7 @@ export default function Auxiron(){
       "\n\nToday's date: "+new Date().toDateString()+
       "\n\nPlease search the web for current market news, bank forecasts and economic calendar data, then generate a comprehensive market brief. Focus on US economic events primarily, then EUR, JPY and GBP. Include upcoming economic events for this week, this month and remaining quarter.";
     callProxy(
-      {model:"claude-sonnet-4-20250514",max_tokens:4000,system:BRIEF_SYS,
+      {model:"claude-sonnet-4-6",max_tokens:4000,system:BRIEF_SYS,
        messages:[{role:"user",content:msg}],
        useWebSearch:true},
       function(res){setBrief(res);setBriefLoading(false);},
@@ -634,7 +654,7 @@ export default function Auxiron(){
                 <div style={{width:55,height:22}}>
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={m.ch.slice(-14)} margin={{top:1,right:0,bottom:1,left:0}}>
-                      <Line type="monotone" dataKey="p" stroke={lc} strokeWidth={1.4} dot={false}/>
+                      <Line type="linear" dataKey="p" stroke={lc} strokeWidth={1.4} dot={false}/>
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
@@ -700,7 +720,7 @@ export default function Auxiron(){
                   <YAxis domain={["auto","auto"]} padding={{top:8,bottom:8}} tick={{fill:C.txt3,fontSize:8}} tickLine={false} axisLine={false} width={56} tickFormatter={function(v){return fmt(v,selI.b);}}/>
                   <Tooltip content={<ChartTip/>}/>
                   <ReferenceLine y={selI.open} stroke={C.border2} strokeDasharray="3 3"/>
-                  <Area type="monotone" dataKey="p" stroke={selI.pct>=0?C.up:C.dn} strokeWidth={2} fill="url(#cg)" dot={false}/>
+                  <Area type="linear" dataKey="p" stroke={selI.pct>=0?C.up:C.dn} strokeWidth={2} fill="url(#cg)" dot={false}/>
                 </AreaChart>
               </ResponsiveContainer>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:5,marginTop:10}}>
@@ -734,7 +754,7 @@ export default function Auxiron(){
                     <defs><linearGradient id={gid} x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={lc} stopOpacity={0.12}/><stop offset="95%" stopColor={lc} stopOpacity={0}/></linearGradient></defs>
                     <YAxis domain={["auto","auto"]} hide/>
                     <ReferenceLine y={m.open} stroke={C.border} strokeDasharray="2 2"/>
-                    <Area type="monotone" dataKey="p" stroke={lc} strokeWidth={1.8} fill={"url(#"+gid+")"} dot={false}/>
+                    <Area type="linear" dataKey="p" stroke={lc} strokeWidth={1.8} fill={"url(#"+gid+")"} dot={false}/>
                   </AreaChart>
                 </ResponsiveContainer>
               </div>;
@@ -757,7 +777,7 @@ export default function Auxiron(){
                 <div style={{fontSize:10,color:isVix?(up?C.dn:C.up):up?C.up:C.dn,marginBottom:4}}>{up?"+":""}{m.pct.toFixed(2)}%</div>
                 <ResponsiveContainer width="100%" height={40}>
                   <LineChart data={m.ch.slice(-16)} margin={{top:0,right:0,bottom:0,left:0}}>
-                    <Line type="monotone" dataKey="p" stroke={lc} strokeWidth={1.4} dot={false}/>
+                    <Line type="linear" dataKey="p" stroke={lc} strokeWidth={1.4} dot={false}/>
                   </LineChart>
                 </ResponsiveContainer>
               </div>;
@@ -809,7 +829,8 @@ export default function Auxiron(){
               })}
             </div>
           </div>}
-          {!ctx&&!ctxLoading&&<div style={{textAlign:"center",padding:"30px 20px",background:C.bg1,border:"1px solid "+C.border,borderRadius:10}}>
+          {ctxErr&&<div style={{background:"rgba(240,64,64,0.07)",border:"1px solid rgba(240,64,64,0.2)",borderRadius:8,padding:"10px 12px",color:C.dn,fontSize:12,marginBottom:10}}>⚠ {ctxErr}</div>}
+          {!ctx&&!ctxLoading&&!ctxErr&&<div style={{textAlign:"center",padding:"30px 20px",background:C.bg1,border:"1px solid "+C.border,borderRadius:10}}>
             <div style={{fontSize:11,color:C.txt3,letterSpacing:".1em"}}>TAP GENERATE FOR AI SESSION BRIEFING</div>
             <div style={{fontSize:10,color:C.txt3,marginTop:4,opacity:0.6}}>DXY dominance · Money flow · Weekly outlook</div>
           </div>}
@@ -959,7 +980,8 @@ export default function Auxiron(){
               })}
             </div>
           </div>
-          {!macroAnalysis&&!macroLoading&&<div style={{textAlign:"center",padding:"40px 20px",background:C.bg1,border:"1px solid "+C.border,borderRadius:10}}>
+          {macroErr&&<div style={{background:"rgba(240,64,64,0.07)",border:"1px solid rgba(240,64,64,0.2)",borderRadius:8,padding:"10px 12px",color:C.dn,fontSize:12,marginBottom:10}}>⚠ {macroErr}</div>}
+          {!macroAnalysis&&!macroLoading&&!macroErr&&<div style={{textAlign:"center",padding:"40px 20px",background:C.bg1,border:"1px solid "+C.border,borderRadius:10}}>
             <div style={{fontFamily:"'Syne',sans-serif",fontSize:28,color:C.txt3,marginBottom:8,opacity:0.25}}>⬡</div>
             <div style={{fontSize:12,color:C.txt2,letterSpacing:".08em"}}>MACRO RISK INTELLIGENCE</div>
             <div style={{fontSize:10,color:C.txt3,marginTop:4}}>Tap GENERATE or select a quick scenario</div>
@@ -1139,7 +1161,8 @@ export default function Auxiron(){
               </div>
             )}
 
-            {!intel && !intelLoading && (
+            {intelErr&&<div style={{background:"rgba(240,64,64,0.07)",border:"1px solid rgba(240,64,64,0.2)",borderRadius:8,padding:"10px 12px",color:C.dn,fontSize:12,marginBottom:10}}>⚠ {intelErr}</div>}
+            {!intel && !intelLoading && !intelErr && (
               <div style={{textAlign:"center",padding:"36px 20px",background:C.bg1,border:"1px solid "+C.border,borderRadius:12}}>
                 <div style={{fontFamily:"'Syne',sans-serif",fontSize:30,marginBottom:10,opacity:0.2}}>⬟</div>
                 <div style={{fontSize:12,color:C.txt2,letterSpacing:".08em",marginBottom:4}}>SELECT A SESSION ABOVE</div>
@@ -1403,9 +1426,33 @@ export default function Auxiron(){
             <textarea value={hl} onChange={function(e){setHl(e.target.value);}}
               placeholder="e.g. Iran closes Strait of Hormuz following US airstrike…"
               rows={3} style={{width:"100%",background:"transparent",border:"none",color:C.txt0,fontSize:13,resize:"none",lineHeight:1.7,fontFamily:"inherit"}}/>
-            <button onClick={function(){analyze();}} disabled={loading||!hl.trim()}
+            <div style={{borderTop:"1px solid "+C.border,marginTop:10,paddingTop:10}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}>
+                <div>
+                  <div style={{fontSize:9,color:C.gold,letterSpacing:".1em",fontWeight:600}}>◈ EDGEFINDER DATA <span style={{color:C.txt3,fontWeight:400}}>(optional)</span></div>
+                  <div style={{fontSize:9,color:C.txt3,marginTop:1}}>Upload screenshots — COT, Top Setups, positioning data</div>
+                </div>
+                <label htmlFor="edge-upload" style={{background:C.bg2,border:"1px solid rgba(200,168,64,0.3)",color:C.goldL,borderRadius:7,padding:"5px 10px",fontSize:9,cursor:"pointer",fontFamily:"inherit",letterSpacing:".05em"}}>+ ADD IMAGES</label>
+                <input id="edge-upload" type="file" accept="image/*" multiple onChange={handleEdgeUpload} style={{display:"none"}}/>
+              </div>
+              {edgeImages.length>0&&<div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:6}}>
+                {edgeImages.map(function(img,i){
+                  return <div key={i} style={{position:"relative",borderRadius:6,overflow:"hidden",border:"1px solid rgba(200,168,64,0.3)"}}>
+                    <img src={"data:"+img.mediaType+";base64,"+img.base64} style={{height:60,width:"auto",display:"block"}}/>
+                    <button onClick={function(){setEdgeImages(function(p){return p.filter(function(_,j){return j!==i;});});}}
+                      style={{position:"absolute",top:2,right:2,background:"rgba(0,0,0,0.7)",border:"none",color:"#fff",borderRadius:"50%",width:16,height:16,fontSize:10,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>×</button>
+                    <div style={{background:"rgba(0,0,0,0.6)",position:"absolute",bottom:0,left:0,right:0,fontSize:7,color:C.txt2,padding:"1px 4px",overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>{img.name}</div>
+                  </div>;
+                })}
+                {edgeImages.length<3&&<label htmlFor="edge-upload" style={{height:60,width:48,background:C.bg2,border:"1px dashed "+C.border2,borderRadius:6,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",color:C.txt3,fontSize:18}}>+</label>}
+              </div>}
+              {edgeImages.length>0&&<div style={{marginTop:6,background:"rgba(200,168,64,0.07)",border:"1px solid rgba(200,168,64,0.2)",borderRadius:6,padding:"6px 9px",fontSize:9,color:C.goldL}}>
+                ✓ {edgeImages.length} EdgeFinder screenshot{edgeImages.length>1?"s":""} attached — AI will cross-analyze against news event
+              </div>}
+            </div>
+            <button onClick={function(){analyze(undefined);}} disabled={loading||!hl.trim()}
               style={{width:"100%",marginTop:10,background:loading?C.bg2:C.gold,color:loading?C.txt2:"#0c1118",border:"none",borderRadius:8,padding:"11px",fontSize:11,fontWeight:500,letterSpacing:".1em",display:"flex",alignItems:"center",justifyContent:"center",gap:7}}>
-              {loading?[<div key="sp" className="sp" style={{width:12,height:12,border:"2px solid "+C.border2,borderTopColor:C.txt1,borderRadius:"50%"}}></div>,"ANALYZING…"]:"▶  ANALYZE IMPACT"}
+              {loading?[<div key="sp" className="sp" style={{width:12,height:12,border:"2px solid "+C.border2,borderTopColor:C.txt1,borderRadius:"50%"}}></div>,"ANALYZING…"]:[edgeImages.length>0?"◈ ":"▶  ",edgeImages.length>0?"ANALYZE + CROSS-CHECK EDGEFINDER":"ANALYZE IMPACT"]}
             </button>
           </div>
           <div style={{marginBottom:12}}>
@@ -1453,6 +1500,33 @@ export default function Auxiron(){
             {result.edgeFinderOverride&&result.edgeFinderOverride.triggered&&<div style={{background:"rgba(240,64,64,0.08)",border:"1px solid rgba(240,64,64,0.3)",borderRadius:8,padding:"10px 12px",marginBottom:8}}>
               <div style={{fontSize:9,color:C.dn,letterSpacing:".1em",marginBottom:4}}>⚠ EDGEFINDER OVERRIDE ALERT</div>
               <div style={{fontSize:12,color:C.txt0,lineHeight:1.75}}>{result.edgeFinderOverride.reason}</div>
+            </div>}
+            {result.edgeFinderCrossCheck&&result.edgeFinderCrossCheck.hasData&&<div style={{background:"rgba(200,168,64,0.08)",border:"2px solid rgba(200,168,64,0.35)",borderRadius:10,padding:"12px",marginBottom:8}}>
+              <div style={{fontSize:10,color:C.goldL,letterSpacing:".1em",fontWeight:700,marginBottom:8}}>◈ EDGEFINDER CROSS-ANALYSIS</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:8}}>
+                <div style={{background:"rgba(0,0,0,0.25)",borderRadius:7,padding:"8px 10px",border:"1px solid "+(result.edgeFinderCrossCheck.cotAlignment==="CONTRADICTS"?"rgba(240,64,64,0.3)":result.edgeFinderCrossCheck.cotAlignment==="CONFIRMS"?"rgba(40,204,120,0.3)":"rgba(240,144,32,0.3)")}}>
+                  <div style={{fontSize:8,color:C.txt3,letterSpacing:".1em",marginBottom:3}}>COT DATA</div>
+                  <div style={{fontSize:11,fontWeight:700,color:result.edgeFinderCrossCheck.cotAlignment==="CONTRADICTS"?C.dn:result.edgeFinderCrossCheck.cotAlignment==="CONFIRMS"?C.up:C.amber,marginBottom:3}}>{result.edgeFinderCrossCheck.cotAlignment}</div>
+                  <div style={{fontSize:10,color:C.txt1,lineHeight:1.5}}>{result.edgeFinderCrossCheck.cotNote}</div>
+                </div>
+                <div style={{background:"rgba(0,0,0,0.25)",borderRadius:7,padding:"8px 10px",border:"1px solid "+(result.edgeFinderCrossCheck.setupAlignment==="CONTRADICTS"?"rgba(240,64,64,0.3)":result.edgeFinderCrossCheck.setupAlignment==="CONFIRMS"?"rgba(40,204,120,0.3)":"rgba(240,144,32,0.3)")}}>
+                  <div style={{fontSize:8,color:C.txt3,letterSpacing:".1em",marginBottom:3}}>TOP SETUPS</div>
+                  <div style={{fontSize:11,fontWeight:700,color:result.edgeFinderCrossCheck.setupAlignment==="CONTRADICTS"?C.dn:result.edgeFinderCrossCheck.setupAlignment==="CONFIRMS"?C.up:C.amber,marginBottom:3}}>{result.edgeFinderCrossCheck.setupAlignment}</div>
+                  <div style={{fontSize:10,color:C.txt1,lineHeight:1.5}}>{result.edgeFinderCrossCheck.setupNote}</div>
+                </div>
+              </div>
+              {result.edgeFinderCrossCheck.keyContradiction&&<div style={{background:"rgba(240,64,64,0.07)",border:"1px solid rgba(240,64,64,0.2)",borderRadius:7,padding:"8px 10px",marginBottom:6}}>
+                <div style={{fontSize:8,color:C.dn,letterSpacing:".1em",marginBottom:3}}>⚡ KEY CONTRADICTION</div>
+                <div style={{fontSize:11,color:C.txt0,lineHeight:1.5}}>{result.edgeFinderCrossCheck.keyContradiction}</div>
+              </div>}
+              {result.edgeFinderCrossCheck.resolution&&<div style={{background:"rgba(72,144,248,0.07)",border:"1px solid rgba(72,144,248,0.2)",borderRadius:7,padding:"8px 10px",marginBottom:6}}>
+                <div style={{fontSize:8,color:C.blue,letterSpacing:".1em",marginBottom:3}}>HOW TO RECONCILE</div>
+                <div style={{fontSize:11,color:C.txt0,lineHeight:1.5}}>{result.edgeFinderCrossCheck.resolution}</div>
+              </div>}
+              {result.edgeFinderCrossCheck.tradeVerdict&&<div style={{background:"rgba(200,168,64,0.1)",border:"1px solid rgba(200,168,64,0.3)",borderRadius:7,padding:"8px 10px"}}>
+                <div style={{fontSize:8,color:C.gold,letterSpacing:".1em",marginBottom:3}}>TRADE VERDICT</div>
+                <div style={{fontSize:12,fontWeight:600,color:C.goldL}}>{result.edgeFinderCrossCheck.tradeVerdict}</div>
+              </div>}
             </div>}
             {result.keyDrivers&&result.keyDrivers.length>0&&<div style={{marginBottom:8}}>
               <div style={{fontSize:9,color:C.txt2,letterSpacing:".1em",marginBottom:4}}>KEY DRIVERS</div>
@@ -1597,7 +1671,7 @@ export default function Auxiron(){
                 <YAxis domain={["auto","auto"]} padding={{top:8,bottom:8}} tick={{fill:C.txt3,fontSize:8}} tickLine={false} axisLine={false} width={56} tickFormatter={function(v){return fmt(v,detailInst.b);}}/>
                 <Tooltip content={<ChartTip/>}/>
                 <ReferenceLine y={detailInst.open} stroke={C.border2} strokeDasharray="3 3"/>
-                <Area type="monotone" dataKey="p" stroke={detailInst.pct>=0?C.up:C.dn} strokeWidth={2} fill="url(#dcg)" dot={false}/>
+                <Area type="linear" dataKey="p" stroke={detailInst.pct>=0?C.up:C.dn} strokeWidth={2} fill="url(#dcg)" dot={false}/>
               </AreaChart>
             </ResponsiveContainer>
           </div>

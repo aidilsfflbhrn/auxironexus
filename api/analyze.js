@@ -13,7 +13,7 @@ export default async function handler(req, res) {
     const useWebSearch = body.useWebSearch || false;
 
     const requestBody = {
-      model: useWebSearch ? "claude-sonnet-4-20250514" : (body.model || "claude-haiku-4-5"),
+      model: useWebSearch ? "claude-sonnet-4-6" : (body.model || "claude-haiku-4-5"),
       max_tokens: body.max_tokens || 1000,
       system: body.system,
       messages: body.messages,
