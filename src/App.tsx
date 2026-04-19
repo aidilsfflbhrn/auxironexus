@@ -100,12 +100,24 @@ const vixLbl=function(v){return v<15?"CALM":v<20?"NORMAL":v<30?"ELEVATED":"HIGH 
 const impactClr=function(i){return i==="HIGH"?"#f04040":i==="MEDIUM"?"#f09020":"#486080";};
 
 function genFB(base,vol,pts){
-  pts=pts||48;var data=[];var p=base*(1-vol*1.8);var now=Date.now();
+  pts=pts||48;var data=[];
+  // Start from a random offset (-1% to +1%) so chart shows meaningful movement
+  var startOffset=(Math.random()-0.5)*0.02;
+  var p=base*(1+startOffset);
+  var now=Date.now();
+  // Add trend component so price walks naturally
+  var trend=(Math.random()-0.5)*0.0003;
   for(var i=pts-1;i>=0;i--){
-    p=p*(1+(Math.random()-0.491)*vol);
+    // Random walk with drift — larger step size for visible movement
+    var step=(Math.random()-0.5)*vol*2.5+trend;
+    p=p*(1+step);
+    // Keep within 2% of base
+    if(p>base*1.02)p=base*1.02;
+    if(p<base*0.98)p=base*0.98;
     data.push({t:new Date(now-i*30*60*1000).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}),p:parseFloat(p.toFixed(dp(base)))});
   }
-  data[data.length-1].p=parseFloat((base*(1+(Math.random()-0.5)*vol*0.25)).toFixed(dp(base)));
+  // Last point anchored near base price
+  data[data.length-1].p=parseFloat((base*(1+(Math.random()-0.5)*vol*0.5)).toFixed(dp(base)));
   return data;
 }
 
@@ -404,9 +416,10 @@ export default function Auxiron(){
         .auxiron-root{display:flex;width:100%;min-height:100vh;min-height:100dvh;background:#0c1118;}
         .auxiron-sidebar{display:none;}
         .auxiron-main{flex:1;display:flex;flex-direction:column;width:100%;min-width:0;}
-        .auxiron-content{flex:1;overflow-y:auto;overflow-x:hidden;padding-bottom:72px;-webkit-overflow-scrolling:touch;}
+        .auxiron-content{flex:1;overflow-y:auto;overflow-x:hidden;padding-bottom:calc(64px + env(safe-area-inset-bottom,0px));-webkit-overflow-scrolling:touch;}
         .auxiron-inner{width:100%;padding:0;}
-        .auxiron-bottom-nav{display:flex;position:fixed;bottom:0;left:0;right:0;z-index:300;padding-bottom:env(safe-area-inset-bottom,0px);}
+        .auxiron-bottom-nav{display:flex;position:fixed;bottom:0;left:0;right:0;z-index:300;background:#111820;padding-bottom:env(safe-area-inset-bottom,0px);}
+        .auxiron-bottom-nav button{padding:10px 0 6px !important;}
 
         /* ── MOBILE phones (up to 480px) ── */
         @media(max-width:480px){
@@ -668,7 +681,7 @@ export default function Auxiron(){
                     </linearGradient>
                   </defs>
                   <XAxis dataKey="t" tick={{fill:C.txt3,fontSize:8}} tickLine={false} axisLine={false} interval={8}/>
-                  <YAxis domain={["auto","auto"]} tick={{fill:C.txt3,fontSize:8}} tickLine={false} axisLine={false} width={56} tickFormatter={function(v){return fmt(v,selI.b);}}/>
+                  <YAxis domain={[function(dataMin){return parseFloat((dataMin*(1-0.0008)).toFixed(dp(selI.b)));},function(dataMax){return parseFloat((dataMax*(1+0.0008)).toFixed(dp(selI.b)));}]} tick={{fill:C.txt3,fontSize:8}} tickLine={false} axisLine={false} width={56} tickFormatter={function(v){return fmt(v,selI.b);}}/>
                   <Tooltip content={<ChartTip/>}/>
                   <ReferenceLine y={selI.open} stroke={C.border2} strokeDasharray="3 3"/>
                   <Area type="monotone" dataKey="p" stroke={selI.pct>=0?C.up:C.dn} strokeWidth={2} fill="url(#cg)" dot={false}/>
@@ -1565,7 +1578,7 @@ export default function Auxiron(){
                   </linearGradient>
                 </defs>
                 <XAxis dataKey="t" tick={{fill:C.txt3,fontSize:8}} tickLine={false} axisLine={false} interval={8}/>
-                <YAxis domain={["auto","auto"]} tick={{fill:C.txt3,fontSize:8}} tickLine={false} axisLine={false} width={56} tickFormatter={function(v){return fmt(v,detailInst.b);}}/>
+                <YAxis domain={[function(dataMin){return parseFloat((dataMin*(1-0.0008)).toFixed(dp(detailInst.b)));},function(dataMax){return parseFloat((dataMax*(1+0.0008)).toFixed(dp(detailInst.b)));}]} tick={{fill:C.txt3,fontSize:8}} tickLine={false} axisLine={false} width={56} tickFormatter={function(v){return fmt(v,detailInst.b);}}/>
                 <Tooltip content={<ChartTip/>}/>
                 <ReferenceLine y={detailInst.open} stroke={C.border2} strokeDasharray="3 3"/>
                 <Area type="monotone" dataKey="p" stroke={detailInst.pct>=0?C.up:C.dn} strokeWidth={2} fill="url(#dcg)" dot={false}/>
