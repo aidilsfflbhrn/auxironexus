@@ -386,10 +386,11 @@ export default function Auxiron(){
   ];
 
   return(
-    <div style={{minHeight:"100vh",background:C.bg0,fontFamily:"'DM Mono','Courier New',monospace",color:C.txt0}} className="auxiron-root">
+    <div style={{fontFamily:"'DM Mono','Courier New',monospace",color:C.txt0}} className="auxiron-root">
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@700;800&display=swap');
         *{box-sizing:border-box;margin:0;padding:0;}
+        html,body,#root{width:100%;height:100%;overflow-x:hidden;}
         ::-webkit-scrollbar{width:4px;} ::-webkit-scrollbar-thumb{background:#1e2d40;border-radius:2px;}
         textarea:focus{outline:none;}
         button{-webkit-tap-highlight-color:transparent;cursor:pointer;font-family:inherit;}
@@ -398,24 +399,41 @@ export default function Auxiron(){
         @keyframes pd{0%,100%{opacity:1}50%{opacity:0.1}} .pd{animation:pd 1.5s ease infinite;}
         @keyframes sp{to{transform:rotate(360deg)}} .sp{animation:sp 0.8s linear infinite;}
         @keyframes tk{0%{transform:translateX(0)}100%{transform:translateX(-50%)}} .tk{animation:tk 65s linear infinite;display:inline-block;white-space:nowrap;} .tk:hover{animation-play-state:paused;}
-        /* Responsive layout */
-        .auxiron-root{display:flex;min-height:100vh;}
-        .auxiron-sidebar{width:220px;flex-shrink:0;background:#111820;border-right:1px solid #1e2d40;display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;z-index:200;}
-        .auxiron-main{flex:1;display:flex;flex-direction:column;margin-left:220px;}
-        .auxiron-content{flex:1;overflow-y:auto;padding-bottom:0;}
-        .auxiron-bottom-nav{display:none;}
-        /* Mobile */
-        @media(max-width:768px){
-          .auxiron-sidebar{display:none;}
-          .auxiron-main{margin-left:0;}
-          .auxiron-bottom-nav{display:flex !important;}
-          .auxiron-content{padding-bottom:72px;}
+
+        /* ── BASE: mobile-first fills full screen ── */
+        .auxiron-root{display:flex;width:100%;min-height:100vh;min-height:100dvh;background:#0c1118;}
+        .auxiron-sidebar{display:none;}
+        .auxiron-main{flex:1;display:flex;flex-direction:column;width:100%;min-width:0;}
+        .auxiron-content{flex:1;overflow-y:auto;overflow-x:hidden;padding-bottom:72px;-webkit-overflow-scrolling:touch;}
+        .auxiron-inner{width:100%;padding:0;}
+        .auxiron-bottom-nav{display:flex;position:fixed;bottom:0;left:0;right:0;z-index:300;padding-bottom:env(safe-area-inset-bottom,0px);}
+
+        /* ── MOBILE phones (up to 480px) ── */
+        @media(max-width:480px){
+          .auxiron-inner{font-size:13px;}
         }
-        /* Wide desktop */
-        @media(min-width:1200px){
+
+        /* ── TABLET portrait: iPad mini, iPad, Galaxy Tab S11 portrait (481px–1023px) ── */
+        @media(min-width:481px) and (max-width:1023px){
+          .auxiron-inner{max-width:100%;padding:0 4px;}
+          .auxiron-content{padding-bottom:80px;}
+          .auxiron-bottom-nav{height:68px;}
+        }
+
+        /* ── TABLET landscape / large tablet: Galaxy Tab S11 landscape, iPad Pro (1024px–1279px) ── */
+        @media(min-width:1024px){
+          .auxiron-sidebar{display:flex;flex-direction:column;width:240px;flex-shrink:0;position:fixed;left:0;top:0;bottom:0;z-index:200;background:#111820;border-right:1px solid #1e2d40;}
+          .auxiron-main{margin-left:240px;}
+          .auxiron-content{padding-bottom:0;}
+          .auxiron-bottom-nav{display:none !important;}
+          .auxiron-inner{max-width:100%;padding:0;}
+        }
+
+        /* ── WIDE desktop (1280px+) ── */
+        @media(min-width:1280px){
           .auxiron-sidebar{width:260px;}
           .auxiron-main{margin-left:260px;}
-          .auxiron-inner{max-width:900px;margin:0 auto;}
+          .auxiron-inner{max-width:960px;margin:0 auto;}
         }
       `}</style>
 
@@ -1615,10 +1633,10 @@ export default function Auxiron(){
       </div>
 
       {/* BOTTOM NAV - mobile only */}
-      <div className="auxiron-bottom-nav" style={{position:"fixed",bottom:0,left:0,right:0,background:C.bg1,borderTop:"1px solid "+C.border,display:"flex",zIndex:300,paddingBottom:"env(safe-area-inset-bottom,0px)"}}>
+      <div className="auxiron-bottom-nav" style={{background:C.bg1,borderTop:"1px solid "+C.border}}>
         {NAV.map(function(item){
           return <button key={item.key} className="tap" onClick={function(){setTab(item.key);}}
-            style={{flex:1,background:"transparent",border:"none",padding:"8px 0 5px",display:"flex",flexDirection:"column",alignItems:"center",gap:2,color:tab===item.key?C.goldL:C.txt2,transition:"color 0.12s"}}>
+            style={{flex:1,background:"transparent",border:"none",padding:"10px 0 6px",display:"flex",flexDirection:"column",alignItems:"center",gap:3,color:tab===item.key?C.goldL:C.txt2,transition:"color 0.12s",minHeight:56}}>
             <span style={{fontSize:13,lineHeight:1}}>{item.icon}</span>
             <span style={{fontSize:7,letterSpacing:".06em",fontWeight:tab===item.key?500:400}}>{item.label}</span>
             {tab===item.key&&<div style={{width:14,height:2,background:C.gold,borderRadius:1,marginTop:1}}></div>}
