@@ -196,6 +196,9 @@ export default function Auxiron(){
   var [intel,setIntel]=useState(null);
   var [intelLoading,setIntelLoading]=useState(false);
   var [intelSession,setIntelSession]=useState("asia");
+  var [calTab,setCalTab]=useState("week");
+  var [brief,setBrief]=useState(null);
+  var [briefLoading,setBriefLoading]=useState(false);
   var cycleRef=useRef(0);
 
   useEffect(function(){
