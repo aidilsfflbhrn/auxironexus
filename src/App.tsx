@@ -78,9 +78,9 @@ Respond ONLY with valid JSON, no extra text:
 {"session":"<ASIA OPEN|LONDON OPEN|NY SESSION>","generatedAt":"<time SGT>","marketRegime":"<RISK-ON|RISK-OFF|NEUTRAL|MIXED>","headline":"<single most important market theme today>","overnightDigest":"<3-4 sentences: what happened overnight, key moves, why — reference actual events>","geopolitical":["<event1>","<event2>","<event3>"],"dynamicMovers":[{"symbol":"<sym>","name":"<name>","price":"<price>","change":"<+/-X.XX%>","dir":"<BULLISH|BEARISH>","why":"<2 sentences>","driver":"<key driver tag>"}],"fedWatch":{"speaker":"<name or NONE>","statement":"<what they said or current Fed stance>","marketRead":"<market interpretation>","impactGold":"<1 sentence>","impactDXY":"<1 sentence>"},"econ":[{"time":"<SGT time>","country":"<US|EUR|JPY|GBP>","event":"<name>","forecast":"<value>","prev":"<value>","impact":"<HIGH|MEDIUM|LOW>"}],"gold":{"price":"<price>","chg":"<change>","drivers":["<d1>","<d2>","<d3>","<d4>"],"rumor":{"phase":"<RUMOR|FACT REACTION|POST-FACT>","signal":"<specific signal name>","analysis":"<2-3 sentences>","analog":"<historical analog and outcome>","conviction":"<HIGH|MEDIUM|LOW>"},"scenarios":[{"s":"<scenario>","p":<probability>,"target":"<price range>","trigger":"<trigger event>","tf":"<timeframe>"}],"curve":{"signal":"<BACKWARDATION|CONTANGO|FLAT>","meaning":"<1 sentence>","impl":"<implication>"},"note":"<2-3 sentences actionable>"},"oil":{"price":"<price>","chg":"<change>","drivers":["<d1>","<d2>","<d3>","<d4>"],"rumor":{"phase":"<RUMOR|FACT REACTION|POST-FACT>","signal":"<signal>","analysis":"<2-3 sentences>","analog":"<historical analog>","conviction":"<HIGH|MEDIUM|LOW>"},"scenarios":[{"s":"<scenario>","p":<probability>,"target":"<price range>","trigger":"<trigger>","tf":"<timeframe>"}],"curve":{"signal":"<BACKWARDATION|CONTANGO|FLAT>","meaning":"<1 sentence>","impl":"<implication>"},"note":"<2-3 sentences actionable>"},"spx":{"price":"<price>","chg":"<change>","what":"<2 sentences what is moving SPX today>","rumor":{"phase":"<RUMOR|FACT REACTION|POST-FACT>","signal":"<signal>","analysis":"<2-3 sentences>","analog":"<historical analog>","conviction":"<HIGH|MEDIUM|LOW>"},"megacaps":[{"t":"<ticker>","w":"<index weight>","m":"<move today>","why":"<1 sentence>","sent":"<BULLISH|BEARISH|NEUTRAL>"}],"sectors":[{"s":"<sector>","c":"<change>","f":"<IN|OUT>","r":"<1 sentence reason>"}],"sentiment":{"pc":"<put/call ratio and interpretation>","breadth":"<advancing/declining and interpretation>","inst":"<institutional flow>","retail":"<retail sentiment AAII or similar>"},"note":"<2-3 sentences actionable>"},"ndx":{"price":"<price>","chg":"<change>","what":"<2 sentences>","rumor":{"phase":"<RUMOR|FACT REACTION|POST-FACT>","signal":"<signal>","analysis":"<2-3 sentences>","analog":"<historical analog>","conviction":"<HIGH|MEDIUM|LOW>"},"tech":[{"sub":"<subsector>","perf":"<performance>","leaders":"<key stocks>","note":"<1 sentence>"}],"instView":"<what major banks say about NDX/tech>","retailVsInst":"<retail vs institutional positioning>","note":"<2-3 sentences actionable>"},"keyLevels":[{"sym":"<sym>","s":<support>,"r":<resistance>,"note":"<why matters>"}],"bias":{"gold":"<BULLISH|BEARISH|NEUTRAL>","oil":"<BULLISH|BEARISH|NEUTRAL>","spx":"<BULLISH|BEARISH|NEUTRAL>","ndx":"<BULLISH|BEARISH|NEUTRAL>","dxy":"<BULLISH|BEARISH|NEUTRAL>","bonds":"<BULLISH|BEARISH|NEUTRAL>"},"tradeFocus":"<4-5 sentences: specific instruments, entry zones, what to avoid, key levels tonight>"}
 Provide 3 dynamicMovers, 3 geopolitical events, 3-4 econ events, 3-4 gold scenarios, 4 oil scenarios, 5 megacaps, 5-6 sector rotation entries, 4 key levels. Reference live prices throughout.`;
 
-const MACRO_SYS=`You are a world-class macro strategist and financial historian. Respond ONLY with valid JSON:
-{"title":"<analysis title>","overallRisk":"<LOW|MODERATE|HIGH|EXTREME>","marketRegime":"<RISK-ON|RISK-OFF|TRANSITION|CRISIS>","executiveSummary":"<3-4 sentences>","riskScenarios":[{"id":<1-5>,"category":"<GEOPOLITICAL|MONETARY|CREDIT|LIQUIDITY|GROWTH|INFLATION|ENERGY|CURRENCY>","title":"<n>","probabilityPct":<0-100>,"status":"<ACTIVE|WATCH|DORMANT>","description":"<2-3 sentences>","triggerEvents":["<e1>","<e2>"],"marketImpact":{"equities":"<BULLISH|BEARISH|NEUTRAL> — <why>","gold":"<BULLISH|BEARISH|NEUTRAL> — <why>","oil":"<BULLISH|BEARISH|NEUTRAL> — <why>","dxy":"<BULLISH|BEARISH|NEUTRAL> — <why>","bonds":"<BULLISH|BEARISH|NEUTRAL> — <why>"},"historicalAnalog":"<historical event and outcome>","timeline":"<timeframe>"}],"timelineOutlook":{"week":"<next 7 days>","month":"<next 30 days>","quarter":"<next 90 days>","year":"<12 month thesis>"},"historicPatterns":[{"pattern":"<n>","currentMatch":"<match>","historicalOutcome":"<outcome>","impliedMove":"<implied>"},{"pattern":"<n2>","currentMatch":"<m>","historicalOutcome":"<o>","impliedMove":"<i>"}],"moneyFlowAnalysis":"<3-4 sentences>","keyWatchlist":[{"instrument":"<sym>","signal":"<watch>","threshold":"<level>","implication":"<means>"},{"instrument":"<s2>","signal":"<w>","threshold":"<l>","implication":"<m>"},{"instrument":"<s3>","signal":"<w2>","threshold":"<l2>","implication":"<m2>"}],"traderActionPlan":"<4-5 sentences>"}
-Provide exactly 5 riskScenarios ordered by probability.`;
+const MACRO_SYS=`You are a world-class macro strategist, financial historian and trading desk analyst. Respond ONLY with valid JSON:
+{"title":"<analysis title>","overallRisk":"<LOW|MODERATE|HIGH|EXTREME>","marketRegime":"<RISK-ON|RISK-OFF|TRANSITION|CRISIS>","executiveSummary":"<3-4 sentences>","bookPlay":{"currentBook":"<dominant market narrative — e.g. STAGFLATION PLAYBOOK|OIL DEMAND SURGE|RISK-OFF CASH RUSH|INFLATIONARY SUPPLY SHOCK|DOLLAR WRECKING BALL|CREDIT CRUNCH|SOFT LANDING|HARD LANDING|CARRY TRADE UNWIND|GEOPOLITICAL RISK PREMIUM>","description":"<2-3 sentences: what narrative is driving markets RIGHT NOW, why it started, and how it is playing out across assets>","phase":"<EARLY|DEVELOPING|MATURE|EXHAUSTION>","historicalParallel":"<which historical period this most closely resembles and what eventually happened>","keyDrivers":["<d1>","<d2>","<d3>"],"impliedRotations":{"buying":["<asset/sector being accumulated>","<asset2>"],"selling":["<asset/sector being dumped>","<asset2>"],"watching":["<on-deck asset — may move next>"]}},"moneyFlowRotation":{"primaryFlow":"<FROM: X → TO: Y — 1 sentence explaining the institutional rotation>","institutionalBias":"<what large funds, hedge funds, CBs are doing>","retailVsInst":"<divergence or alignment between retail and institutional positioning>","sectorRotation":"<which sectors getting inflows and outflows right now>","assetClassRanking":["<#1 most favored asset class right now>","<#2>","<#3>","<#4>","<#5 least favored — avoid>"],"weeklySetup":"<3-4 sentences: what specifically to watch next week, key data releases and catalysts, how to position heading into next week, what event would change the thesis>"},"riskScenarios":[{"id":<1-5>,"category":"<GEOPOLITICAL|MONETARY|CREDIT|LIQUIDITY|GROWTH|INFLATION|ENERGY|CURRENCY>","title":"<n>","probabilityPct":<0-100>,"status":"<ACTIVE|WATCH|DORMANT>","description":"<2-3 sentences>","triggerEvents":["<e1>","<e2>"],"marketImpact":{"equities":"<BULLISH|BEARISH|NEUTRAL> — <why>","gold":"<BULLISH|BEARISH|NEUTRAL> — <why>","oil":"<BULLISH|BEARISH|NEUTRAL> — <why>","dxy":"<BULLISH|BEARISH|NEUTRAL> — <why>","bonds":"<BULLISH|BEARISH|NEUTRAL> — <why>"},"historicalAnalog":"<historical event and outcome>","timeline":"<timeframe>"}],"timelineOutlook":{"week":"<next 7 days>","month":"<next 30 days>","quarter":"<next 90 days>","year":"<12 month thesis>"},"historicPatterns":[{"pattern":"<n>","currentMatch":"<match>","historicalOutcome":"<outcome>","impliedMove":"<implied>"},{"pattern":"<n2>","currentMatch":"<m>","historicalOutcome":"<o>","impliedMove":"<i>"}],"moneyFlowAnalysis":"<3-4 sentences on institutional money movement>","keyWatchlist":[{"instrument":"<sym>","signal":"<watch>","threshold":"<level>","implication":"<means>"},{"instrument":"<s2>","signal":"<w>","threshold":"<l>","implication":"<m>"},{"instrument":"<s3>","signal":"<w2>","threshold":"<l2>","implication":"<m2>"}],"traderActionPlan":"<4-5 sentences: specific trades, sizing guidance, what to buy/sell/avoid this week>"}
+Provide exactly 5 riskScenarios ordered by probability. Identify the dominant market book play with precision — name the exact narrative (e.g. Stagflation Playbook, Oil Demand Surge + Cash Rush, etc). Make weeklySetup highly specific and actionable for next week.`;
 
 const BRIEF_SYS=`You are a senior macro strategist at a top-tier investment bank with access to live market data and current news. Generate a comprehensive Goldman Sachs-style market brief.
 
@@ -145,7 +145,13 @@ function callProxy(body,onSuccess,onError){
   xhr.onload=function(){
     try{
       var d=JSON.parse(xhr.responseText);
-      if(d.error){onError(typeof d.error==="string"?d.error:JSON.stringify(d.error));return;}
+      if(d.error){
+        var eType=d.error&&d.error.type;
+        var eMsg=eType==="overloaded_error"?"Anthropic API overloaded — please try again in 1–2 min":
+          eType==="rate_limit_error"?"Rate limit hit — please wait 30 seconds and retry":
+          typeof d.error==="string"?d.error:JSON.stringify(d.error);
+        onError(eMsg);return;
+      }
       var txt=(d.content||[]).map(function(x){return x.type==="text"?x.text:"";}).join("");
       if(!txt){onError("Empty response");return;}
       var clean=txt.split("```json").join("").split("```").join("").trim();
@@ -360,10 +366,20 @@ export default function Auxiron(){
   }
 
   function fetchMacro(query){
-    setMacroLoading(true);setMacroAnalysis(null);
+    setMacroLoading(true);setMacroAnalysis(null);setMacroErr(null);
+    var baseRequest=query||"Comprehensive macro risk analysis of the current market environment.";
+    var msg="LIVE MARKET DATA:\n"+getSnap()+
+      "\n\nToday: "+new Date().toDateString()+
+      "\n\nMACRO ANALYSIS REQUEST:\n"+baseRequest+
+      "\n\nIMPORTANT — include ALL of the following in your analysis:\n"+
+      "1. MARKET BOOK PLAY: Identify the dominant market narrative right now (e.g. Stagflation Playbook, Oil Demand Surge + Cash Rush, Risk-Off, etc). Specify phase (Early/Developing/Mature/Exhaustion), what is being bought/sold, and historical parallel.\n"+
+      "2. MONEY FLOW ROTATION: Where is institutional money moving? What asset class ranking right now? Sector inflows/outflows?\n"+
+      "3. WEEKLY SETUP: What are the 3-4 key events/catalysts next week? How should a trader position heading into next week? What would change the thesis?\n"+
+      "4. RISK SCENARIOS: 5 scenarios with probabilities, triggers, and cross-asset impact.\n"+
+      "5. TRADER ACTION PLAN: Specific, actionable trades for this week.";
     callProxy(
-      {model:"claude-haiku-4-5",max_tokens:3000,system:MACRO_SYS,
-       messages:[{role:"user",content:"LIVE MARKET DATA:\n"+getSnap()+"\n\nMACRO ANALYSIS REQUEST:\n"+(query||"Provide comprehensive macro risk analysis of current market environment.")}]},
+      {model:"claude-haiku-4-5",max_tokens:4000,system:MACRO_SYS,
+       messages:[{role:"user",content:msg}]},
       function(res){setMacroAnalysis(res);setMacroLoading(false);setMacroErr(null);},
       function(e){setMacroErr("Failed: "+e);setMacroLoading(false);}
     );
@@ -1004,6 +1020,62 @@ export default function Auxiron(){
               </div>
               <div style={{fontSize:13,color:C.txt0,lineHeight:1.75}}>{macroAnalysis.executiveSummary}</div>
             </div>
+
+            {macroAnalysis.bookPlay&&<div style={{background:"linear-gradient(135deg,rgba(200,168,64,0.13),rgba(200,168,64,0.04))",border:"2px solid rgba(200,168,64,0.4)",borderRadius:12,padding:"14px",marginBottom:10}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+                <div>
+                  <div style={{fontSize:9,color:C.gold,letterSpacing:".12em",marginBottom:4,fontWeight:600}}>◈ ACTIVE MARKET BOOK PLAY</div>
+                  <div style={{fontFamily:"'Syne',sans-serif",fontSize:17,fontWeight:800,color:C.goldL,lineHeight:1.2}}>{macroAnalysis.bookPlay.currentBook}</div>
+                </div>
+                {macroAnalysis.bookPlay.phase&&<span style={{fontSize:9,fontWeight:700,color:C.amber,background:"rgba(240,144,32,0.12)",border:"1px solid rgba(240,144,32,0.35)",borderRadius:5,padding:"3px 9px",flexShrink:0,marginTop:2}}>{macroAnalysis.bookPlay.phase}</span>}
+              </div>
+              <div style={{fontSize:12,color:C.txt0,lineHeight:1.75,marginBottom:10}}>{macroAnalysis.bookPlay.description}</div>
+              {macroAnalysis.bookPlay.impliedRotations&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6,marginBottom:8}}>
+                {[
+                  {label:"▲ BUYING",key:"buying",clr:C.up,bg:"rgba(40,204,120,0.07)",bdr:"rgba(40,204,120,0.2)"},
+                  {label:"▼ SELLING",key:"selling",clr:C.dn,bg:"rgba(240,64,64,0.07)",bdr:"rgba(240,64,64,0.2)"},
+                  {label:"◉ WATCHING",key:"watching",clr:C.amber,bg:"rgba(240,144,32,0.07)",bdr:"rgba(240,144,32,0.2)"},
+                ].map(function(col){
+                  var items=macroAnalysis.bookPlay.impliedRotations[col.key]||[];
+                  return <div key={col.key} style={{background:col.bg,border:"1px solid "+col.bdr,borderRadius:7,padding:"8px 10px"}}>
+                    <div style={{fontSize:8,color:col.clr,letterSpacing:".1em",marginBottom:5,fontWeight:700}}>{col.label}</div>
+                    {items.map(function(a,i){return <div key={i} style={{fontSize:10,color:C.txt0,marginBottom:2}}>· {a}</div>;})}
+                  </div>;
+                })}
+              </div>}
+              {macroAnalysis.bookPlay.historicalParallel&&<div style={{background:"rgba(72,144,248,0.07)",border:"1px solid rgba(72,144,248,0.2)",borderRadius:7,padding:"7px 10px"}}>
+                <span style={{fontSize:9,color:C.blue,fontWeight:600}}>📚 Historical Parallel: </span>
+                <span style={{fontSize:11,color:C.txt1}}>{macroAnalysis.bookPlay.historicalParallel}</span>
+              </div>}
+            </div>}
+
+            {macroAnalysis.moneyFlowRotation&&<div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,padding:"13px",marginBottom:10}}>
+              <div style={{fontSize:10,color:C.gold,letterSpacing:".1em",fontWeight:700,marginBottom:8}}>💰 MONEY FLOW ROTATION</div>
+              {macroAnalysis.moneyFlowRotation.primaryFlow&&<div style={{fontSize:13,color:C.txt0,lineHeight:1.7,marginBottom:8}}>{macroAnalysis.moneyFlowRotation.primaryFlow}</div>}
+              {macroAnalysis.moneyFlowRotation.assetClassRanking&&macroAnalysis.moneyFlowRotation.assetClassRanking.length>0&&<div style={{marginBottom:10}}>
+                <div style={{fontSize:9,color:C.txt3,letterSpacing:".1em",marginBottom:6}}>ASSET CLASS RANKING — CURRENT PREFERENCE</div>
+                <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
+                  {macroAnalysis.moneyFlowRotation.assetClassRanking.map(function(a,i){
+                    var last=macroAnalysis.moneyFlowRotation.assetClassRanking.length-1;
+                    var clr=i===0?C.up:i===last?C.dn:i===1?C.goldL:C.txt2;
+                    var bg=i===0?"rgba(40,204,120,0.1)":i===last?"rgba(240,64,64,0.1)":i===1?"rgba(200,168,64,0.1)":"rgba(72,96,128,0.08)";
+                    var bdr=i===0?"rgba(40,204,120,0.3)":i===last?"rgba(240,64,64,0.3)":i===1?"rgba(200,168,64,0.3)":C.border;
+                    return <span key={i} style={{fontSize:10,padding:"4px 10px",borderRadius:6,background:bg,color:clr,border:"1px solid "+bdr,fontWeight:i<=1||i===last?600:400}}>
+                      <span style={{fontSize:8,opacity:0.6}}>#{i+1} </span>{a}
+                    </span>;
+                  })}
+                </div>
+              </div>}
+              {macroAnalysis.moneyFlowRotation.sectorRotation&&<div style={{background:C.bg2,border:"1px solid "+C.border,borderRadius:7,padding:"8px 10px",marginBottom:10}}>
+                <div style={{fontSize:9,color:C.txt3,letterSpacing:".1em",marginBottom:3}}>SECTOR ROTATION</div>
+                <div style={{fontSize:11,color:C.txt1,lineHeight:1.6}}>{macroAnalysis.moneyFlowRotation.sectorRotation}</div>
+              </div>}
+              {macroAnalysis.moneyFlowRotation.weeklySetup&&<div style={{background:"linear-gradient(135deg,rgba(72,144,248,0.09),rgba(72,144,248,0.03))",border:"1px solid rgba(72,144,248,0.3)",borderRadius:9,padding:"11px 13px"}}>
+                <div style={{fontSize:10,color:C.blue,letterSpacing:".1em",fontWeight:700,marginBottom:6}}>📅 WEEKLY SETUP — NEXT 7 DAYS</div>
+                <div style={{fontSize:12,color:C.txt0,lineHeight:1.8}}>{macroAnalysis.moneyFlowRotation.weeklySetup}</div>
+              </div>}
+            </div>}
+
             {macroAnalysis.moneyFlowAnalysis&&<div style={{background:"rgba(200,168,64,0.07)",border:"1px solid rgba(200,168,64,0.2)",borderRadius:10,padding:"13px",marginBottom:10}}>
               <div style={{fontSize:10,color:C.gold,letterSpacing:".1em",marginBottom:6}}>💰 INSTITUTIONAL MONEY FLOW</div>
               <div style={{fontSize:13,color:C.txt0,lineHeight:1.75}}>{macroAnalysis.moneyFlowAnalysis}</div>
