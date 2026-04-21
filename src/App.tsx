@@ -78,9 +78,9 @@ Respond ONLY with valid JSON, no extra text:
 {"session":"<ASIA OPEN|LONDON OPEN|NY SESSION>","generatedAt":"<time SGT>","marketRegime":"<RISK-ON|RISK-OFF|NEUTRAL|MIXED>","headline":"<single most important market theme today>","overnightDigest":"<3-4 sentences: what happened overnight, key moves, why — reference actual events>","geopolitical":["<event1>","<event2>","<event3>"],"dynamicMovers":[{"symbol":"<sym>","name":"<name>","price":"<price>","change":"<+/-X.XX%>","dir":"<BULLISH|BEARISH>","why":"<2 sentences>","driver":"<key driver tag>"}],"fedWatch":{"speaker":"<name or NONE>","statement":"<what they said or current Fed stance>","marketRead":"<market interpretation>","impactGold":"<1 sentence>","impactDXY":"<1 sentence>"},"econ":[{"time":"<SGT time>","country":"<US|EUR|JPY|GBP>","event":"<name>","forecast":"<value>","prev":"<value>","impact":"<HIGH|MEDIUM|LOW>"}],"gold":{"price":"<price>","chg":"<change>","drivers":["<d1>","<d2>","<d3>","<d4>"],"rumor":{"phase":"<RUMOR|FACT REACTION|POST-FACT>","signal":"<specific signal name>","analysis":"<2-3 sentences>","analog":"<historical analog and outcome>","conviction":"<HIGH|MEDIUM|LOW>"},"scenarios":[{"s":"<scenario>","p":<probability>,"target":"<price range>","trigger":"<trigger event>","tf":"<timeframe>"}],"curve":{"signal":"<BACKWARDATION|CONTANGO|FLAT>","meaning":"<1 sentence>","impl":"<implication>"},"note":"<2-3 sentences actionable>"},"oil":{"price":"<price>","chg":"<change>","drivers":["<d1>","<d2>","<d3>","<d4>"],"rumor":{"phase":"<RUMOR|FACT REACTION|POST-FACT>","signal":"<signal>","analysis":"<2-3 sentences>","analog":"<historical analog>","conviction":"<HIGH|MEDIUM|LOW>"},"scenarios":[{"s":"<scenario>","p":<probability>,"target":"<price range>","trigger":"<trigger>","tf":"<timeframe>"}],"curve":{"signal":"<BACKWARDATION|CONTANGO|FLAT>","meaning":"<1 sentence>","impl":"<implication>"},"note":"<2-3 sentences actionable>"},"spx":{"price":"<price>","chg":"<change>","what":"<2 sentences what is moving SPX today>","rumor":{"phase":"<RUMOR|FACT REACTION|POST-FACT>","signal":"<signal>","analysis":"<2-3 sentences>","analog":"<historical analog>","conviction":"<HIGH|MEDIUM|LOW>"},"megacaps":[{"t":"<ticker>","w":"<index weight>","m":"<move today>","why":"<1 sentence>","sent":"<BULLISH|BEARISH|NEUTRAL>"}],"sectors":[{"s":"<sector>","c":"<change>","f":"<IN|OUT>","r":"<1 sentence reason>"}],"sentiment":{"pc":"<put/call ratio and interpretation>","breadth":"<advancing/declining and interpretation>","inst":"<institutional flow>","retail":"<retail sentiment AAII or similar>"},"note":"<2-3 sentences actionable>"},"ndx":{"price":"<price>","chg":"<change>","what":"<2 sentences>","rumor":{"phase":"<RUMOR|FACT REACTION|POST-FACT>","signal":"<signal>","analysis":"<2-3 sentences>","analog":"<historical analog>","conviction":"<HIGH|MEDIUM|LOW>"},"tech":[{"sub":"<subsector>","perf":"<performance>","leaders":"<key stocks>","note":"<1 sentence>"}],"instView":"<what major banks say about NDX/tech>","retailVsInst":"<retail vs institutional positioning>","note":"<2-3 sentences actionable>"},"keyLevels":[{"sym":"<sym>","s":<support>,"r":<resistance>,"note":"<why matters>"}],"bias":{"gold":"<BULLISH|BEARISH|NEUTRAL>","oil":"<BULLISH|BEARISH|NEUTRAL>","spx":"<BULLISH|BEARISH|NEUTRAL>","ndx":"<BULLISH|BEARISH|NEUTRAL>","dxy":"<BULLISH|BEARISH|NEUTRAL>","bonds":"<BULLISH|BEARISH|NEUTRAL>"},"tradeFocus":"<4-5 sentences: specific instruments, entry zones, what to avoid, key levels tonight>"}
 Provide 3 dynamicMovers, 3 geopolitical events, 3-4 econ events, 3-4 gold scenarios, 4 oil scenarios, 5 megacaps, 5-6 sector rotation entries, 4 key levels. Reference live prices throughout.`;
 
-const MACRO_SYS=`You are a world-class macro strategist, financial historian and trading desk analyst. Respond ONLY with valid JSON:
-{"title":"<analysis title>","overallRisk":"<LOW|MODERATE|HIGH|EXTREME>","marketRegime":"<RISK-ON|RISK-OFF|TRANSITION|CRISIS>","executiveSummary":"<3-4 sentences>","bookPlay":{"currentBook":"<dominant market narrative — e.g. STAGFLATION PLAYBOOK|OIL DEMAND SURGE|RISK-OFF CASH RUSH|INFLATIONARY SUPPLY SHOCK|DOLLAR WRECKING BALL|CREDIT CRUNCH|SOFT LANDING|HARD LANDING|CARRY TRADE UNWIND|GEOPOLITICAL RISK PREMIUM>","description":"<2-3 sentences: what narrative is driving markets RIGHT NOW, why it started, and how it is playing out across assets>","phase":"<EARLY|DEVELOPING|MATURE|EXHAUSTION>","historicalParallel":"<which historical period this most closely resembles and what eventually happened>","keyDrivers":["<d1>","<d2>","<d3>"],"impliedRotations":{"buying":["<asset/sector being accumulated>","<asset2>"],"selling":["<asset/sector being dumped>","<asset2>"],"watching":["<on-deck asset — may move next>"]}},"moneyFlowRotation":{"primaryFlow":"<FROM: X → TO: Y — 1 sentence explaining the institutional rotation>","institutionalBias":"<what large funds, hedge funds, CBs are doing>","retailVsInst":"<divergence or alignment between retail and institutional positioning>","sectorRotation":"<which sectors getting inflows and outflows right now>","assetClassRanking":["<#1 most favored asset class right now>","<#2>","<#3>","<#4>","<#5 least favored — avoid>"],"weeklySetup":"<3-4 sentences: what specifically to watch next week, key data releases and catalysts, how to position heading into next week, what event would change the thesis>"},"riskScenarios":[{"id":<1-5>,"category":"<GEOPOLITICAL|MONETARY|CREDIT|LIQUIDITY|GROWTH|INFLATION|ENERGY|CURRENCY>","title":"<n>","probabilityPct":<0-100>,"status":"<ACTIVE|WATCH|DORMANT>","description":"<2-3 sentences>","triggerEvents":["<e1>","<e2>"],"marketImpact":{"equities":"<BULLISH|BEARISH|NEUTRAL> — <why>","gold":"<BULLISH|BEARISH|NEUTRAL> — <why>","oil":"<BULLISH|BEARISH|NEUTRAL> — <why>","dxy":"<BULLISH|BEARISH|NEUTRAL> — <why>","bonds":"<BULLISH|BEARISH|NEUTRAL> — <why>"},"historicalAnalog":"<historical event and outcome>","timeline":"<timeframe>"}],"timelineOutlook":{"week":"<next 7 days>","month":"<next 30 days>","quarter":"<next 90 days>","year":"<12 month thesis>"},"historicPatterns":[{"pattern":"<n>","currentMatch":"<match>","historicalOutcome":"<outcome>","impliedMove":"<implied>"},{"pattern":"<n2>","currentMatch":"<m>","historicalOutcome":"<o>","impliedMove":"<i>"}],"moneyFlowAnalysis":"<3-4 sentences on institutional money movement>","keyWatchlist":[{"instrument":"<sym>","signal":"<watch>","threshold":"<level>","implication":"<means>"},{"instrument":"<s2>","signal":"<w>","threshold":"<l>","implication":"<m>"},{"instrument":"<s3>","signal":"<w2>","threshold":"<l2>","implication":"<m2>"}],"traderActionPlan":"<4-5 sentences: specific trades, sizing guidance, what to buy/sell/avoid this week>"}
-Provide exactly 5 riskScenarios ordered by probability. Identify the dominant market book play with precision — name the exact narrative (e.g. Stagflation Playbook, Oil Demand Surge + Cash Rush, etc). Make weeklySetup highly specific and actionable for next week.`;
+const MACRO_SYS=`You are a world-class macro strategist, financial historian, quant analyst and trading desk head. Respond ONLY with valid JSON:
+{"title":"<analysis title>","overallRisk":"<LOW|MODERATE|HIGH|EXTREME>","marketRegime":"<RISK-ON|RISK-OFF|TRANSITION|CRISIS>","executiveSummary":"<3-4 sentences>","bookPlay":{"currentBook":"<dominant market narrative — e.g. STAGFLATION PLAYBOOK|OIL DEMAND SURGE|RISK-OFF CASH RUSH|INFLATIONARY SUPPLY SHOCK|DOLLAR WRECKING BALL|CREDIT CRUNCH|SOFT LANDING|HARD LANDING|CARRY TRADE UNWIND|GEOPOLITICAL RISK PREMIUM>","description":"<2-3 sentences: what narrative is driving markets RIGHT NOW, why it started, and how it is playing out across assets>","phase":"<EARLY|DEVELOPING|MATURE|EXHAUSTION>","historicalParallel":"<which historical period this most closely resembles and what eventually happened>","keyDrivers":["<d1>","<d2>","<d3>"],"impliedRotations":{"buying":["<asset/sector being accumulated>","<asset2>"],"selling":["<asset/sector being dumped>","<asset2>"],"watching":["<on-deck asset — may move next>"]}},"probabilityMatrix":{"methodology":"<1 sentence: basis for probability estimates — macro fundamentals, positioning, historical base rates>","timeHorizon":"<e.g. 3 months>","distributionType":"<NORMAL|FAT-TAIL|BIMODAL>","tailRiskNote":"<1-2 sentences: why tail risk is elevated or suppressed right now>","scenarios":[{"name":"<scenario name e.g. Soft Landing|Stagflation|Hard Landing|Geopolitical Shock|Deflation Scare>","type":"<BULL|BASE|BEAR|CRISIS|BLACK_SWAN>","probability":<0-100>,"description":"<2 sentences>","keyAssets":{"gold":"<BULLISH|BEARISH|NEUTRAL>","equities":"<BULLISH|BEARISH|NEUTRAL>","dxy":"<BULLISH|BEARISH|NEUTRAL>","bonds":"<BULLISH|BEARISH|NEUTRAL>","oil":"<BULLISH|BEARISH|NEUTRAL>"},"triggerConditions":["<c1>","<c2>"],"timeline":"<e.g. 1-3 months>"}],"cashRushScenario":{"probability":<0-100>,"phase":"<NOT STARTED|EARLY|DEVELOPING|ADVANCED>","isActive":<true|false>,"description":"<2 sentences: what cash rush looks like in current context — investors liquidating assets for USD/cash/T-bills>","triggers":["<specific trigger 1>","<specific trigger 2>","<specific trigger 3>"],"assetFlow":"<FROM: what assets are being sold → TO: where cash is going>","leadingIndicators":["<indicator currently showing stress>","<indicator2>"],"historicalAnalog":"<e.g. March 2020, 2008 Lehman, Sept 2022>","estimatedDuration":"<how long this phase typically lasts>","traderNote":"<1 sentence: how to position if this hits>"},"dollarDistrustScenario":{"probability":<0-100>,"phase":"<NOT STARTED|EARLY|DEVELOPING|ADVANCED>","isActive":<true|false>,"description":"<2 sentences: what dollar distrust/de-dollarization looks like and what drives it>","triggers":["<specific trigger 1>","<specific trigger 2>","<specific trigger 3>"],"assetFlow":"<FROM: USD-denominated assets → TO: gold, commodities, other currencies, BTC>","leadingIndicators":["<indicator1>","<indicator2>"],"historicalAnalog":"<e.g. 1971 Nixon shock, late 1970s dollar crisis>","estimatedDuration":"<months or years>","traderNote":"<1 sentence: how to position if this hits>"},"blackSwanEvents":[{"event":"<specific plausible black swan — e.g. China invades Taiwan, US debt default, Major bank collapse, Pandemic outbreak, Nuclear escalation>","category":"<GEOPOLITICAL|FINANCIAL|NATURAL|POLICY|PANDEMIC>","probability":<0-10>,"impactSeverity":"<HIGH|EXTREME|CATASTROPHIC>","marketShock":"<equities -X%, gold +Y%, oil +/-Z%>","timeToRecover":"<estimated recovery timeline>"},{"event":"<second black swan>","category":"<cat>","probability":<0-10>,"impactSeverity":"<HIGH|EXTREME|CATASTROPHIC>","marketShock":"<shock estimates>","timeToRecover":"<timeline>"},{"event":"<third black swan>","category":"<cat>","probability":<0-10>,"impactSeverity":"<HIGH|EXTREME|CATASTROPHIC>","marketShock":"<shock>","timeToRecover":"<timeline>"}]},"moneyFlowRotation":{"primaryFlow":"<FROM: X → TO: Y — 1 sentence explaining the institutional rotation>","institutionalBias":"<what large funds, hedge funds, CBs are doing>","retailVsInst":"<divergence or alignment between retail and institutional positioning>","sectorRotation":"<which sectors getting inflows and outflows right now>","assetClassRanking":["<#1 most favored asset class right now>","<#2>","<#3>","<#4>","<#5 least favored — avoid>"],"weeklySetup":"<3-4 sentences: what specifically to watch next week, key data releases and catalysts, how to position heading into next week, what event would change the thesis>"},"riskScenarios":[{"id":<1-5>,"category":"<GEOPOLITICAL|MONETARY|CREDIT|LIQUIDITY|GROWTH|INFLATION|ENERGY|CURRENCY>","title":"<n>","probabilityPct":<0-100>,"status":"<ACTIVE|WATCH|DORMANT>","description":"<2-3 sentences>","triggerEvents":["<e1>","<e2>"],"marketImpact":{"equities":"<BULLISH|BEARISH|NEUTRAL> — <why>","gold":"<BULLISH|BEARISH|NEUTRAL> — <why>","oil":"<BULLISH|BEARISH|NEUTRAL> — <why>","dxy":"<BULLISH|BEARISH|NEUTRAL> — <why>","bonds":"<BULLISH|BEARISH|NEUTRAL> — <why>"},"historicalAnalog":"<historical event and outcome>","timeline":"<timeframe>"}],"timelineOutlook":{"week":"<next 7 days>","month":"<next 30 days>","quarter":"<next 90 days>","year":"<12 month thesis>"},"historicPatterns":[{"pattern":"<n>","currentMatch":"<match>","historicalOutcome":"<outcome>","impliedMove":"<implied>"},{"pattern":"<n2>","currentMatch":"<m>","historicalOutcome":"<o>","impliedMove":"<i>"}],"moneyFlowAnalysis":"<3-4 sentences on institutional money movement>","keyWatchlist":[{"instrument":"<sym>","signal":"<watch>","threshold":"<level>","implication":"<means>"},{"instrument":"<s2>","signal":"<w>","threshold":"<l>","implication":"<m>"},{"instrument":"<s3>","signal":"<w2>","threshold":"<l2>","implication":"<m2>"}],"traderActionPlan":"<4-5 sentences: specific trades, sizing guidance, what to buy/sell/avoid this week>"}
+Provide exactly 5 riskScenarios ordered by probability. Scenarios in probabilityMatrix must sum to 100%. Provide exactly 3 blackSwanEvents (probability 0-10% each). Rate cashRushScenario and dollarDistrustScenario probability independently (not part of the 100% sum — these are conditional probabilities). Be precise and specific about current market conditions.`;
 
 const BRIEF_SYS=`You are a senior macro strategist at a top-tier investment bank with access to live market data and current news. Generate a comprehensive Goldman Sachs-style market brief.
 
@@ -371,14 +371,14 @@ export default function Auxiron(){
     var msg="LIVE MARKET DATA:\n"+getSnap()+
       "\n\nToday: "+new Date().toDateString()+
       "\n\nMACRO ANALYSIS REQUEST:\n"+baseRequest+
-      "\n\nIMPORTANT — include ALL of the following in your analysis:\n"+
-      "1. MARKET BOOK PLAY: Identify the dominant market narrative right now (e.g. Stagflation Playbook, Oil Demand Surge + Cash Rush, Risk-Off, etc). Specify phase (Early/Developing/Mature/Exhaustion), what is being bought/sold, and historical parallel.\n"+
-      "2. MONEY FLOW ROTATION: Where is institutional money moving? What asset class ranking right now? Sector inflows/outflows?\n"+
-      "3. WEEKLY SETUP: What are the 3-4 key events/catalysts next week? How should a trader position heading into next week? What would change the thesis?\n"+
-      "4. RISK SCENARIOS: 5 scenarios with probabilities, triggers, and cross-asset impact.\n"+
-      "5. TRADER ACTION PLAN: Specific, actionable trades for this week.";
+      "\n\nANALYSIS REQUIREMENTS — include ALL sections:\n"+
+      "1. MARKET BOOK PLAY: Name the exact dominant narrative. Phase. What's being bought/sold. Historical parallel.\n"+
+      "2. PROBABILITY DISTRIBUTION MATRIX: Rate all macro scenarios with probabilities summing to 100%. Include 3+ main scenarios (Soft Landing, Stagflation, Hard Landing, Black Swan, etc). Provide CASH RUSH SCENARIO probability (independently rated 0-100%) — are investors running for cash right now? What phase is it? What are the triggers and asset flows? Provide DOLLAR DISTRUST SCENARIO probability (independently rated 0-100%) — is confidence in the USD eroding? What drives it? List 3 BLACK SWAN events with probability, market shock estimate, and recovery timeline.\n"+
+      "3. MONEY FLOW ROTATION: Institutional flows, asset class ranking, sector rotation, weekly setup.\n"+
+      "4. RISK SCENARIOS: Exactly 5 scenarios with probabilities, triggers, cross-asset impact.\n"+
+      "5. TRADER ACTION PLAN: Specific, actionable trades for this week with sizing guidance.";
     callProxy(
-      {model:"claude-haiku-4-5",max_tokens:4000,system:MACRO_SYS,
+      {model:"claude-haiku-4-5",max_tokens:5000,system:MACRO_SYS,
        messages:[{role:"user",content:msg}]},
       function(res){setMacroAnalysis(res);setMacroLoading(false);setMacroErr(null);},
       function(e){setMacroErr("Failed: "+e);setMacroLoading(false);}
@@ -1075,6 +1075,180 @@ export default function Auxiron(){
                 <div style={{fontSize:12,color:C.txt0,lineHeight:1.8}}>{macroAnalysis.moneyFlowRotation.weeklySetup}</div>
               </div>}
             </div>}
+
+            {macroAnalysis.probabilityMatrix&&(function(){
+              var pm=macroAnalysis.probabilityMatrix;
+              var scTypeClr=function(t:string){return t==="BULL"?C.up:t==="BASE"?C.blue:t==="BEAR"?C.amber:t==="CRISIS"?C.dn:"#ff1840";};
+              var scTypeBg=function(t:string){return t==="BULL"?"rgba(40,204,120,0.08)":t==="BASE"?"rgba(72,144,248,0.08)":t==="BEAR"?"rgba(240,144,32,0.08)":t==="CRISIS"?"rgba(240,64,64,0.08)":"rgba(255,24,64,0.06)";};
+              var sevClr=function(s:string){return s==="CATASTROPHIC"?"#ff1840":s==="EXTREME"?C.dn:C.amber;};
+              return <div style={{marginBottom:10}}>
+                <div style={{background:C.bg1,border:"1px solid "+C.border2,borderRadius:12,padding:"14px",marginBottom:10}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
+                    <div>
+                      <div style={{fontSize:10,color:C.blue,letterSpacing:".12em",fontWeight:700,marginBottom:2}}>⬡ PROBABILITY DISTRIBUTION MATRIX</div>
+                      <div style={{fontSize:9,color:C.txt3}}>{pm.timeHorizon||"3-month"} horizon · {pm.distributionType||"FAT-TAIL"} distribution</div>
+                    </div>
+                    {pm.distributionType&&<span style={{fontSize:8,fontWeight:700,padding:"3px 8px",borderRadius:4,
+                      color:pm.distributionType==="FAT-TAIL"?C.dn:pm.distributionType==="BIMODAL"?C.amber:C.txt2,
+                      background:pm.distributionType==="FAT-TAIL"?"rgba(240,64,64,0.1)":pm.distributionType==="BIMODAL"?"rgba(240,144,32,0.1)":"rgba(72,96,128,0.1)",
+                      border:"1px solid "+(pm.distributionType==="FAT-TAIL"?"rgba(240,64,64,0.3)":pm.distributionType==="BIMODAL"?"rgba(240,144,32,0.3)":C.border)
+                    }}>{pm.distributionType}</span>}
+                  </div>
+
+                  {pm.tailRiskNote&&<div style={{background:"rgba(240,64,64,0.06)",border:"1px solid rgba(240,64,64,0.18)",borderRadius:7,padding:"7px 10px",marginBottom:10}}>
+                    <span style={{fontSize:9,color:C.dn,fontWeight:600}}>⚡ TAIL RISK: </span>
+                    <span style={{fontSize:10,color:C.txt1}}>{pm.tailRiskNote}</span>
+                  </div>}
+
+                  {pm.scenarios&&pm.scenarios.length>0&&<div style={{marginBottom:4}}>
+                    <div style={{fontSize:9,color:C.txt3,letterSpacing:".1em",marginBottom:8}}>SCENARIO PROBABILITY DISTRIBUTION</div>
+                    {pm.scenarios.map(function(sc:any,i:number){
+                      var clr=scTypeClr(sc.type);var bg=scTypeBg(sc.type);
+                      return <div key={i} style={{marginBottom:8}}>
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
+                          <div style={{display:"flex",alignItems:"center",gap:7}}>
+                            <span style={{fontSize:10,fontWeight:600,color:clr,minWidth:14,textAlign:"center"}}>
+                              {sc.type==="BULL"?"▲":sc.type==="BASE"?"◆":sc.type==="BEAR"?"▼":sc.type==="CRISIS"?"⚠":"☠"}
+                            </span>
+                            <span style={{fontSize:11,fontWeight:500,color:C.txt0}}>{sc.name}</span>
+                            <span style={{fontSize:8,color:clr,background:bg,border:"1px solid "+clr+"33",borderRadius:3,padding:"1px 5px"}}>{sc.type}</span>
+                          </div>
+                          <div style={{textAlign:"right"}}>
+                            <span style={{fontFamily:"'Syne',sans-serif",fontSize:14,fontWeight:700,color:clr}}>{sc.probability}%</span>
+                            {sc.timeline&&<div style={{fontSize:8,color:C.txt3}}>{sc.timeline}</div>}
+                          </div>
+                        </div>
+                        <div style={{position:"relative",height:6,background:C.bg2,borderRadius:3,overflow:"hidden",marginBottom:3}}>
+                          <div style={{width:sc.probability+"%",height:"100%",background:clr,borderRadius:3,transition:"width 0.5s ease",opacity:0.75}}></div>
+                        </div>
+                        {sc.description&&<div style={{fontSize:10,color:C.txt2,lineHeight:1.5,marginLeft:21}}>{sc.description}</div>}
+                        {sc.keyAssets&&<div style={{display:"flex",gap:4,flexWrap:"wrap",marginTop:4,marginLeft:21}}>
+                          {Object.entries(sc.keyAssets).map(function([k,v]:any){
+                            var vc=v==="BULLISH"?C.up:v==="BEARISH"?C.dn:C.txt3;
+                            return <span key={k} style={{fontSize:8,color:vc,background:"rgba(0,0,0,0.25)",border:"1px solid "+vc+"30",borderRadius:3,padding:"1px 5px"}}>{k.toUpperCase()} {v==="BULLISH"?"↑":v==="BEARISH"?"↓":"→"}</span>;
+                          })}
+                        </div>}
+                      </div>;
+                    })}
+                  </div>}
+
+                  {pm.methodology&&<div style={{fontSize:9,color:C.txt3,fontStyle:"italic",borderTop:"1px solid "+C.border,paddingTop:7,marginTop:7}}>Methodology: {pm.methodology}</div>}
+                </div>
+
+                {pm.cashRushScenario&&(function(){
+                  var cr=pm.cashRushScenario;
+                  var pClr=cr.probability>=60?C.dn:cr.probability>=35?C.amber:C.up;
+                  return <div style={{background:"rgba(240,64,64,0.06)",border:"2px solid rgba(240,64,64,"+(cr.isActive?"0.5":"0.22")+")",borderRadius:12,padding:"13px",marginBottom:10}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+                      <div>
+                        <div style={{fontSize:9,color:C.dn,letterSpacing:".12em",fontWeight:700,marginBottom:2}}>💵 CASH RUSH SCENARIO</div>
+                        <div style={{fontSize:9,color:C.txt3}}>Investors liquidating assets → USD cash / T-bills</div>
+                      </div>
+                      <div style={{textAlign:"right"}}>
+                        <div style={{fontFamily:"'Syne',sans-serif",fontSize:20,fontWeight:800,color:pClr}}>{cr.probability}%</div>
+                        <div style={{fontSize:8,color:cr.isActive?C.dn:C.txt3,fontWeight:cr.isActive?700:400}}>{cr.isActive?"● ACTIVE":"○ WATCH"}</div>
+                      </div>
+                    </div>
+                    <div style={{position:"relative",height:6,background:C.bg2,borderRadius:3,overflow:"hidden",marginBottom:8}}>
+                      <div style={{width:cr.probability+"%",height:"100%",background:pClr,borderRadius:3,opacity:0.8}}></div>
+                    </div>
+                    {cr.phase&&<div style={{display:"inline-block",fontSize:9,fontWeight:700,color:pClr,background:"rgba(240,64,64,0.1)",border:"1px solid rgba(240,64,64,0.3)",borderRadius:4,padding:"2px 8px",marginBottom:7}}>{cr.phase}</div>}
+                    <div style={{fontSize:12,color:C.txt0,lineHeight:1.7,marginBottom:8}}>{cr.description}</div>
+                    {cr.assetFlow&&<div style={{background:"rgba(0,0,0,0.3)",borderRadius:7,padding:"7px 10px",marginBottom:7}}>
+                      <div style={{fontSize:8,color:C.txt3,marginBottom:2}}>ASSET FLOW</div>
+                      <div style={{fontSize:11,color:C.dn}}>{cr.assetFlow}</div>
+                    </div>}
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:7}}>
+                      {cr.triggers&&cr.triggers.length>0&&<div style={{background:"rgba(0,0,0,0.2)",borderRadius:7,padding:"7px 9px"}}>
+                        <div style={{fontSize:8,color:C.txt3,letterSpacing:".08em",marginBottom:4}}>TRIGGERS</div>
+                        {cr.triggers.map(function(t:string,i:number){return <div key={i} style={{fontSize:9,color:C.txt1,marginBottom:2}}>→ {t}</div>;})}
+                      </div>}
+                      {cr.leadingIndicators&&cr.leadingIndicators.length>0&&<div style={{background:"rgba(0,0,0,0.2)",borderRadius:7,padding:"7px 9px"}}>
+                        <div style={{fontSize:8,color:C.txt3,letterSpacing:".08em",marginBottom:4}}>WATCH FOR</div>
+                        {cr.leadingIndicators.map(function(ind:string,i:number){return <div key={i} style={{fontSize:9,color:C.amber,marginBottom:2}}>◉ {ind}</div>;})}
+                      </div>}
+                    </div>
+                    {cr.historicalAnalog&&<div style={{fontSize:9,color:C.txt2,marginBottom:cr.traderNote?5:0}}>📚 Analog: {cr.historicalAnalog}{cr.estimatedDuration?" · "+cr.estimatedDuration:""}</div>}
+                    {cr.traderNote&&<div style={{background:"rgba(240,64,64,0.08)",borderRadius:6,padding:"6px 9px",fontSize:10,color:C.txt0}}>◈ {cr.traderNote}</div>}
+                  </div>;
+                })()}
+
+                {pm.dollarDistrustScenario&&(function(){
+                  var dd=pm.dollarDistrustScenario;
+                  var pClr=dd.probability>=50?C.amber:dd.probability>=25?C.gold:C.up;
+                  return <div style={{background:"rgba(240,144,32,0.06)",border:"2px solid rgba(240,144,32,"+(dd.isActive?"0.5":"0.22")+")",borderRadius:12,padding:"13px",marginBottom:10}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+                      <div>
+                        <div style={{fontSize:9,color:C.amber,letterSpacing:".12em",fontWeight:700,marginBottom:2}}>⚡ DOLLAR DISTRUST SCENARIO</div>
+                        <div style={{fontSize:9,color:C.txt3}}>USD confidence erosion · De-dollarization · Reserve status risk</div>
+                      </div>
+                      <div style={{textAlign:"right"}}>
+                        <div style={{fontFamily:"'Syne',sans-serif",fontSize:20,fontWeight:800,color:pClr}}>{dd.probability}%</div>
+                        <div style={{fontSize:8,color:dd.isActive?C.amber:C.txt3,fontWeight:dd.isActive?700:400}}>{dd.isActive?"● ACTIVE":"○ WATCH"}</div>
+                      </div>
+                    </div>
+                    <div style={{position:"relative",height:6,background:C.bg2,borderRadius:3,overflow:"hidden",marginBottom:8}}>
+                      <div style={{width:dd.probability+"%",height:"100%",background:pClr,borderRadius:3,opacity:0.8}}></div>
+                    </div>
+                    {dd.phase&&<div style={{display:"inline-block",fontSize:9,fontWeight:700,color:pClr,background:"rgba(240,144,32,0.1)",border:"1px solid rgba(240,144,32,0.3)",borderRadius:4,padding:"2px 8px",marginBottom:7}}>{dd.phase}</div>}
+                    <div style={{fontSize:12,color:C.txt0,lineHeight:1.7,marginBottom:8}}>{dd.description}</div>
+                    {dd.assetFlow&&<div style={{background:"rgba(0,0,0,0.3)",borderRadius:7,padding:"7px 10px",marginBottom:7}}>
+                      <div style={{fontSize:8,color:C.txt3,marginBottom:2}}>ASSET FLOW</div>
+                      <div style={{fontSize:11,color:C.amber}}>{dd.assetFlow}</div>
+                    </div>}
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:7}}>
+                      {dd.triggers&&dd.triggers.length>0&&<div style={{background:"rgba(0,0,0,0.2)",borderRadius:7,padding:"7px 9px"}}>
+                        <div style={{fontSize:8,color:C.txt3,letterSpacing:".08em",marginBottom:4}}>TRIGGERS</div>
+                        {dd.triggers.map(function(t:string,i:number){return <div key={i} style={{fontSize:9,color:C.txt1,marginBottom:2}}>→ {t}</div>;})}
+                      </div>}
+                      {dd.leadingIndicators&&dd.leadingIndicators.length>0&&<div style={{background:"rgba(0,0,0,0.2)",borderRadius:7,padding:"7px 9px"}}>
+                        <div style={{fontSize:8,color:C.txt3,letterSpacing:".08em",marginBottom:4}}>WATCH FOR</div>
+                        {dd.leadingIndicators.map(function(ind:string,i:number){return <div key={i} style={{fontSize:9,color:C.gold,marginBottom:2}}>◉ {ind}</div>;})}
+                      </div>}
+                    </div>
+                    {dd.historicalAnalog&&<div style={{fontSize:9,color:C.txt2,marginBottom:dd.traderNote?5:0}}>📚 Analog: {dd.historicalAnalog}{dd.estimatedDuration?" · "+dd.estimatedDuration:""}</div>}
+                    {dd.traderNote&&<div style={{background:"rgba(240,144,32,0.08)",borderRadius:6,padding:"6px 9px",fontSize:10,color:C.txt0}}>◈ {dd.traderNote}</div>}
+                  </div>;
+                })()}
+
+                {pm.blackSwanEvents&&pm.blackSwanEvents.length>0&&<div style={{background:C.bg1,border:"1px solid rgba(255,24,64,0.2)",borderRadius:12,padding:"13px",marginBottom:10}}>
+                  <div style={{fontSize:10,color:"#ff1840",letterSpacing:".12em",fontWeight:700,marginBottom:8}}>☠ BLACK SWAN EVENT PROBABILITIES</div>
+                  <div style={{display:"grid",gap:7}}>
+                    {pm.blackSwanEvents.map(function(ev:any,i:number){
+                      var sc=sevClr(ev.impactSeverity);
+                      return <div key={i} style={{background:"rgba(0,0,0,0.35)",border:"1px solid rgba(255,24,64,0.15)",borderRadius:9,padding:"10px 12px"}}>
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:5}}>
+                          <div style={{flex:1}}>
+                            <div style={{fontSize:11,fontWeight:600,color:C.txt0,marginBottom:2}}>{ev.event}</div>
+                            <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
+                              {ev.category&&<span style={{fontSize:8,color:C.txt3,background:"rgba(72,96,128,0.15)",border:"1px solid "+C.border,borderRadius:3,padding:"1px 5px"}}>{ev.category}</span>}
+                              {ev.impactSeverity&&<span style={{fontSize:8,color:sc,background:"rgba(0,0,0,0.25)",border:"1px solid "+sc+"44",borderRadius:3,padding:"1px 5px",fontWeight:700}}>{ev.impactSeverity}</span>}
+                            </div>
+                          </div>
+                          <div style={{textAlign:"right",flexShrink:0,marginLeft:8}}>
+                            <div style={{fontFamily:"'Syne',sans-serif",fontSize:16,fontWeight:800,color:"#ff1840"}}>{ev.probability}%</div>
+                            <div style={{fontSize:8,color:C.txt3}}>probability</div>
+                          </div>
+                        </div>
+                        <div style={{position:"relative",height:4,background:C.bg2,borderRadius:2,overflow:"hidden",marginBottom:6}}>
+                          <div style={{width:(ev.probability*10)+"%",height:"100%",background:"#ff1840",borderRadius:2,opacity:0.6}}></div>
+                        </div>
+                        <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                          {ev.marketShock&&<div style={{flex:1}}>
+                            <div style={{fontSize:8,color:C.txt3,marginBottom:1}}>MARKET SHOCK</div>
+                            <div style={{fontSize:10,color:C.dn}}>{ev.marketShock}</div>
+                          </div>}
+                          {ev.timeToRecover&&<div>
+                            <div style={{fontSize:8,color:C.txt3,marginBottom:1}}>RECOVERY</div>
+                            <div style={{fontSize:10,color:C.txt2}}>{ev.timeToRecover}</div>
+                          </div>}
+                        </div>
+                      </div>;
+                    })}
+                  </div>
+                </div>}
+              </div>;
+            })()}
 
             {macroAnalysis.moneyFlowAnalysis&&<div style={{background:"rgba(200,168,64,0.07)",border:"1px solid rgba(200,168,64,0.2)",borderRadius:10,padding:"13px",marginBottom:10}}>
               <div style={{fontSize:10,color:C.gold,letterSpacing:".1em",marginBottom:6}}>💰 INSTITUTIONAL MONEY FLOW</div>
