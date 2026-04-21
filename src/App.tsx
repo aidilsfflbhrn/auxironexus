@@ -359,7 +359,7 @@ export default function Auxiron(){
       userContent="LIVE MARKET DATA:\n"+snap+"\n\nEVENT:\n"+inp;
     }
     callProxy(
-      {model:"claude-haiku-4-5",max_tokens:2000,system:AI_SYS,
+      {model:"claude-haiku-4-5",max_tokens:3500,system:AI_SYS,
        messages:[{role:"user",content:userContent}]},
       function(res){setResult(res);setHist(function(p){return[{headline:inp,result:res,ts:new Date()}].concat(p.slice(0,7));});setLoading(false);},
       function(e){setErr("Failed: "+e);setLoading(false);}
@@ -401,7 +401,7 @@ export default function Auxiron(){
       "5. TRADER ACTION PLAN: Specific, actionable trades for this week with sizing guidance.\n"+
       "6. EVENT RISK PROBABILITIES: For exactly 3 high-impact events scheduled this week or upcoming (e.g. CPI, FOMC, NFP, OPEC, geopolitical flashpoints), provide upside/base/downside probability outcomes (must sum to 100% per event) PLUS a separate black swan risk (0-10%). For each outcome show how it impacts gold, equities, DXY, and oil. This is the daily probability theory section — make it specific to actual upcoming events.";
     callProxy(
-      {model:"claude-sonnet-4-6",max_tokens:1800,system:MACRO_SYS,
+      {model:"claude-sonnet-4-6",max_tokens:3000,system:MACRO_SYS,
        messages:[{role:"user",content:msg}]},
       function(res){setMacroAnalysis(res);setMacroLoading(false);setMacroErr(null);},
       function(e){setMacroErr("Failed: "+e);setMacroLoading(false);}
