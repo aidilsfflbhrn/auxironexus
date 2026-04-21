@@ -33,24 +33,22 @@ export default async function handler(req, res) {
       headers["anthropic-beta"] = "web-search-2025-03-05";
     }
 
-    // Retry up to 3 times on overloaded errors
-    let data;
-    for (let attempt = 0; attempt <= 3; attempt++) {
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
+    // 1 retry on transient errors (429, 500, 504) — never retry 401/403/other
+    let response, data;
+    for (let attempt = 0; attempt <= 1; attempt++) {
+      response = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers,
         body: JSON.stringify(requestBody),
       });
       data = await response.json();
 
-      const isOverloaded = response.status === 529 ||
-        (data.error && data.error.type === "overloaded_error") ||
-        (data.type === "error" && data.error && data.error.type === "overloaded_error");
+      const retryable = response.status === 429 ||
+                        response.status === 500 ||
+                        response.status === 504;
 
-      if (!isOverloaded || attempt === 3) break;
-
-      // Exponential backoff: 2s, 4s, 6s
-      await new Promise(r => setTimeout(r, (attempt + 1) * 2000));
+      if (!retryable || attempt === 1) break;
+      await new Promise(r => setTimeout(r, 2000));
     }
 
     return res.status(200).json(data);
