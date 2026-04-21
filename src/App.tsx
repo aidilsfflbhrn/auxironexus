@@ -359,7 +359,7 @@ export default function Auxiron(){
       userContent="LIVE MARKET DATA:\n"+snap+"\n\nEVENT:\n"+inp;
     }
     callProxy(
-      {model:"claude-haiku-4-5",max_tokens:2500,system:AI_SYS,
+      {model:"claude-haiku-4-5",max_tokens:2000,system:AI_SYS,
        messages:[{role:"user",content:userContent}]},
       function(res){setResult(res);setHist(function(p){return[{headline:inp,result:res,ts:new Date()}].concat(p.slice(0,7));});setLoading(false);},
       function(e){setErr("Failed: "+e);setLoading(false);}
@@ -418,7 +418,7 @@ export default function Auxiron(){
       "\n\nSearch for: latest market news overnight geopolitical events Fed speakers US economic data today Gold Oil price drivers SPX NDX sector rotation mega-cap movers investor sentiment put call ratio market breadth institutional flows bank forecasts."+
       "\n\nGenerate a comprehensive "+label+" intelligence report with: overnight digest, geopolitical events, dynamic market movers (AI picks most relevant today), Fed watch, economic events SGT times, COMMODITIES DEEP DIVE (Gold + Oil each with what moving now + buy/sell rumor detection + risk scenarios + price targets + futures curve), INDICES DEEP DIVE (SPX + NDX each with what moving + rumor detection + top 5 mega-caps + sector rotation inflows/outflows + investor sentiment put/call breadth institutional vs retail), key levels, instrument bias, trade focus for tonight.";
     callProxy(
-      {model:"claude-sonnet-4-6",max_tokens:2000,system:INTEL_SYS,
+      {model:"claude-sonnet-4-20250514",max_tokens:2000,system:INTEL_SYS,
        messages:[{role:"user",content:msg}],
        useWebSearch:true},
       function(res){setIntel(res);setIntelLoading(false);setIntelErr(null);},
