@@ -60,8 +60,8 @@ const SAMPLES=[
 ];
 
 const AI_SYS=`You are an elite macro financial analyst and geopolitical strategist. Respond ONLY with valid JSON:
-{"impactScore":<0-100>,"impactLevel":"<NOISE|LOW|MODERATE|HIGH|CRITICAL>","marketSentiment":"<RISK-ON|RISK-OFF|NEUTRAL|MIXED>","sentimentShift":"<BULLISH|BEARISH|NEUTRAL>","immediateImpact":"<2-3 sentences>","moneyFlow":"<2 sentences on institutional money movement>","geopoliticalCascade":"<2-3 sentences: full transmission chain>","affectedInstruments":[{"symbol":"<sym>","direction":"<BULLISH|BEARISH|NEUTRAL>","confidence":<0-100>,"currentPrice":<number>,"targetLevel":<number>,"reason":"<one sentence>"}],"keyDrivers":["<d1>","<d2>","<d3>"],"edgeFinderOverride":{"triggered":<true|false>,"reason":"<why geopolitical conditions override scoring model>"},"edgeFinderCrossCheck":{"hasData":<true|false>,"cotAlignment":"<CONFIRMS|CONTRADICTS|MIXED|N/A>","cotNote":"<1-2 sentences: what COT data shows vs the event, or N/A>","setupAlignment":"<CONFIRMS|CONTRADICTS|MIXED|N/A>","setupNote":"<1-2 sentences: what top setups show vs event direction, or N/A>","keyContradiction":"<the single most important conflict between EdgeFinder data and the news event, or null>","resolution":"<2 sentences: how to reconcile conflicting signals, which to prioritize and why>","tradeVerdict":"<EDGEFINDER WINS|NEWS WINS|WAIT FOR CONFIRMATION|SPLIT — explain briefly>"},"scenarios":[{"type":"BEARISH_EXTREME","title":"<n>","probability":<0-100>,"timeline":"<e.g. 2-5 days>","description":"<2 sentences>","watchFor":"<trigger>","instruments":[{"symbol":"<sym>","move":"<e.g.+8%>"}]},{"type":"BASE_CASE","title":"<n>","probability":<0-100>,"timeline":"<e.g. 1-3 days>","description":"<2 sentences>","watchFor":"<trigger>","instruments":[{"symbol":"<sym>","move":"<e.g.+3%>"}]},{"type":"BULLISH_REVERSAL","title":"<n>","probability":<0-100>,"timeline":"<e.g. 1 week>","description":"<2 sentences>","watchFor":"<trigger>","instruments":[{"symbol":"<sym>","move":"<e.g.-2%>"}]}],"keyLevelsToWatch":[{"symbol":"<sym>","level":<number>,"significance":"<why critical now>"}],"traderNote":"<3-4 sentences actionable>","timeHorizon":"<INTRADAY|SHORT-TERM|MEDIUM-TERM|LONG-TERM>","nextCatalysts":["<event1>","<event2>"]}
-Probabilities sum to 100. List 3-5 affected instruments. List 3 key levels. Always explain full transmission chain. If EdgeFinder screenshots are attached, read the COT data, top setups, and any positioning data shown, then fill edgeFinderCrossCheck.hasData=true and provide a full cross-analysis highlighting contradictions. If no images provided, set hasData=false and all alignment fields to "N/A".`;
+{"impactScore":<0-100>,"impactLevel":"<NOISE|LOW|MODERATE|HIGH|CRITICAL>","marketSentiment":"<RISK-ON|RISK-OFF|NEUTRAL|MIXED>","sentimentShift":"<BULLISH|BEARISH|NEUTRAL>","immediateImpact":"<2-3 sentences>","moneyFlow":"<2 sentences on institutional money movement>","geopoliticalCascade":"<2-3 sentences: full transmission chain>","affectedInstruments":[{"symbol":"<sym>","direction":"<BULLISH|BEARISH|NEUTRAL>","confidence":<0-100>,"currentPrice":<number>,"targetLevel":<number>,"reason":"<one sentence>"}],"keyDrivers":["<d1>","<d2>","<d3>"],"edgeFinderOverride":{"triggered":<true|false>,"reason":"<why geopolitical conditions override scoring model>"},"scenarios":[{"type":"BEARISH_EXTREME","title":"<n>","probability":<0-100>,"timeline":"<e.g. 2-5 days>","description":"<2 sentences>","watchFor":"<trigger>","instruments":[{"symbol":"<sym>","move":"<e.g.+8%>"}]},{"type":"BASE_CASE","title":"<n>","probability":<0-100>,"timeline":"<e.g. 1-3 days>","description":"<2 sentences>","watchFor":"<trigger>","instruments":[{"symbol":"<sym>","move":"<e.g.+3%>"}]},{"type":"BULLISH_REVERSAL","title":"<n>","probability":<0-100>,"timeline":"<e.g. 1 week>","description":"<2 sentences>","watchFor":"<trigger>","instruments":[{"symbol":"<sym>","move":"<e.g.-2%>"}]}],"keyLevelsToWatch":[{"symbol":"<sym>","level":<number>,"significance":"<why critical now>"}],"traderNote":"<3-4 sentences actionable>","timeHorizon":"<INTRADAY|SHORT-TERM|MEDIUM-TERM|LONG-TERM>","nextCatalysts":["<event1>","<event2>"]}
+Probabilities sum to 100. List 3-5 affected instruments. List 3 key levels. Always explain full transmission chain.`;
 
 const CTX_SYS=`You are a professional macro market analyst. Respond ONLY with valid JSON:
 {"sessionBias":"<RISK-ON|RISK-OFF|NEUTRAL|MIXED>","sessionNote":"<2-3 sentences>","dxyDominance":{"status":"<LEADING|LAGGING|NEUTRAL>","analysis":"<2 sentences>","vsGold":"<INVERSE|CORRELATED|DECOUPLED>","vsBonds":"<1 sentence>"},"yieldCurve":{"status":"<NORMAL|INVERTED|FLATTENING|STEEPENING>","analysis":"<2 sentences>"},"moneyFlow":"<2 sentences on institutional positioning>","topMovers":[{"symbol":"<sym>","direction":"<BULLISH|BEARISH>","potentialMove":"<e.g.+2%>","reason":"<1 sentence>"}],"watchlist":[{"symbol":"<sym>","bias":"<BULLISH|BEARISH|NEUTRAL>","entryZone":"<price range>","reason":"<1 sentence>"}],"keyLevels":[{"symbol":"<sym>","level":<number>,"type":"<RESISTANCE|SUPPORT>","note":"<why>"}],"weeklyOutlook":"<2-3 sentences>","riskEvents":["<event1>","<event2>"],"goldBias":"<BULLISH|BEARISH|NEUTRAL>","oilOutlook":"<1 sentence>"}
@@ -78,9 +78,9 @@ Respond ONLY with valid JSON, no extra text:
 {"session":"<ASIA OPEN|LONDON OPEN|NY SESSION>","generatedAt":"<time SGT>","marketRegime":"<RISK-ON|RISK-OFF|NEUTRAL|MIXED>","headline":"<single most important market theme today>","overnightDigest":"<3-4 sentences: what happened overnight, key moves, why — reference actual events>","geopolitical":["<event1>","<event2>","<event3>"],"dynamicMovers":[{"symbol":"<sym>","name":"<name>","price":"<price>","change":"<+/-X.XX%>","dir":"<BULLISH|BEARISH>","why":"<2 sentences>","driver":"<key driver tag>"}],"fedWatch":{"speaker":"<name or NONE>","statement":"<what they said or current Fed stance>","marketRead":"<market interpretation>","impactGold":"<1 sentence>","impactDXY":"<1 sentence>"},"econ":[{"time":"<SGT time>","country":"<US|EUR|JPY|GBP>","event":"<name>","forecast":"<value>","prev":"<value>","impact":"<HIGH|MEDIUM|LOW>"}],"gold":{"price":"<price>","chg":"<change>","drivers":["<d1>","<d2>","<d3>","<d4>"],"rumor":{"phase":"<RUMOR|FACT REACTION|POST-FACT>","signal":"<specific signal name>","analysis":"<2-3 sentences>","analog":"<historical analog and outcome>","conviction":"<HIGH|MEDIUM|LOW>"},"scenarios":[{"s":"<scenario>","p":<probability>,"target":"<price range>","trigger":"<trigger event>","tf":"<timeframe>"}],"curve":{"signal":"<BACKWARDATION|CONTANGO|FLAT>","meaning":"<1 sentence>","impl":"<implication>"},"note":"<2-3 sentences actionable>"},"oil":{"price":"<price>","chg":"<change>","drivers":["<d1>","<d2>","<d3>","<d4>"],"rumor":{"phase":"<RUMOR|FACT REACTION|POST-FACT>","signal":"<signal>","analysis":"<2-3 sentences>","analog":"<historical analog>","conviction":"<HIGH|MEDIUM|LOW>"},"scenarios":[{"s":"<scenario>","p":<probability>,"target":"<price range>","trigger":"<trigger>","tf":"<timeframe>"}],"curve":{"signal":"<BACKWARDATION|CONTANGO|FLAT>","meaning":"<1 sentence>","impl":"<implication>"},"note":"<2-3 sentences actionable>"},"spx":{"price":"<price>","chg":"<change>","what":"<2 sentences what is moving SPX today>","rumor":{"phase":"<RUMOR|FACT REACTION|POST-FACT>","signal":"<signal>","analysis":"<2-3 sentences>","analog":"<historical analog>","conviction":"<HIGH|MEDIUM|LOW>"},"megacaps":[{"t":"<ticker>","w":"<index weight>","m":"<move today>","why":"<1 sentence>","sent":"<BULLISH|BEARISH|NEUTRAL>"}],"sectors":[{"s":"<sector>","c":"<change>","f":"<IN|OUT>","r":"<1 sentence reason>"}],"sentiment":{"pc":"<put/call ratio and interpretation>","breadth":"<advancing/declining and interpretation>","inst":"<institutional flow>","retail":"<retail sentiment AAII or similar>"},"note":"<2-3 sentences actionable>"},"ndx":{"price":"<price>","chg":"<change>","what":"<2 sentences>","rumor":{"phase":"<RUMOR|FACT REACTION|POST-FACT>","signal":"<signal>","analysis":"<2-3 sentences>","analog":"<historical analog>","conviction":"<HIGH|MEDIUM|LOW>"},"tech":[{"sub":"<subsector>","perf":"<performance>","leaders":"<key stocks>","note":"<1 sentence>"}],"instView":"<what major banks say about NDX/tech>","retailVsInst":"<retail vs institutional positioning>","note":"<2-3 sentences actionable>"},"keyLevels":[{"sym":"<sym>","s":<support>,"r":<resistance>,"note":"<why matters>"}],"bias":{"gold":"<BULLISH|BEARISH|NEUTRAL>","oil":"<BULLISH|BEARISH|NEUTRAL>","spx":"<BULLISH|BEARISH|NEUTRAL>","ndx":"<BULLISH|BEARISH|NEUTRAL>","dxy":"<BULLISH|BEARISH|NEUTRAL>","bonds":"<BULLISH|BEARISH|NEUTRAL>"},"tradeFocus":"<4-5 sentences: specific instruments, entry zones, what to avoid, key levels tonight>"}
 Provide 3 dynamicMovers, 3 geopolitical events, 3-4 econ events, 3-4 gold scenarios, 4 oil scenarios, 5 megacaps, 5-6 sector rotation entries, 4 key levels. Reference live prices throughout.`;
 
-const MACRO_SYS=`You are a world-class macro strategist, financial historian, quant analyst and trading desk head. Respond ONLY with valid JSON:
-{"title":"<analysis title>","overallRisk":"<LOW|MODERATE|HIGH|EXTREME>","marketRegime":"<RISK-ON|RISK-OFF|TRANSITION|CRISIS>","executiveSummary":"<3-4 sentences>","bookPlay":{"currentBook":"<dominant market narrative — e.g. STAGFLATION PLAYBOOK|OIL DEMAND SURGE|RISK-OFF CASH RUSH|INFLATIONARY SUPPLY SHOCK|DOLLAR WRECKING BALL|CREDIT CRUNCH|SOFT LANDING|HARD LANDING|CARRY TRADE UNWIND|GEOPOLITICAL RISK PREMIUM>","description":"<2-3 sentences: what narrative is driving markets RIGHT NOW, why it started, and how it is playing out across assets>","phase":"<EARLY|DEVELOPING|MATURE|EXHAUSTION>","historicalParallel":"<which historical period this most closely resembles and what eventually happened>","keyDrivers":["<d1>","<d2>","<d3>"],"impliedRotations":{"buying":["<asset/sector being accumulated>","<asset2>"],"selling":["<asset/sector being dumped>","<asset2>"],"watching":["<on-deck asset — may move next>"]}},"probabilityMatrix":{"methodology":"<1 sentence: basis for probability estimates — macro fundamentals, positioning, historical base rates>","timeHorizon":"<e.g. 3 months>","distributionType":"<NORMAL|FAT-TAIL|BIMODAL>","tailRiskNote":"<1-2 sentences: why tail risk is elevated or suppressed right now>","scenarios":[{"name":"<scenario name e.g. Soft Landing|Stagflation|Hard Landing|Geopolitical Shock|Deflation Scare>","type":"<BULL|BASE|BEAR|CRISIS|BLACK_SWAN>","probability":<0-100>,"description":"<2 sentences>","keyAssets":{"gold":"<BULLISH|BEARISH|NEUTRAL>","equities":"<BULLISH|BEARISH|NEUTRAL>","dxy":"<BULLISH|BEARISH|NEUTRAL>","bonds":"<BULLISH|BEARISH|NEUTRAL>","oil":"<BULLISH|BEARISH|NEUTRAL>"},"triggerConditions":["<c1>","<c2>"],"timeline":"<e.g. 1-3 months>"}],"cashRushScenario":{"probability":<0-100>,"phase":"<NOT STARTED|EARLY|DEVELOPING|ADVANCED>","isActive":<true|false>,"description":"<2 sentences: what cash rush looks like in current context — investors liquidating assets for USD/cash/T-bills>","triggers":["<specific trigger 1>","<specific trigger 2>","<specific trigger 3>"],"assetFlow":"<FROM: what assets are being sold → TO: where cash is going>","leadingIndicators":["<indicator currently showing stress>","<indicator2>"],"historicalAnalog":"<e.g. March 2020, 2008 Lehman, Sept 2022>","estimatedDuration":"<how long this phase typically lasts>","traderNote":"<1 sentence: how to position if this hits>"},"dollarDistrustScenario":{"probability":<0-100>,"phase":"<NOT STARTED|EARLY|DEVELOPING|ADVANCED>","isActive":<true|false>,"description":"<2 sentences: what dollar distrust/de-dollarization looks like and what drives it>","triggers":["<specific trigger 1>","<specific trigger 2>","<specific trigger 3>"],"assetFlow":"<FROM: USD-denominated assets → TO: gold, commodities, other currencies, BTC>","leadingIndicators":["<indicator1>","<indicator2>"],"historicalAnalog":"<e.g. 1971 Nixon shock, late 1970s dollar crisis>","estimatedDuration":"<months or years>","traderNote":"<1 sentence: how to position if this hits>"},"blackSwanEvents":[{"event":"<specific plausible black swan — e.g. China invades Taiwan, US debt default, Major bank collapse, Pandemic outbreak, Nuclear escalation>","category":"<GEOPOLITICAL|FINANCIAL|NATURAL|POLICY|PANDEMIC>","probability":<0-10>,"impactSeverity":"<HIGH|EXTREME|CATASTROPHIC>","marketShock":"<equities -X%, gold +Y%, oil +/-Z%>","timeToRecover":"<estimated recovery timeline>"},{"event":"<second black swan>","category":"<cat>","probability":<0-10>,"impactSeverity":"<HIGH|EXTREME|CATASTROPHIC>","marketShock":"<shock estimates>","timeToRecover":"<timeline>"},{"event":"<third black swan>","category":"<cat>","probability":<0-10>,"impactSeverity":"<HIGH|EXTREME|CATASTROPHIC>","marketShock":"<shock>","timeToRecover":"<timeline>"}]},"moneyFlowRotation":{"primaryFlow":"<FROM: X → TO: Y — 1 sentence explaining the institutional rotation>","institutionalBias":"<what large funds, hedge funds, CBs are doing>","retailVsInst":"<divergence or alignment between retail and institutional positioning>","sectorRotation":"<which sectors getting inflows and outflows right now>","assetClassRanking":["<#1 most favored asset class right now>","<#2>","<#3>","<#4>","<#5 least favored — avoid>"],"weeklySetup":"<3-4 sentences: what specifically to watch next week, key data releases and catalysts, how to position heading into next week, what event would change the thesis>"},"riskScenarios":[{"id":<1-5>,"category":"<GEOPOLITICAL|MONETARY|CREDIT|LIQUIDITY|GROWTH|INFLATION|ENERGY|CURRENCY>","title":"<n>","probabilityPct":<0-100>,"status":"<ACTIVE|WATCH|DORMANT>","description":"<2-3 sentences>","triggerEvents":["<e1>","<e2>"],"marketImpact":{"equities":"<BULLISH|BEARISH|NEUTRAL> — <why>","gold":"<BULLISH|BEARISH|NEUTRAL> — <why>","oil":"<BULLISH|BEARISH|NEUTRAL> — <why>","dxy":"<BULLISH|BEARISH|NEUTRAL> — <why>","bonds":"<BULLISH|BEARISH|NEUTRAL> — <why>"},"historicalAnalog":"<historical event and outcome>","timeline":"<timeframe>"}],"timelineOutlook":{"week":"<next 7 days>","month":"<next 30 days>","quarter":"<next 90 days>","year":"<12 month thesis>"},"historicPatterns":[{"pattern":"<n>","currentMatch":"<match>","historicalOutcome":"<outcome>","impliedMove":"<implied>"},{"pattern":"<n2>","currentMatch":"<m>","historicalOutcome":"<o>","impliedMove":"<i>"}],"moneyFlowAnalysis":"<3-4 sentences on institutional money movement>","keyWatchlist":[{"instrument":"<sym>","signal":"<watch>","threshold":"<level>","implication":"<means>"},{"instrument":"<s2>","signal":"<w>","threshold":"<l>","implication":"<m>"},{"instrument":"<s3>","signal":"<w2>","threshold":"<l2>","implication":"<m2>"}],"traderActionPlan":"<4-5 sentences: specific trades, sizing guidance, what to buy/sell/avoid this week>","eventRiskProbabilities":[{"event":"<specific event name e.g. US CPI April 2026 Release|FOMC Meeting|NFP Jobs Report|OPEC+ Meeting|Fed Chair Speech>","date":"<date or day e.g. Wed Apr 23>","type":"<CENTRAL_BANK|ECONOMIC_DATA|GEOPOLITICAL|ENERGY|POLICY|EARNINGS>","upside":{"outcome":"<better-than-expected scenario>","probability":<0-100>,"impact":{"gold":"<BULLISH|BEARISH|NEUTRAL>","equities":"<BULLISH|BEARISH|NEUTRAL>","dxy":"<BULLISH|BEARISH|NEUTRAL>","oil":"<BULLISH|BEARISH|NEUTRAL>"}},"baseCase":{"outcome":"<consensus/expected scenario>","probability":<0-100>,"impact":{"gold":"<BULLISH|BEARISH|NEUTRAL>","equities":"<BULLISH|BEARISH|NEUTRAL>","dxy":"<BULLISH|BEARISH|NEUTRAL>","oil":"<BULLISH|BEARISH|NEUTRAL>"}},"downside":{"outcome":"<worse-than-expected scenario>","probability":<0-100>,"impact":{"gold":"<BULLISH|BEARISH|NEUTRAL>","equities":"<BULLISH|BEARISH|NEUTRAL>","dxy":"<BULLISH|BEARISH|NEUTRAL>","oil":"<BULLISH|BEARISH|NEUTRAL>"}},"blackSwanRisk":{"outcome":"<extreme tail risk from this event>","probability":<0-10>,"impact":{"gold":"<BULLISH|BEARISH|NEUTRAL>","equities":"<BULLISH|BEARISH|NEUTRAL>","dxy":"<BULLISH|BEARISH|NEUTRAL>","oil":"<BULLISH|BEARISH|NEUTRAL>"}},"primaryImpactInstrument":"<the single most affected instrument e.g. XAU/USD>","traderNote":"<1 sentence actionable>"},{"event":"<second event>","date":"<date>","type":"<type>","upside":{"outcome":"<upside>","probability":<0-100>,"impact":{"gold":"<BULLISH|BEARISH|NEUTRAL>","equities":"<BULLISH|BEARISH|NEUTRAL>","dxy":"<BULLISH|BEARISH|NEUTRAL>","oil":"<BULLISH|BEARISH|NEUTRAL>"}},"baseCase":{"outcome":"<base>","probability":<0-100>,"impact":{"gold":"<BULLISH|BEARISH|NEUTRAL>","equities":"<BULLISH|BEARISH|NEUTRAL>","dxy":"<BULLISH|BEARISH|NEUTRAL>","oil":"<BULLISH|BEARISH|NEUTRAL>"}},"downside":{"outcome":"<down>","probability":<0-100>,"impact":{"gold":"<BULLISH|BEARISH|NEUTRAL>","equities":"<BULLISH|BEARISH|NEUTRAL>","dxy":"<BULLISH|BEARISH|NEUTRAL>","oil":"<BULLISH|BEARISH|NEUTRAL>"}},"blackSwanRisk":{"outcome":"<tail>","probability":<0-10>,"impact":{"gold":"<BULLISH|BEARISH|NEUTRAL>","equities":"<BULLISH|BEARISH|NEUTRAL>","dxy":"<BULLISH|BEARISH|NEUTRAL>","oil":"<BULLISH|BEARISH|NEUTRAL>"}},"primaryImpactInstrument":"<sym>","traderNote":"<1 sentence>"},{"event":"<third event>","date":"<date>","type":"<type>","upside":{"outcome":"<upside>","probability":<0-100>,"impact":{"gold":"<BULLISH|BEARISH|NEUTRAL>","equities":"<BULLISH|BEARISH|NEUTRAL>","dxy":"<BULLISH|BEARISH|NEUTRAL>","oil":"<BULLISH|BEARISH|NEUTRAL>"}},"baseCase":{"outcome":"<base>","probability":<0-100>,"impact":{"gold":"<BULLISH|BEARISH|NEUTRAL>","equities":"<BULLISH|BEARISH|NEUTRAL>","dxy":"<BULLISH|BEARISH|NEUTRAL>","oil":"<BULLISH|BEARISH|NEUTRAL>"}},"downside":{"outcome":"<down>","probability":<0-100>,"impact":{"gold":"<BULLISH|BEARISH|NEUTRAL>","equities":"<BULLISH|BEARISH|NEUTRAL>","dxy":"<BULLISH|BEARISH|NEUTRAL>","oil":"<BULLISH|BEARISH|NEUTRAL>"}},"blackSwanRisk":{"outcome":"<tail>","probability":<0-10>,"impact":{"gold":"<BULLISH|BEARISH|NEUTRAL>","equities":"<BULLISH|BEARISH|NEUTRAL>","dxy":"<BULLISH|BEARISH|NEUTRAL>","oil":"<BULLISH|BEARISH|NEUTRAL>"}},"primaryImpactInstrument":"<sym>","traderNote":"<1 sentence>"}]}
-Provide exactly 5 riskScenarios ordered by probability. Scenarios in probabilityMatrix must sum to 100%. Provide exactly 3 blackSwanEvents (probability 0-10% each). Rate cashRushScenario and dollarDistrustScenario probability independently (not part of the 100% sum — these are conditional probabilities). For eventRiskProbabilities provide exactly 3 upcoming critical events this week or month with upside/base/downside probabilities summing to 100% for each event plus a separate blackSwanRisk (0-10%). Be precise and specific about current market conditions.`;
+const MACRO_SYS=`You are a world-class macro strategist and financial historian. Respond ONLY with valid JSON:
+{"title":"<analysis title>","overallRisk":"<LOW|MODERATE|HIGH|EXTREME>","marketRegime":"<RISK-ON|RISK-OFF|TRANSITION|CRISIS>","executiveSummary":"<3-4 sentences>","riskScenarios":[{"id":<1-5>,"category":"<GEOPOLITICAL|MONETARY|CREDIT|LIQUIDITY|GROWTH|INFLATION|ENERGY|CURRENCY>","title":"<n>","probabilityPct":<0-100>,"status":"<ACTIVE|WATCH|DORMANT>","description":"<2-3 sentences>","triggerEvents":["<e1>","<e2>"],"marketImpact":{"equities":"<BULLISH|BEARISH|NEUTRAL> — <why>","gold":"<BULLISH|BEARISH|NEUTRAL> — <why>","oil":"<BULLISH|BEARISH|NEUTRAL> — <why>","dxy":"<BULLISH|BEARISH|NEUTRAL> — <why>","bonds":"<BULLISH|BEARISH|NEUTRAL> — <why>"},"historicalAnalog":"<historical event and outcome>","timeline":"<timeframe>"}],"timelineOutlook":{"week":"<next 7 days>","month":"<next 30 days>","quarter":"<next 90 days>","year":"<12 month thesis>"},"historicPatterns":[{"pattern":"<n>","currentMatch":"<match>","historicalOutcome":"<outcome>","impliedMove":"<implied>"},{"pattern":"<n2>","currentMatch":"<m>","historicalOutcome":"<o>","impliedMove":"<i>"}],"moneyFlowAnalysis":"<3-4 sentences>","keyWatchlist":[{"instrument":"<sym>","signal":"<watch>","threshold":"<level>","implication":"<means>"},{"instrument":"<s2>","signal":"<w>","threshold":"<l>","implication":"<m>"},{"instrument":"<s3>","signal":"<w2>","threshold":"<l2>","implication":"<m2>"}],"traderActionPlan":"<4-5 sentences>"}
+Provide exactly 5 riskScenarios ordered by probability.`;
 
 const BRIEF_SYS=`You are a senior macro strategist at a top-tier investment bank with access to live market data and current news. Generate a comprehensive Goldman Sachs-style market brief.
 
@@ -103,15 +103,19 @@ function genFB(base,vol,pts){
   pts=pts||48;var data=[];var now=Date.now();
   // Generate realistic daily-style price movement
   // Daily range: instruments move 0.3%-2% on a typical day
-  var dailyRange=Math.max(vol*2, 0.002);
+  var dailyRange=Math.max(vol*3, 0.003); // minimum 0.3% daily range
+  // Random overall trend for the period: bullish or bearish
   var trendDir=Math.random()>0.5?1:-1;
   var trendStrength=dailyRange*(0.3+Math.random()*0.7);
+  // Start price offset from base
   var startPct=trendDir*(-trendStrength*0.8);
   var p=base*(1+startPct);
   var momentum=0;
   for(var i=0;i<pts;i++){
-    momentum=momentum*0.92+(Math.random()-0.5)*dailyRange*0.12;
-    var maxMom=dailyRange*0.3;
+    // Add momentum (trending behaviour)
+    momentum=momentum*0.85+(Math.random()-0.48)*dailyRange*0.4;
+    // Cap momentum so it doesn't run away
+    var maxMom=dailyRange*0.6;
     if(momentum>maxMom)momentum=maxMom;
     if(momentum<-maxMom)momentum=-maxMom;
     // Apply move
@@ -141,32 +145,19 @@ function callProxy(body,onSuccess,onError){
   var xhr=new XMLHttpRequest();
   xhr.open("POST","/api/analyze",true);
   xhr.setRequestHeader("Content-Type","application/json");
-  xhr.timeout=body.useWebSearch?90000:55000;
+  xhr.timeout=58000;
   xhr.onload=function(){
     try{
-      var raw=(xhr.responseText||"").trim();
-      if(!raw.startsWith("{")&&!raw.startsWith("[")){
-        onError("Server error (timeout or gateway): "+raw.slice(0,180));return;
-      }
-      var d=JSON.parse(raw);
-      if(d.error){
-        var eType=d.error&&d.error.type;
-        var eMsg=eType==="overloaded_error"?"Anthropic API overloaded — please try again in 1–2 min":
-          eType==="rate_limit_error"?"Rate limit hit — please wait 30 seconds and retry":
-          typeof d.error==="string"?d.error:JSON.stringify(d.error);
-        onError(eMsg);return;
-      }
+      var d=JSON.parse(xhr.responseText);
+      if(d.error){onError(typeof d.error==="string"?d.error:JSON.stringify(d.error));return;}
       var txt=(d.content||[]).map(function(x){return x.type==="text"?x.text:"";}).join("");
-      if(!txt){onError("Empty response — web search may be unavailable, retry");return;}
+      if(!txt){onError("Empty response");return;}
       var clean=txt.split("```json").join("").split("```").join("").trim();
-      var s=clean.indexOf("{"),ef=clean.lastIndexOf("}");
-      if(s!==-1&&ef>s){clean=clean.slice(s,ef+1);}
-      else{onError("AI returned plain text instead of JSON: "+clean.slice(0,160)+"…");return;}
       onSuccess(JSON.parse(clean));
     }catch(e){onError("Parse error: "+e.message);}
   };
   xhr.onerror=function(){onError("Network error");};
-  xhr.ontimeout=function(){onError("Request timed out — web search takes up to 60s, please retry");};
+  xhr.ontimeout=function(){onError("Timed out (58s) — Sonnet+web search can take 30-45s. Please retry.");};
   xhr.send(JSON.stringify(body));
 }
 
@@ -194,15 +185,12 @@ export default function Auxiron(){
   var [nowStr,setNowStr]=useState("");
   var [ctx,setCtx]=useState(null);
   var [ctxLoading,setCtxLoading]=useState(false);
-  var [ctxErr,setCtxErr]=useState(null);
   var [lastRefresh,setLastRefresh]=useState(null);
   var [detailInst,setDetailInst]=useState(null);
   var [instAnalysis,setInstAnalysis]=useState(null);
   var [instLoading,setInstLoading]=useState(false);
   var [macroAnalysis,setMacroAnalysis]=useState(null);
   var [macroLoading,setMacroLoading]=useState(false);
-  var [macroErr,setMacroErr]=useState(null);
-  var [intelErr,setIntelErr]=useState(null);
   var [macroQuery,setMacroQuery]=useState("");
   var [activeScenario,setActiveScenario]=useState(null);
   var [intel,setIntel]=useState(null);
@@ -211,8 +199,6 @@ export default function Auxiron(){
   var [calTab,setCalTab]=useState("week");
   var [brief,setBrief]=useState(null);
   var [briefLoading,setBriefLoading]=useState(false);
-  var [briefErr,setBriefErr]=useState(null);
-  var [edgeImages,setEdgeImages]=useState<{name:string;base64:string;mediaType:string}[]>([]);
   var cycleRef=useRef(0);
 
   useEffect(function(){
@@ -311,40 +297,12 @@ export default function Auxiron(){
     }).join(", ");
   }
 
-  function handleEdgeUpload(e:React.ChangeEvent<HTMLInputElement>){
-    var files=Array.from(e.target.files||[]);
-    files.forEach(function(file){
-      var reader=new FileReader();
-      reader.onload=function(ev){
-        var dataUrl=ev.target?.result as string;
-        var base64=dataUrl.split(",")[1];
-        var mediaType=file.type||"image/jpeg";
-        setEdgeImages(function(prev){
-          if(prev.length>=3)return prev;
-          return prev.concat([{name:file.name,base64,mediaType}]);
-        });
-      };
-      reader.readAsDataURL(file);
-    });
-    e.target.value="";
-  }
-
-  function analyze(text:string|undefined){
+  function analyze(text){
     var inp=(text||hl).trim();if(!inp)return;
     setLoading(true);setErr(null);setResult(null);
-    var snap=getSnap();
-    var userContent:any;
-    if(edgeImages.length>0){
-      userContent=[
-        ...edgeImages.map(function(img){return{type:"image",source:{type:"base64",media_type:img.mediaType,data:img.base64}};}),
-        {type:"text",text:"LIVE MARKET DATA:\n"+snap+"\n\nEVENT:\n"+inp+"\n\nEdgeFinder screenshots are attached above. Please read the COT data, Top Setups, and any positioning signals shown, then cross-analyze against the news event and fill the edgeFinderCrossCheck section in your JSON response."}
-      ];
-    } else {
-      userContent="LIVE MARKET DATA:\n"+snap+"\n\nEVENT:\n"+inp;
-    }
     callProxy(
-      {model:"claude-haiku-4-5",max_tokens:3000,system:AI_SYS,
-       messages:[{role:"user",content:userContent}]},
+      {model:"claude-haiku-4-5",max_tokens:2500,system:AI_SYS,
+       messages:[{role:"user",content:"LIVE MARKET DATA:\n"+getSnap()+"\n\nEVENT:\n"+inp}]},
       function(res){setResult(res);setHist(function(p){return[{headline:inp,result:res,ts:new Date()}].concat(p.slice(0,7));});setLoading(false);},
       function(e){setErr("Failed: "+e);setLoading(false);}
     );
@@ -355,8 +313,8 @@ export default function Auxiron(){
     callProxy(
       {model:"claude-haiku-4-5",max_tokens:1800,system:CTX_SYS,
        messages:[{role:"user",content:"Live market: "+getSnap()+"\nGenerate session briefing."}]},
-      function(res){setCtx(res);setLastRefresh(new Date());setCtxLoading(false);setCtxErr(null);},
-      function(e){setCtxErr("Failed: "+e);setCtxLoading(false);}
+      function(res){setCtx(res);setLastRefresh(new Date());setCtxLoading(false);},
+      function(){setCtxLoading(false);}
     );
   }
 
@@ -372,23 +330,12 @@ export default function Auxiron(){
   }
 
   function fetchMacro(query){
-    setMacroLoading(true);setMacroAnalysis(null);setMacroErr(null);
-    var baseRequest=query||"Comprehensive macro risk analysis of the current market environment.";
-    var msg="LIVE MARKET DATA:\n"+getSnap()+
-      "\n\nToday: "+new Date().toDateString()+
-      "\n\nMACRO ANALYSIS REQUEST:\n"+baseRequest+
-      "\n\nANALYSIS REQUIREMENTS — include ALL sections:\n"+
-      "1. MARKET BOOK PLAY: Name the exact dominant narrative. Phase. What's being bought/sold. Historical parallel.\n"+
-      "2. PROBABILITY DISTRIBUTION MATRIX: Rate all macro scenarios with probabilities summing to 100%. Include 3+ main scenarios (Soft Landing, Stagflation, Hard Landing, Black Swan, etc). Provide CASH RUSH SCENARIO probability (independently rated 0-100%) — are investors running for cash right now? What phase is it? What are the triggers and asset flows? Provide DOLLAR DISTRUST SCENARIO probability (independently rated 0-100%) — is confidence in the USD eroding? What drives it? List 3 BLACK SWAN events with probability, market shock estimate, and recovery timeline.\n"+
-      "3. MONEY FLOW ROTATION: Institutional flows, asset class ranking, sector rotation, weekly setup.\n"+
-      "4. RISK SCENARIOS: Exactly 5 scenarios with probabilities, triggers, cross-asset impact.\n"+
-      "5. TRADER ACTION PLAN: Specific, actionable trades for this week with sizing guidance.\n"+
-      "6. EVENT RISK PROBABILITIES: For exactly 3 high-impact events scheduled this week or upcoming (e.g. CPI, FOMC, NFP, OPEC, geopolitical flashpoints), provide upside/base/downside probability outcomes (must sum to 100% per event) PLUS a separate black swan risk (0-10%). For each outcome show how it impacts gold, equities, DXY, and oil. This is the daily probability theory section — make it specific to actual upcoming events.";
+    setMacroLoading(true);setMacroAnalysis(null);
     callProxy(
-      {model:"claude-haiku-4-5",max_tokens:7000,system:MACRO_SYS,
-       messages:[{role:"user",content:msg}]},
-      function(res){setMacroAnalysis(res);setMacroLoading(false);setMacroErr(null);},
-      function(e){setMacroErr("Failed: "+e);setMacroLoading(false);}
+      {model:"claude-haiku-4-5",max_tokens:1500,system:MACRO_SYS,
+       messages:[{role:"user",content:"LIVE MARKET DATA:\n"+getSnap()+"\n\nMACRO ANALYSIS REQUEST:\n"+(query||"Provide comprehensive macro risk analysis of current market environment.")}]},
+      function(res){setMacroAnalysis(res);setMacroLoading(false);},
+      function(e){console.log("Macro error:",e);setMacroLoading(false);}
     );
   }
 
@@ -400,29 +347,39 @@ export default function Auxiron(){
       "\n\nSESSION: "+label+
       "\n\nToday: "+new Date().toDateString()+
       "\n\nSearch for: latest market news overnight geopolitical events Fed speakers US economic data today Gold Oil price drivers SPX NDX sector rotation mega-cap movers investor sentiment put call ratio market breadth institutional flows bank forecasts."+
-      "\n\nGenerate a comprehensive "+label+" intelligence report with: overnight digest, geopolitical events, dynamic market movers (AI picks most relevant today), Fed watch, economic events SGT times, COMMODITIES DEEP DIVE (Gold + Oil each with what moving now + buy/sell rumor detection + risk scenarios + price targets + futures curve), INDICES DEEP DIVE (SPX + NDX each with what moving + rumor detection + top 5 mega-caps + sector rotation inflows/outflows + investor sentiment put/call breadth institutional vs retail), key levels, instrument bias, trade focus for tonight.";
+      "\n\nGenerate a "+label+" intelligence report. Include: overnight digest, geopolitical events, top 3 market movers, fed watch, economic events (SGT), Gold deep dive (drivers+rumor+scenarios), Oil deep dive (drivers+rumor+scenarios), SPX (mega-caps+sectors+sentiment), NDX (tech breakdown), key levels, bias, trade focus.";
     callProxy(
-      {model:"claude-sonnet-4-6",max_tokens:8000,system:INTEL_SYS,
+      {model:"claude-sonnet-4-20250514",max_tokens:2000,system:INTEL_SYS,
        messages:[{role:"user",content:msg}],
        useWebSearch:true},
-      function(res){setIntel(res);setIntelLoading(false);setIntelErr(null);},
-      function(e){setIntelErr("Failed: "+e);setIntelLoading(false);}
+      function(res){setIntel(res);setIntelLoading(false);},
+      function(e){console.log("Intel error:",e);setIntelLoading(false);}
+    );
+  }
+
+    function fetchMacro(query){
+    setMacroLoading(true);setMacroAnalysis(null);
+    callProxy(
+      {model:"claude-haiku-4-5",max_tokens:1500,system:MACRO_SYS,
+       messages:[{role:"user",content:"LIVE MARKET DATA:\n"+getSnap()+"\n\nMACRO ANALYSIS REQUEST:\n"+(query||"Provide comprehensive macro risk analysis of current market environment.")}]},
+      function(res){setMacroAnalysis(res);setMacroLoading(false);},
+      function(e){console.log("Macro error:",e);setMacroLoading(false);}
     );
   }
 
   function fetchBrief(session){
-    setBriefLoading(true);setBrief(null);setBriefErr(null);
+    setBriefLoading(true);setBrief(null);
     var label=session==="asia"?"ASIA OPEN (SGT 8am-12pm)":"PRE-NY SESSION (SGT 8pm-10pm)";
     var msg="LIVE MARKET DATA:\n"+getSnap()+
       "\n\nSESSION: "+label+
       "\n\nToday's date: "+new Date().toDateString()+
       "\n\nPlease search the web for current market news, bank forecasts and economic calendar data, then generate a comprehensive market brief. Focus on US economic events primarily, then EUR, JPY and GBP. Include upcoming economic events for this week, this month and remaining quarter.";
     callProxy(
-      {model:"claude-sonnet-4-6",max_tokens:6000,system:BRIEF_SYS,
+      {model:"claude-sonnet-4-20250514",max_tokens:1500,system:BRIEF_SYS,
        messages:[{role:"user",content:msg}],
        useWebSearch:true},
-      function(res){setBrief(res);setBriefLoading(false);setBriefErr(null);},
-      function(e){setBriefErr("Failed: "+e);setBriefLoading(false);}
+      function(res){setBrief(res);setBriefLoading(false);},
+      function(e){console.log("Brief error:",e);setBriefLoading(false);}
     );
   }
 
@@ -677,7 +634,7 @@ export default function Auxiron(){
                 <div style={{width:55,height:22}}>
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={m.ch.slice(-14)} margin={{top:1,right:0,bottom:1,left:0}}>
-                      <Line type="linear" dataKey="p" stroke={lc} strokeWidth={1.4} dot={false}/>
+                      <Line type="monotone" dataKey="p" stroke={lc} strokeWidth={1.4} dot={false}/>
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
@@ -743,7 +700,7 @@ export default function Auxiron(){
                   <YAxis domain={["auto","auto"]} padding={{top:8,bottom:8}} tick={{fill:C.txt3,fontSize:8}} tickLine={false} axisLine={false} width={56} tickFormatter={function(v){return fmt(v,selI.b);}}/>
                   <Tooltip content={<ChartTip/>}/>
                   <ReferenceLine y={selI.open} stroke={C.border2} strokeDasharray="3 3"/>
-                  <Area type="linear" dataKey="p" stroke={selI.pct>=0?C.up:C.dn} strokeWidth={2} fill="url(#cg)" dot={false}/>
+                  <Area type="monotone" dataKey="p" stroke={selI.pct>=0?C.up:C.dn} strokeWidth={2} fill="url(#cg)" dot={false}/>
                 </AreaChart>
               </ResponsiveContainer>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:5,marginTop:10}}>
@@ -777,7 +734,7 @@ export default function Auxiron(){
                     <defs><linearGradient id={gid} x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={lc} stopOpacity={0.12}/><stop offset="95%" stopColor={lc} stopOpacity={0}/></linearGradient></defs>
                     <YAxis domain={["auto","auto"]} hide/>
                     <ReferenceLine y={m.open} stroke={C.border} strokeDasharray="2 2"/>
-                    <Area type="linear" dataKey="p" stroke={lc} strokeWidth={1.8} fill={"url(#"+gid+")"} dot={false}/>
+                    <Area type="monotone" dataKey="p" stroke={lc} strokeWidth={1.8} fill={"url(#"+gid+")"} dot={false}/>
                   </AreaChart>
                 </ResponsiveContainer>
               </div>;
@@ -800,7 +757,7 @@ export default function Auxiron(){
                 <div style={{fontSize:10,color:isVix?(up?C.dn:C.up):up?C.up:C.dn,marginBottom:4}}>{up?"+":""}{m.pct.toFixed(2)}%</div>
                 <ResponsiveContainer width="100%" height={40}>
                   <LineChart data={m.ch.slice(-16)} margin={{top:0,right:0,bottom:0,left:0}}>
-                    <Line type="linear" dataKey="p" stroke={lc} strokeWidth={1.4} dot={false}/>
+                    <Line type="monotone" dataKey="p" stroke={lc} strokeWidth={1.4} dot={false}/>
                   </LineChart>
                 </ResponsiveContainer>
               </div>;
@@ -852,8 +809,7 @@ export default function Auxiron(){
               })}
             </div>
           </div>}
-          {ctxErr&&<div style={{background:"rgba(240,64,64,0.07)",border:"1px solid rgba(240,64,64,0.2)",borderRadius:8,padding:"10px 12px",color:C.dn,fontSize:12,marginBottom:10}}>⚠ {ctxErr}</div>}
-          {!ctx&&!ctxLoading&&!ctxErr&&<div style={{textAlign:"center",padding:"30px 20px",background:C.bg1,border:"1px solid "+C.border,borderRadius:10}}>
+          {!ctx&&!ctxLoading&&<div style={{textAlign:"center",padding:"30px 20px",background:C.bg1,border:"1px solid "+C.border,borderRadius:10}}>
             <div style={{fontSize:11,color:C.txt3,letterSpacing:".1em"}}>TAP GENERATE FOR AI SESSION BRIEFING</div>
             <div style={{fontSize:10,color:C.txt3,marginTop:4,opacity:0.6}}>DXY dominance · Money flow · Weekly outlook</div>
           </div>}
@@ -1003,8 +959,7 @@ export default function Auxiron(){
               })}
             </div>
           </div>
-          {macroErr&&<div style={{background:"rgba(240,64,64,0.07)",border:"1px solid rgba(240,64,64,0.2)",borderRadius:8,padding:"10px 12px",color:C.dn,fontSize:12,marginBottom:10}}>⚠ {macroErr}</div>}
-          {!macroAnalysis&&!macroLoading&&!macroErr&&<div style={{textAlign:"center",padding:"40px 20px",background:C.bg1,border:"1px solid "+C.border,borderRadius:10}}>
+          {!macroAnalysis&&!macroLoading&&<div style={{textAlign:"center",padding:"40px 20px",background:C.bg1,border:"1px solid "+C.border,borderRadius:10}}>
             <div style={{fontFamily:"'Syne',sans-serif",fontSize:28,color:C.txt3,marginBottom:8,opacity:0.25}}>⬡</div>
             <div style={{fontSize:12,color:C.txt2,letterSpacing:".08em"}}>MACRO RISK INTELLIGENCE</div>
             <div style={{fontSize:10,color:C.txt3,marginTop:4}}>Tap GENERATE or select a quick scenario</div>
@@ -1027,310 +982,10 @@ export default function Auxiron(){
               </div>
               <div style={{fontSize:13,color:C.txt0,lineHeight:1.75}}>{macroAnalysis.executiveSummary}</div>
             </div>
-
-            {macroAnalysis.bookPlay&&<div style={{background:"linear-gradient(135deg,rgba(200,168,64,0.13),rgba(200,168,64,0.04))",border:"2px solid rgba(200,168,64,0.4)",borderRadius:12,padding:"14px",marginBottom:10}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
-                <div>
-                  <div style={{fontSize:9,color:C.gold,letterSpacing:".12em",marginBottom:4,fontWeight:600}}>◈ ACTIVE MARKET BOOK PLAY</div>
-                  <div style={{fontFamily:"'Syne',sans-serif",fontSize:17,fontWeight:800,color:C.goldL,lineHeight:1.2}}>{macroAnalysis.bookPlay.currentBook}</div>
-                </div>
-                {macroAnalysis.bookPlay.phase&&<span style={{fontSize:9,fontWeight:700,color:C.amber,background:"rgba(240,144,32,0.12)",border:"1px solid rgba(240,144,32,0.35)",borderRadius:5,padding:"3px 9px",flexShrink:0,marginTop:2}}>{macroAnalysis.bookPlay.phase}</span>}
-              </div>
-              <div style={{fontSize:12,color:C.txt0,lineHeight:1.75,marginBottom:10}}>{macroAnalysis.bookPlay.description}</div>
-              {macroAnalysis.bookPlay.impliedRotations&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6,marginBottom:8}}>
-                {[
-                  {label:"▲ BUYING",key:"buying",clr:C.up,bg:"rgba(40,204,120,0.07)",bdr:"rgba(40,204,120,0.2)"},
-                  {label:"▼ SELLING",key:"selling",clr:C.dn,bg:"rgba(240,64,64,0.07)",bdr:"rgba(240,64,64,0.2)"},
-                  {label:"◉ WATCHING",key:"watching",clr:C.amber,bg:"rgba(240,144,32,0.07)",bdr:"rgba(240,144,32,0.2)"},
-                ].map(function(col){
-                  var items=macroAnalysis.bookPlay.impliedRotations[col.key]||[];
-                  return <div key={col.key} style={{background:col.bg,border:"1px solid "+col.bdr,borderRadius:7,padding:"8px 10px"}}>
-                    <div style={{fontSize:8,color:col.clr,letterSpacing:".1em",marginBottom:5,fontWeight:700}}>{col.label}</div>
-                    {items.map(function(a,i){return <div key={i} style={{fontSize:10,color:C.txt0,marginBottom:2}}>· {a}</div>;})}
-                  </div>;
-                })}
-              </div>}
-              {macroAnalysis.bookPlay.historicalParallel&&<div style={{background:"rgba(72,144,248,0.07)",border:"1px solid rgba(72,144,248,0.2)",borderRadius:7,padding:"7px 10px"}}>
-                <span style={{fontSize:9,color:C.blue,fontWeight:600}}>📚 Historical Parallel: </span>
-                <span style={{fontSize:11,color:C.txt1}}>{macroAnalysis.bookPlay.historicalParallel}</span>
-              </div>}
-            </div>}
-
-            {macroAnalysis.moneyFlowRotation&&<div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,padding:"13px",marginBottom:10}}>
-              <div style={{fontSize:10,color:C.gold,letterSpacing:".1em",fontWeight:700,marginBottom:8}}>💰 MONEY FLOW ROTATION</div>
-              {macroAnalysis.moneyFlowRotation.primaryFlow&&<div style={{fontSize:13,color:C.txt0,lineHeight:1.7,marginBottom:8}}>{macroAnalysis.moneyFlowRotation.primaryFlow}</div>}
-              {macroAnalysis.moneyFlowRotation.assetClassRanking&&macroAnalysis.moneyFlowRotation.assetClassRanking.length>0&&<div style={{marginBottom:10}}>
-                <div style={{fontSize:9,color:C.txt3,letterSpacing:".1em",marginBottom:6}}>ASSET CLASS RANKING — CURRENT PREFERENCE</div>
-                <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
-                  {macroAnalysis.moneyFlowRotation.assetClassRanking.map(function(a,i){
-                    var last=macroAnalysis.moneyFlowRotation.assetClassRanking.length-1;
-                    var clr=i===0?C.up:i===last?C.dn:i===1?C.goldL:C.txt2;
-                    var bg=i===0?"rgba(40,204,120,0.1)":i===last?"rgba(240,64,64,0.1)":i===1?"rgba(200,168,64,0.1)":"rgba(72,96,128,0.08)";
-                    var bdr=i===0?"rgba(40,204,120,0.3)":i===last?"rgba(240,64,64,0.3)":i===1?"rgba(200,168,64,0.3)":C.border;
-                    return <span key={i} style={{fontSize:10,padding:"4px 10px",borderRadius:6,background:bg,color:clr,border:"1px solid "+bdr,fontWeight:i<=1||i===last?600:400}}>
-                      <span style={{fontSize:8,opacity:0.6}}>#{i+1} </span>{a}
-                    </span>;
-                  })}
-                </div>
-              </div>}
-              {macroAnalysis.moneyFlowRotation.sectorRotation&&<div style={{background:C.bg2,border:"1px solid "+C.border,borderRadius:7,padding:"8px 10px",marginBottom:10}}>
-                <div style={{fontSize:9,color:C.txt3,letterSpacing:".1em",marginBottom:3}}>SECTOR ROTATION</div>
-                <div style={{fontSize:11,color:C.txt1,lineHeight:1.6}}>{macroAnalysis.moneyFlowRotation.sectorRotation}</div>
-              </div>}
-              {macroAnalysis.moneyFlowRotation.weeklySetup&&<div style={{background:"linear-gradient(135deg,rgba(72,144,248,0.09),rgba(72,144,248,0.03))",border:"1px solid rgba(72,144,248,0.3)",borderRadius:9,padding:"11px 13px"}}>
-                <div style={{fontSize:10,color:C.blue,letterSpacing:".1em",fontWeight:700,marginBottom:6}}>📅 WEEKLY SETUP — NEXT 7 DAYS</div>
-                <div style={{fontSize:12,color:C.txt0,lineHeight:1.8}}>{macroAnalysis.moneyFlowRotation.weeklySetup}</div>
-              </div>}
-            </div>}
-
-            {macroAnalysis.probabilityMatrix&&(function(){
-              var pm=macroAnalysis.probabilityMatrix;
-              var scTypeClr=function(t:string){return t==="BULL"?C.up:t==="BASE"?C.blue:t==="BEAR"?C.amber:t==="CRISIS"?C.dn:"#ff1840";};
-              var scTypeBg=function(t:string){return t==="BULL"?"rgba(40,204,120,0.08)":t==="BASE"?"rgba(72,144,248,0.08)":t==="BEAR"?"rgba(240,144,32,0.08)":t==="CRISIS"?"rgba(240,64,64,0.08)":"rgba(255,24,64,0.06)";};
-              var sevClr=function(s:string){return s==="CATASTROPHIC"?"#ff1840":s==="EXTREME"?C.dn:C.amber;};
-              return <div style={{marginBottom:10}}>
-                <div style={{background:C.bg1,border:"1px solid "+C.border2,borderRadius:12,padding:"14px",marginBottom:10}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
-                    <div>
-                      <div style={{fontSize:10,color:C.blue,letterSpacing:".12em",fontWeight:700,marginBottom:2}}>⬡ PROBABILITY DISTRIBUTION MATRIX</div>
-                      <div style={{fontSize:9,color:C.txt3}}>{pm.timeHorizon||"3-month"} horizon · {pm.distributionType||"FAT-TAIL"} distribution</div>
-                    </div>
-                    {pm.distributionType&&<span style={{fontSize:8,fontWeight:700,padding:"3px 8px",borderRadius:4,
-                      color:pm.distributionType==="FAT-TAIL"?C.dn:pm.distributionType==="BIMODAL"?C.amber:C.txt2,
-                      background:pm.distributionType==="FAT-TAIL"?"rgba(240,64,64,0.1)":pm.distributionType==="BIMODAL"?"rgba(240,144,32,0.1)":"rgba(72,96,128,0.1)",
-                      border:"1px solid "+(pm.distributionType==="FAT-TAIL"?"rgba(240,64,64,0.3)":pm.distributionType==="BIMODAL"?"rgba(240,144,32,0.3)":C.border)
-                    }}>{pm.distributionType}</span>}
-                  </div>
-
-                  {pm.tailRiskNote&&<div style={{background:"rgba(240,64,64,0.06)",border:"1px solid rgba(240,64,64,0.18)",borderRadius:7,padding:"7px 10px",marginBottom:10}}>
-                    <span style={{fontSize:9,color:C.dn,fontWeight:600}}>⚡ TAIL RISK: </span>
-                    <span style={{fontSize:10,color:C.txt1}}>{pm.tailRiskNote}</span>
-                  </div>}
-
-                  {pm.scenarios&&pm.scenarios.length>0&&<div style={{marginBottom:4}}>
-                    <div style={{fontSize:9,color:C.txt3,letterSpacing:".1em",marginBottom:8}}>SCENARIO PROBABILITY DISTRIBUTION</div>
-                    {pm.scenarios.map(function(sc:any,i:number){
-                      var clr=scTypeClr(sc.type);var bg=scTypeBg(sc.type);
-                      return <div key={i} style={{marginBottom:8}}>
-                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
-                          <div style={{display:"flex",alignItems:"center",gap:7}}>
-                            <span style={{fontSize:10,fontWeight:600,color:clr,minWidth:14,textAlign:"center"}}>
-                              {sc.type==="BULL"?"▲":sc.type==="BASE"?"◆":sc.type==="BEAR"?"▼":sc.type==="CRISIS"?"⚠":"☠"}
-                            </span>
-                            <span style={{fontSize:11,fontWeight:500,color:C.txt0}}>{sc.name}</span>
-                            <span style={{fontSize:8,color:clr,background:bg,border:"1px solid "+clr+"33",borderRadius:3,padding:"1px 5px"}}>{sc.type}</span>
-                          </div>
-                          <div style={{textAlign:"right"}}>
-                            <span style={{fontFamily:"'Syne',sans-serif",fontSize:14,fontWeight:700,color:clr}}>{sc.probability}%</span>
-                            {sc.timeline&&<div style={{fontSize:8,color:C.txt3}}>{sc.timeline}</div>}
-                          </div>
-                        </div>
-                        <div style={{position:"relative",height:6,background:C.bg2,borderRadius:3,overflow:"hidden",marginBottom:3}}>
-                          <div style={{width:sc.probability+"%",height:"100%",background:clr,borderRadius:3,transition:"width 0.5s ease",opacity:0.75}}></div>
-                        </div>
-                        {sc.description&&<div style={{fontSize:10,color:C.txt2,lineHeight:1.5,marginLeft:21}}>{sc.description}</div>}
-                        {sc.keyAssets&&<div style={{display:"flex",gap:4,flexWrap:"wrap",marginTop:4,marginLeft:21}}>
-                          {Object.entries(sc.keyAssets).map(function([k,v]:any){
-                            var vc=v==="BULLISH"?C.up:v==="BEARISH"?C.dn:C.txt3;
-                            return <span key={k} style={{fontSize:8,color:vc,background:"rgba(0,0,0,0.25)",border:"1px solid "+vc+"30",borderRadius:3,padding:"1px 5px"}}>{k.toUpperCase()} {v==="BULLISH"?"↑":v==="BEARISH"?"↓":"→"}</span>;
-                          })}
-                        </div>}
-                      </div>;
-                    })}
-                  </div>}
-
-                  {pm.methodology&&<div style={{fontSize:9,color:C.txt3,fontStyle:"italic",borderTop:"1px solid "+C.border,paddingTop:7,marginTop:7}}>Methodology: {pm.methodology}</div>}
-                </div>
-
-                {pm.cashRushScenario&&(function(){
-                  var cr=pm.cashRushScenario;
-                  var pClr=cr.probability>=60?C.dn:cr.probability>=35?C.amber:C.up;
-                  return <div style={{background:"rgba(240,64,64,0.06)",border:"2px solid rgba(240,64,64,"+(cr.isActive?"0.5":"0.22")+")",borderRadius:12,padding:"13px",marginBottom:10}}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
-                      <div>
-                        <div style={{fontSize:9,color:C.dn,letterSpacing:".12em",fontWeight:700,marginBottom:2}}>💵 CASH RUSH SCENARIO</div>
-                        <div style={{fontSize:9,color:C.txt3}}>Investors liquidating assets → USD cash / T-bills</div>
-                      </div>
-                      <div style={{textAlign:"right"}}>
-                        <div style={{fontFamily:"'Syne',sans-serif",fontSize:20,fontWeight:800,color:pClr}}>{cr.probability}%</div>
-                        <div style={{fontSize:8,color:cr.isActive?C.dn:C.txt3,fontWeight:cr.isActive?700:400}}>{cr.isActive?"● ACTIVE":"○ WATCH"}</div>
-                      </div>
-                    </div>
-                    <div style={{position:"relative",height:6,background:C.bg2,borderRadius:3,overflow:"hidden",marginBottom:8}}>
-                      <div style={{width:cr.probability+"%",height:"100%",background:pClr,borderRadius:3,opacity:0.8}}></div>
-                    </div>
-                    {cr.phase&&<div style={{display:"inline-block",fontSize:9,fontWeight:700,color:pClr,background:"rgba(240,64,64,0.1)",border:"1px solid rgba(240,64,64,0.3)",borderRadius:4,padding:"2px 8px",marginBottom:7}}>{cr.phase}</div>}
-                    <div style={{fontSize:12,color:C.txt0,lineHeight:1.7,marginBottom:8}}>{cr.description}</div>
-                    {cr.assetFlow&&<div style={{background:"rgba(0,0,0,0.3)",borderRadius:7,padding:"7px 10px",marginBottom:7}}>
-                      <div style={{fontSize:8,color:C.txt3,marginBottom:2}}>ASSET FLOW</div>
-                      <div style={{fontSize:11,color:C.dn}}>{cr.assetFlow}</div>
-                    </div>}
-                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:7}}>
-                      {cr.triggers&&cr.triggers.length>0&&<div style={{background:"rgba(0,0,0,0.2)",borderRadius:7,padding:"7px 9px"}}>
-                        <div style={{fontSize:8,color:C.txt3,letterSpacing:".08em",marginBottom:4}}>TRIGGERS</div>
-                        {cr.triggers.map(function(t:string,i:number){return <div key={i} style={{fontSize:9,color:C.txt1,marginBottom:2}}>→ {t}</div>;})}
-                      </div>}
-                      {cr.leadingIndicators&&cr.leadingIndicators.length>0&&<div style={{background:"rgba(0,0,0,0.2)",borderRadius:7,padding:"7px 9px"}}>
-                        <div style={{fontSize:8,color:C.txt3,letterSpacing:".08em",marginBottom:4}}>WATCH FOR</div>
-                        {cr.leadingIndicators.map(function(ind:string,i:number){return <div key={i} style={{fontSize:9,color:C.amber,marginBottom:2}}>◉ {ind}</div>;})}
-                      </div>}
-                    </div>
-                    {cr.historicalAnalog&&<div style={{fontSize:9,color:C.txt2,marginBottom:cr.traderNote?5:0}}>📚 Analog: {cr.historicalAnalog}{cr.estimatedDuration?" · "+cr.estimatedDuration:""}</div>}
-                    {cr.traderNote&&<div style={{background:"rgba(240,64,64,0.08)",borderRadius:6,padding:"6px 9px",fontSize:10,color:C.txt0}}>◈ {cr.traderNote}</div>}
-                  </div>;
-                })()}
-
-                {pm.dollarDistrustScenario&&(function(){
-                  var dd=pm.dollarDistrustScenario;
-                  var pClr=dd.probability>=50?C.amber:dd.probability>=25?C.gold:C.up;
-                  return <div style={{background:"rgba(240,144,32,0.06)",border:"2px solid rgba(240,144,32,"+(dd.isActive?"0.5":"0.22")+")",borderRadius:12,padding:"13px",marginBottom:10}}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
-                      <div>
-                        <div style={{fontSize:9,color:C.amber,letterSpacing:".12em",fontWeight:700,marginBottom:2}}>⚡ DOLLAR DISTRUST SCENARIO</div>
-                        <div style={{fontSize:9,color:C.txt3}}>USD confidence erosion · De-dollarization · Reserve status risk</div>
-                      </div>
-                      <div style={{textAlign:"right"}}>
-                        <div style={{fontFamily:"'Syne',sans-serif",fontSize:20,fontWeight:800,color:pClr}}>{dd.probability}%</div>
-                        <div style={{fontSize:8,color:dd.isActive?C.amber:C.txt3,fontWeight:dd.isActive?700:400}}>{dd.isActive?"● ACTIVE":"○ WATCH"}</div>
-                      </div>
-                    </div>
-                    <div style={{position:"relative",height:6,background:C.bg2,borderRadius:3,overflow:"hidden",marginBottom:8}}>
-                      <div style={{width:dd.probability+"%",height:"100%",background:pClr,borderRadius:3,opacity:0.8}}></div>
-                    </div>
-                    {dd.phase&&<div style={{display:"inline-block",fontSize:9,fontWeight:700,color:pClr,background:"rgba(240,144,32,0.1)",border:"1px solid rgba(240,144,32,0.3)",borderRadius:4,padding:"2px 8px",marginBottom:7}}>{dd.phase}</div>}
-                    <div style={{fontSize:12,color:C.txt0,lineHeight:1.7,marginBottom:8}}>{dd.description}</div>
-                    {dd.assetFlow&&<div style={{background:"rgba(0,0,0,0.3)",borderRadius:7,padding:"7px 10px",marginBottom:7}}>
-                      <div style={{fontSize:8,color:C.txt3,marginBottom:2}}>ASSET FLOW</div>
-                      <div style={{fontSize:11,color:C.amber}}>{dd.assetFlow}</div>
-                    </div>}
-                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:7}}>
-                      {dd.triggers&&dd.triggers.length>0&&<div style={{background:"rgba(0,0,0,0.2)",borderRadius:7,padding:"7px 9px"}}>
-                        <div style={{fontSize:8,color:C.txt3,letterSpacing:".08em",marginBottom:4}}>TRIGGERS</div>
-                        {dd.triggers.map(function(t:string,i:number){return <div key={i} style={{fontSize:9,color:C.txt1,marginBottom:2}}>→ {t}</div>;})}
-                      </div>}
-                      {dd.leadingIndicators&&dd.leadingIndicators.length>0&&<div style={{background:"rgba(0,0,0,0.2)",borderRadius:7,padding:"7px 9px"}}>
-                        <div style={{fontSize:8,color:C.txt3,letterSpacing:".08em",marginBottom:4}}>WATCH FOR</div>
-                        {dd.leadingIndicators.map(function(ind:string,i:number){return <div key={i} style={{fontSize:9,color:C.gold,marginBottom:2}}>◉ {ind}</div>;})}
-                      </div>}
-                    </div>
-                    {dd.historicalAnalog&&<div style={{fontSize:9,color:C.txt2,marginBottom:dd.traderNote?5:0}}>📚 Analog: {dd.historicalAnalog}{dd.estimatedDuration?" · "+dd.estimatedDuration:""}</div>}
-                    {dd.traderNote&&<div style={{background:"rgba(240,144,32,0.08)",borderRadius:6,padding:"6px 9px",fontSize:10,color:C.txt0}}>◈ {dd.traderNote}</div>}
-                  </div>;
-                })()}
-
-                {pm.blackSwanEvents&&pm.blackSwanEvents.length>0&&<div style={{background:C.bg1,border:"1px solid rgba(255,24,64,0.2)",borderRadius:12,padding:"13px",marginBottom:10}}>
-                  <div style={{fontSize:10,color:"#ff1840",letterSpacing:".12em",fontWeight:700,marginBottom:8}}>☠ BLACK SWAN EVENT PROBABILITIES</div>
-                  <div style={{display:"grid",gap:7}}>
-                    {pm.blackSwanEvents.map(function(ev:any,i:number){
-                      var sc=sevClr(ev.impactSeverity);
-                      return <div key={i} style={{background:"rgba(0,0,0,0.35)",border:"1px solid rgba(255,24,64,0.15)",borderRadius:9,padding:"10px 12px"}}>
-                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:5}}>
-                          <div style={{flex:1}}>
-                            <div style={{fontSize:11,fontWeight:600,color:C.txt0,marginBottom:2}}>{ev.event}</div>
-                            <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
-                              {ev.category&&<span style={{fontSize:8,color:C.txt3,background:"rgba(72,96,128,0.15)",border:"1px solid "+C.border,borderRadius:3,padding:"1px 5px"}}>{ev.category}</span>}
-                              {ev.impactSeverity&&<span style={{fontSize:8,color:sc,background:"rgba(0,0,0,0.25)",border:"1px solid "+sc+"44",borderRadius:3,padding:"1px 5px",fontWeight:700}}>{ev.impactSeverity}</span>}
-                            </div>
-                          </div>
-                          <div style={{textAlign:"right",flexShrink:0,marginLeft:8}}>
-                            <div style={{fontFamily:"'Syne',sans-serif",fontSize:16,fontWeight:800,color:"#ff1840"}}>{ev.probability}%</div>
-                            <div style={{fontSize:8,color:C.txt3}}>probability</div>
-                          </div>
-                        </div>
-                        <div style={{position:"relative",height:4,background:C.bg2,borderRadius:2,overflow:"hidden",marginBottom:6}}>
-                          <div style={{width:(ev.probability*10)+"%",height:"100%",background:"#ff1840",borderRadius:2,opacity:0.6}}></div>
-                        </div>
-                        <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                          {ev.marketShock&&<div style={{flex:1}}>
-                            <div style={{fontSize:8,color:C.txt3,marginBottom:1}}>MARKET SHOCK</div>
-                            <div style={{fontSize:10,color:C.dn}}>{ev.marketShock}</div>
-                          </div>}
-                          {ev.timeToRecover&&<div>
-                            <div style={{fontSize:8,color:C.txt3,marginBottom:1}}>RECOVERY</div>
-                            <div style={{fontSize:10,color:C.txt2}}>{ev.timeToRecover}</div>
-                          </div>}
-                        </div>
-                      </div>;
-                    })}
-                  </div>
-                </div>}
-              </div>;
-            })()}
-
             {macroAnalysis.moneyFlowAnalysis&&<div style={{background:"rgba(200,168,64,0.07)",border:"1px solid rgba(200,168,64,0.2)",borderRadius:10,padding:"13px",marginBottom:10}}>
               <div style={{fontSize:10,color:C.gold,letterSpacing:".1em",marginBottom:6}}>💰 INSTITUTIONAL MONEY FLOW</div>
               <div style={{fontSize:13,color:C.txt0,lineHeight:1.75}}>{macroAnalysis.moneyFlowAnalysis}</div>
             </div>}
-
-            {macroAnalysis.eventRiskProbabilities&&macroAnalysis.eventRiskProbabilities.length>0&&(function(){
-              var typeClr=function(t:string){return t==="CENTRAL_BANK"?C.blue:t==="ECONOMIC_DATA"?C.up:t==="GEOPOLITICAL"?C.dn:t==="ENERGY"?C.amber:t==="POLICY"?C.vix:C.txt2;};
-              var impactIcon=function(v:string){return v==="BULLISH"?"↑":v==="BEARISH"?"↓":"→";};
-              var impactClrFn=function(v:string){return v==="BULLISH"?C.up:v==="BEARISH"?C.dn:C.txt3;};
-              return <div style={{marginBottom:10}}>
-                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-                  <div style={{fontSize:10,color:"#ff8c42",letterSpacing:".12em",fontWeight:700}}>📊 EVENT RISK PROBABILITY — DAILY BRIEFING</div>
-                  <span style={{fontSize:8,color:C.txt3,fontStyle:"italic"}}>upside / base / downside per event</span>
-                </div>
-                <div style={{display:"grid",gap:8}}>
-                  {macroAnalysis.eventRiskProbabilities.map(function(ev:any,i:number){
-                    var tc=typeClr(ev.type);
-                    return <div key={i} style={{background:C.bg1,border:"1px solid "+C.border2,borderRadius:12,padding:"13px"}}>
-                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
-                        <div>
-                          <div style={{fontSize:12,fontWeight:700,color:C.txt0,marginBottom:2}}>{ev.event}</div>
-                          <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                            {ev.date&&<span style={{fontSize:9,color:C.txt3}}>📅 {ev.date}</span>}
-                            {ev.type&&<span style={{fontSize:8,fontWeight:700,color:tc,background:"rgba(0,0,0,0.3)",border:"1px solid "+tc+"44",borderRadius:3,padding:"1px 6px"}}>{ev.type}</span>}
-                          </div>
-                        </div>
-                        {ev.primaryImpactInstrument&&<span style={{fontSize:10,fontWeight:600,color:C.goldL,background:"rgba(200,168,64,0.12)",border:"1px solid rgba(200,168,64,0.3)",borderRadius:5,padding:"3px 8px",flexShrink:0}}>{ev.primaryImpactInstrument}</span>}
-                      </div>
-                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:5,marginBottom:8}}>
-                        {[
-                          {k:"upside",label:"UPSIDE",icon:"▲",clr:C.up,bg:"rgba(40,204,120,0.08)",bdr:"rgba(40,204,120,0.25)"},
-                          {k:"baseCase",label:"BASE",icon:"◆",clr:C.blue,bg:"rgba(72,144,248,0.08)",bdr:"rgba(72,144,248,0.25)"},
-                          {k:"downside",label:"DOWNSIDE",icon:"▼",clr:C.dn,bg:"rgba(240,64,64,0.08)",bdr:"rgba(240,64,64,0.25)"},
-                        ].map(function(col){
-                          var sc=ev[col.k];if(!sc)return null;
-                          return <div key={col.k} style={{background:col.bg,border:"1px solid "+col.bdr,borderRadius:8,padding:"8px 9px"}}>
-                            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
-                              <span style={{fontSize:8,color:col.clr,fontWeight:700,letterSpacing:".08em"}}>{col.icon} {col.label}</span>
-                              <span style={{fontFamily:"'Syne',sans-serif",fontSize:14,fontWeight:800,color:col.clr}}>{sc.probability}%</span>
-                            </div>
-                            <div style={{position:"relative",height:4,background:C.bg2,borderRadius:2,overflow:"hidden",marginBottom:5}}>
-                              <div style={{width:sc.probability+"%",height:"100%",background:col.clr,borderRadius:2,opacity:0.7}}></div>
-                            </div>
-                            <div style={{fontSize:9,color:C.txt1,lineHeight:1.45,marginBottom:5}}>{sc.outcome}</div>
-                            {sc.impact&&<div style={{display:"flex",gap:3,flexWrap:"wrap"}}>
-                              {Object.entries(sc.impact).map(function([k,v]:any){
-                                return <span key={k} style={{fontSize:7,color:impactClrFn(v),background:"rgba(0,0,0,0.3)",borderRadius:2,padding:"1px 4px"}}>{k.toUpperCase()} {impactIcon(v)}</span>;
-                              })}
-                            </div>}
-                          </div>;
-                        })}
-                      </div>
-                      {ev.blackSwanRisk&&<div style={{background:"rgba(255,24,64,0.06)",border:"1px solid rgba(255,24,64,0.25)",borderRadius:7,padding:"7px 10px",marginBottom:6}}>
-                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
-                          <span style={{fontSize:8,color:"#ff1840",fontWeight:700}}>☠ BLACK SWAN RISK</span>
-                          <span style={{fontFamily:"'Syne',sans-serif",fontSize:12,fontWeight:700,color:"#ff1840"}}>{ev.blackSwanRisk.probability}%</span>
-                        </div>
-                        <div style={{fontSize:9,color:C.txt1,lineHeight:1.4,marginBottom:4}}>{ev.blackSwanRisk.outcome}</div>
-                        {ev.blackSwanRisk.impact&&<div style={{display:"flex",gap:3,flexWrap:"wrap"}}>
-                          {Object.entries(ev.blackSwanRisk.impact).map(function([k,v]:any){
-                            return <span key={k} style={{fontSize:7,color:impactClrFn(v),background:"rgba(0,0,0,0.3)",borderRadius:2,padding:"1px 4px"}}>{k.toUpperCase()} {impactIcon(v)}</span>;
-                          })}
-                        </div>}
-                      </div>}
-                      {ev.traderNote&&<div style={{background:"rgba(40,204,120,0.07)",border:"1px solid rgba(40,204,120,0.2)",borderRadius:6,padding:"6px 9px"}}>
-                        <span style={{fontSize:8,color:C.up,fontWeight:600}}>◈ </span>
-                        <span style={{fontSize:10,color:C.txt0}}>{ev.traderNote}</span>
-                      </div>}
-                    </div>;
-                  })}
-                </div>
-              </div>;
-            })()}
-
             {macroAnalysis.riskScenarios&&macroAnalysis.riskScenarios.length>0&&<div style={{marginBottom:10}}>
               <div style={{fontSize:11,color:C.txt1,letterSpacing:".1em",marginBottom:8,fontWeight:600}}>⚠ RISK SCENARIO MATRIX</div>
               <div style={{display:"grid",gap:6}}>
@@ -1484,8 +1139,7 @@ export default function Auxiron(){
               </div>
             )}
 
-            {intelErr&&<div style={{background:"rgba(240,64,64,0.07)",border:"1px solid rgba(240,64,64,0.2)",borderRadius:8,padding:"10px 12px",color:C.dn,fontSize:12,marginBottom:10}}>⚠ {intelErr}</div>}
-            {!intel && !intelLoading && !intelErr && (
+            {!intel && !intelLoading && (
               <div style={{textAlign:"center",padding:"36px 20px",background:C.bg1,border:"1px solid "+C.border,borderRadius:12}}>
                 <div style={{fontFamily:"'Syne',sans-serif",fontSize:30,marginBottom:10,opacity:0.2}}>⬟</div>
                 <div style={{fontSize:12,color:C.txt2,letterSpacing:".08em",marginBottom:4}}>SELECT A SESSION ABOVE</div>
@@ -1749,33 +1403,9 @@ export default function Auxiron(){
             <textarea value={hl} onChange={function(e){setHl(e.target.value);}}
               placeholder="e.g. Iran closes Strait of Hormuz following US airstrike…"
               rows={3} style={{width:"100%",background:"transparent",border:"none",color:C.txt0,fontSize:13,resize:"none",lineHeight:1.7,fontFamily:"inherit"}}/>
-            <div style={{borderTop:"1px solid "+C.border,marginTop:10,paddingTop:10}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}>
-                <div>
-                  <div style={{fontSize:9,color:C.gold,letterSpacing:".1em",fontWeight:600}}>◈ EDGEFINDER DATA <span style={{color:C.txt3,fontWeight:400}}>(optional)</span></div>
-                  <div style={{fontSize:9,color:C.txt3,marginTop:1}}>Upload screenshots — COT, Top Setups, positioning data</div>
-                </div>
-                <label htmlFor="edge-upload" style={{background:C.bg2,border:"1px solid rgba(200,168,64,0.3)",color:C.goldL,borderRadius:7,padding:"5px 10px",fontSize:9,cursor:"pointer",fontFamily:"inherit",letterSpacing:".05em"}}>+ ADD IMAGES</label>
-                <input id="edge-upload" type="file" accept="image/*" multiple onChange={handleEdgeUpload} style={{display:"none"}}/>
-              </div>
-              {edgeImages.length>0&&<div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:6}}>
-                {edgeImages.map(function(img,i){
-                  return <div key={i} style={{position:"relative",borderRadius:6,overflow:"hidden",border:"1px solid rgba(200,168,64,0.3)"}}>
-                    <img src={"data:"+img.mediaType+";base64,"+img.base64} style={{height:60,width:"auto",display:"block"}}/>
-                    <button onClick={function(){setEdgeImages(function(p){return p.filter(function(_,j){return j!==i;});});}}
-                      style={{position:"absolute",top:2,right:2,background:"rgba(0,0,0,0.7)",border:"none",color:"#fff",borderRadius:"50%",width:16,height:16,fontSize:10,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>×</button>
-                    <div style={{background:"rgba(0,0,0,0.6)",position:"absolute",bottom:0,left:0,right:0,fontSize:7,color:C.txt2,padding:"1px 4px",overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>{img.name}</div>
-                  </div>;
-                })}
-                {edgeImages.length<3&&<label htmlFor="edge-upload" style={{height:60,width:48,background:C.bg2,border:"1px dashed "+C.border2,borderRadius:6,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",color:C.txt3,fontSize:18}}>+</label>}
-              </div>}
-              {edgeImages.length>0&&<div style={{marginTop:6,background:"rgba(200,168,64,0.07)",border:"1px solid rgba(200,168,64,0.2)",borderRadius:6,padding:"6px 9px",fontSize:9,color:C.goldL}}>
-                ✓ {edgeImages.length} EdgeFinder screenshot{edgeImages.length>1?"s":""} attached — AI will cross-analyze against news event
-              </div>}
-            </div>
-            <button onClick={function(){analyze(undefined);}} disabled={loading||!hl.trim()}
+            <button onClick={function(){analyze();}} disabled={loading||!hl.trim()}
               style={{width:"100%",marginTop:10,background:loading?C.bg2:C.gold,color:loading?C.txt2:"#0c1118",border:"none",borderRadius:8,padding:"11px",fontSize:11,fontWeight:500,letterSpacing:".1em",display:"flex",alignItems:"center",justifyContent:"center",gap:7}}>
-              {loading?[<div key="sp" className="sp" style={{width:12,height:12,border:"2px solid "+C.border2,borderTopColor:C.txt1,borderRadius:"50%"}}></div>,"ANALYZING…"]:[edgeImages.length>0?"◈ ":"▶  ",edgeImages.length>0?"ANALYZE + CROSS-CHECK EDGEFINDER":"ANALYZE IMPACT"]}
+              {loading?[<div key="sp" className="sp" style={{width:12,height:12,border:"2px solid "+C.border2,borderTopColor:C.txt1,borderRadius:"50%"}}></div>,"ANALYZING…"]:"▶  ANALYZE IMPACT"}
             </button>
           </div>
           <div style={{marginBottom:12}}>
@@ -1823,33 +1453,6 @@ export default function Auxiron(){
             {result.edgeFinderOverride&&result.edgeFinderOverride.triggered&&<div style={{background:"rgba(240,64,64,0.08)",border:"1px solid rgba(240,64,64,0.3)",borderRadius:8,padding:"10px 12px",marginBottom:8}}>
               <div style={{fontSize:9,color:C.dn,letterSpacing:".1em",marginBottom:4}}>⚠ EDGEFINDER OVERRIDE ALERT</div>
               <div style={{fontSize:12,color:C.txt0,lineHeight:1.75}}>{result.edgeFinderOverride.reason}</div>
-            </div>}
-            {result.edgeFinderCrossCheck&&result.edgeFinderCrossCheck.hasData&&<div style={{background:"rgba(200,168,64,0.08)",border:"2px solid rgba(200,168,64,0.35)",borderRadius:10,padding:"12px",marginBottom:8}}>
-              <div style={{fontSize:10,color:C.goldL,letterSpacing:".1em",fontWeight:700,marginBottom:8}}>◈ EDGEFINDER CROSS-ANALYSIS</div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:8}}>
-                <div style={{background:"rgba(0,0,0,0.25)",borderRadius:7,padding:"8px 10px",border:"1px solid "+(result.edgeFinderCrossCheck.cotAlignment==="CONTRADICTS"?"rgba(240,64,64,0.3)":result.edgeFinderCrossCheck.cotAlignment==="CONFIRMS"?"rgba(40,204,120,0.3)":"rgba(240,144,32,0.3)")}}>
-                  <div style={{fontSize:8,color:C.txt3,letterSpacing:".1em",marginBottom:3}}>COT DATA</div>
-                  <div style={{fontSize:11,fontWeight:700,color:result.edgeFinderCrossCheck.cotAlignment==="CONTRADICTS"?C.dn:result.edgeFinderCrossCheck.cotAlignment==="CONFIRMS"?C.up:C.amber,marginBottom:3}}>{result.edgeFinderCrossCheck.cotAlignment}</div>
-                  <div style={{fontSize:10,color:C.txt1,lineHeight:1.5}}>{result.edgeFinderCrossCheck.cotNote}</div>
-                </div>
-                <div style={{background:"rgba(0,0,0,0.25)",borderRadius:7,padding:"8px 10px",border:"1px solid "+(result.edgeFinderCrossCheck.setupAlignment==="CONTRADICTS"?"rgba(240,64,64,0.3)":result.edgeFinderCrossCheck.setupAlignment==="CONFIRMS"?"rgba(40,204,120,0.3)":"rgba(240,144,32,0.3)")}}>
-                  <div style={{fontSize:8,color:C.txt3,letterSpacing:".1em",marginBottom:3}}>TOP SETUPS</div>
-                  <div style={{fontSize:11,fontWeight:700,color:result.edgeFinderCrossCheck.setupAlignment==="CONTRADICTS"?C.dn:result.edgeFinderCrossCheck.setupAlignment==="CONFIRMS"?C.up:C.amber,marginBottom:3}}>{result.edgeFinderCrossCheck.setupAlignment}</div>
-                  <div style={{fontSize:10,color:C.txt1,lineHeight:1.5}}>{result.edgeFinderCrossCheck.setupNote}</div>
-                </div>
-              </div>
-              {result.edgeFinderCrossCheck.keyContradiction&&<div style={{background:"rgba(240,64,64,0.07)",border:"1px solid rgba(240,64,64,0.2)",borderRadius:7,padding:"8px 10px",marginBottom:6}}>
-                <div style={{fontSize:8,color:C.dn,letterSpacing:".1em",marginBottom:3}}>⚡ KEY CONTRADICTION</div>
-                <div style={{fontSize:11,color:C.txt0,lineHeight:1.5}}>{result.edgeFinderCrossCheck.keyContradiction}</div>
-              </div>}
-              {result.edgeFinderCrossCheck.resolution&&<div style={{background:"rgba(72,144,248,0.07)",border:"1px solid rgba(72,144,248,0.2)",borderRadius:7,padding:"8px 10px",marginBottom:6}}>
-                <div style={{fontSize:8,color:C.blue,letterSpacing:".1em",marginBottom:3}}>HOW TO RECONCILE</div>
-                <div style={{fontSize:11,color:C.txt0,lineHeight:1.5}}>{result.edgeFinderCrossCheck.resolution}</div>
-              </div>}
-              {result.edgeFinderCrossCheck.tradeVerdict&&<div style={{background:"rgba(200,168,64,0.1)",border:"1px solid rgba(200,168,64,0.3)",borderRadius:7,padding:"8px 10px"}}>
-                <div style={{fontSize:8,color:C.gold,letterSpacing:".1em",marginBottom:3}}>TRADE VERDICT</div>
-                <div style={{fontSize:12,fontWeight:600,color:C.goldL}}>{result.edgeFinderCrossCheck.tradeVerdict}</div>
-              </div>}
             </div>}
             {result.keyDrivers&&result.keyDrivers.length>0&&<div style={{marginBottom:8}}>
               <div style={{fontSize:9,color:C.txt2,letterSpacing:".1em",marginBottom:4}}>KEY DRIVERS</div>
@@ -1994,7 +1597,7 @@ export default function Auxiron(){
                 <YAxis domain={["auto","auto"]} padding={{top:8,bottom:8}} tick={{fill:C.txt3,fontSize:8}} tickLine={false} axisLine={false} width={56} tickFormatter={function(v){return fmt(v,detailInst.b);}}/>
                 <Tooltip content={<ChartTip/>}/>
                 <ReferenceLine y={detailInst.open} stroke={C.border2} strokeDasharray="3 3"/>
-                <Area type="linear" dataKey="p" stroke={detailInst.pct>=0?C.up:C.dn} strokeWidth={2} fill="url(#dcg)" dot={false}/>
+                <Area type="monotone" dataKey="p" stroke={detailInst.pct>=0?C.up:C.dn} strokeWidth={2} fill="url(#dcg)" dot={false}/>
               </AreaChart>
             </ResponsiveContainer>
           </div>
