@@ -207,6 +207,8 @@ export default function Auxiron(){
   var [activeScenario,setActiveScenario]=useState(null);
   var [intel,setIntel]=useState(null);
   var [intelLoading,setIntelLoading]=useState(false);
+  var [intelElapsed,setIntelElapsed]=useState(0);
+  var [macroElapsed,setMacroElapsed]=useState(0);
   var [intelSession,setIntelSession]=useState("asia");
   var [calTab,setCalTab]=useState("week");
   var [brief,setBrief]=useState(null);
@@ -220,6 +222,20 @@ export default function Auxiron(){
     setNowStr(new Date().toUTCString().slice(0,25));
     return function(){clearInterval(id);};
   },[]);
+
+  useEffect(function(){
+    if(!intelLoading){setIntelElapsed(0);return;}
+    setIntelElapsed(0);
+    var id=setInterval(function(){setIntelElapsed(function(n){return n+1;});},1000);
+    return function(){clearInterval(id);};
+  },[intelLoading]);
+
+  useEffect(function(){
+    if(!macroLoading){setMacroElapsed(0);return;}
+    setMacroElapsed(0);
+    var id=setInterval(function(){setMacroElapsed(function(n){return n+1;});},1000);
+    return function(){clearInterval(id);};
+  },[macroLoading]);
 
   function applyPrices(combined){
     if(!combined||Object.keys(combined).length===0)return;
@@ -343,7 +359,7 @@ export default function Auxiron(){
       userContent="LIVE MARKET DATA:\n"+snap+"\n\nEVENT:\n"+inp;
     }
     callProxy(
-      {model:"claude-haiku-4-5",max_tokens:3000,system:AI_SYS,
+      {model:"claude-haiku-4-5",max_tokens:2500,system:AI_SYS,
        messages:[{role:"user",content:userContent}]},
       function(res){setResult(res);setHist(function(p){return[{headline:inp,result:res,ts:new Date()}].concat(p.slice(0,7));});setLoading(false);},
       function(e){setErr("Failed: "+e);setLoading(false);}
@@ -385,7 +401,7 @@ export default function Auxiron(){
       "5. TRADER ACTION PLAN: Specific, actionable trades for this week with sizing guidance.\n"+
       "6. EVENT RISK PROBABILITIES: For exactly 3 high-impact events scheduled this week or upcoming (e.g. CPI, FOMC, NFP, OPEC, geopolitical flashpoints), provide upside/base/downside probability outcomes (must sum to 100% per event) PLUS a separate black swan risk (0-10%). For each outcome show how it impacts gold, equities, DXY, and oil. This is the daily probability theory section — make it specific to actual upcoming events.";
     callProxy(
-      {model:"claude-haiku-4-5",max_tokens:7000,system:MACRO_SYS,
+      {model:"claude-sonnet-4-6",max_tokens:1800,system:MACRO_SYS,
        messages:[{role:"user",content:msg}]},
       function(res){setMacroAnalysis(res);setMacroLoading(false);setMacroErr(null);},
       function(e){setMacroErr("Failed: "+e);setMacroLoading(false);}
@@ -402,7 +418,7 @@ export default function Auxiron(){
       "\n\nSearch for: latest market news overnight geopolitical events Fed speakers US economic data today Gold Oil price drivers SPX NDX sector rotation mega-cap movers investor sentiment put call ratio market breadth institutional flows bank forecasts."+
       "\n\nGenerate a comprehensive "+label+" intelligence report with: overnight digest, geopolitical events, dynamic market movers (AI picks most relevant today), Fed watch, economic events SGT times, COMMODITIES DEEP DIVE (Gold + Oil each with what moving now + buy/sell rumor detection + risk scenarios + price targets + futures curve), INDICES DEEP DIVE (SPX + NDX each with what moving + rumor detection + top 5 mega-caps + sector rotation inflows/outflows + investor sentiment put/call breadth institutional vs retail), key levels, instrument bias, trade focus for tonight.";
     callProxy(
-      {model:"claude-sonnet-4-6",max_tokens:8000,system:INTEL_SYS,
+      {model:"claude-sonnet-4-6",max_tokens:2000,system:INTEL_SYS,
        messages:[{role:"user",content:msg}],
        useWebSearch:true},
       function(res){setIntel(res);setIntelLoading(false);setIntelErr(null);},
@@ -1003,6 +1019,15 @@ export default function Auxiron(){
               })}
             </div>
           </div>
+          {macroLoading&&<div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:12,padding:"22px 20px",textAlign:"center",marginBottom:10}}>
+            <div className="sp" style={{width:20,height:20,border:"3px solid "+C.border2,borderTopColor:C.gold,borderRadius:"50%",margin:"0 auto 10px"}}></div>
+            <div style={{fontSize:11,color:C.goldL,letterSpacing:".08em",marginBottom:4}}>ANALYZING MACRO CONDITIONS</div>
+            <div style={{fontSize:9,color:C.txt2,marginBottom:6}}>Scenarios · Probabilities · Book play</div>
+            <div style={{fontSize:10,color:C.txt3,fontVariantNumeric:"tabular-nums"}}>
+              {macroElapsed<5?"Starting analysis…":macroElapsed<15?"Building scenario models…":"Generating report…"}
+              <span style={{color:C.gold,marginLeft:6,fontWeight:600}}>{macroElapsed}s</span>
+            </div>
+          </div>}
           {macroErr&&<div style={{background:"rgba(240,64,64,0.07)",border:"1px solid rgba(240,64,64,0.2)",borderRadius:8,padding:"10px 12px",color:C.dn,fontSize:12,marginBottom:10}}>⚠ {macroErr}</div>}
           {!macroAnalysis&&!macroLoading&&!macroErr&&<div style={{textAlign:"center",padding:"40px 20px",background:C.bg1,border:"1px solid "+C.border,borderRadius:10}}>
             <div style={{fontFamily:"'Syne',sans-serif",fontSize:28,color:C.txt3,marginBottom:8,opacity:0.25}}>⬡</div>
@@ -1480,7 +1505,11 @@ export default function Auxiron(){
               <div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:12,padding:"26px 20px",textAlign:"center",marginBottom:10}}>
                 <div className="sp" style={{width:22,height:22,border:"3px solid "+C.border2,borderTopColor:C.gold,borderRadius:"50%",margin:"0 auto 10px"}}></div>
                 <div style={{fontSize:11,color:C.goldL,letterSpacing:".08em",marginBottom:3}}>SEARCHING WEB + GENERATING</div>
-                <div style={{fontSize:9,color:C.txt2}}>Live news · Sector flows · Rumor detection</div>
+                <div style={{fontSize:9,color:C.txt2,marginBottom:6}}>Live news · Sector flows · Rumor detection</div>
+                <div style={{fontSize:10,color:C.txt3,fontVariantNumeric:"tabular-nums"}}>
+                  {intelElapsed<5?"Starting up…":intelElapsed<15?"Searching the web…":intelElapsed<30?"Reading market data…":"Generating report…"}
+                  <span style={{color:C.gold,marginLeft:6,fontWeight:600}}>{intelElapsed}s</span>
+                </div>
               </div>
             )}
 
