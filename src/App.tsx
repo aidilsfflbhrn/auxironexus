@@ -79,8 +79,8 @@ Respond ONLY with valid JSON, no extra text:
 Provide 3 dynamicMovers, 3 geopolitical events, 3-4 econ events, 3-4 gold scenarios, 4 oil scenarios, 5 megacaps, 5-6 sector rotation entries, 4 key levels. Reference live prices throughout.`;
 
 const MACRO_SYS=`You are a world-class macro strategist, financial historian, quant analyst and trading desk head. Respond ONLY with valid JSON:
-{"title":"<analysis title>","overallRisk":"<LOW|MODERATE|HIGH|EXTREME>","marketRegime":"<RISK-ON|RISK-OFF|TRANSITION|CRISIS>","executiveSummary":"<3-4 sentences>","bookPlay":{"currentBook":"<dominant market narrative — e.g. STAGFLATION PLAYBOOK|OIL DEMAND SURGE|RISK-OFF CASH RUSH|INFLATIONARY SUPPLY SHOCK|DOLLAR WRECKING BALL|CREDIT CRUNCH|SOFT LANDING|HARD LANDING|CARRY TRADE UNWIND|GEOPOLITICAL RISK PREMIUM>","description":"<2-3 sentences: what narrative is driving markets RIGHT NOW, why it started, and how it is playing out across assets>","phase":"<EARLY|DEVELOPING|MATURE|EXHAUSTION>","historicalParallel":"<which historical period this most closely resembles and what eventually happened>","keyDrivers":["<d1>","<d2>","<d3>"],"impliedRotations":{"buying":["<asset/sector being accumulated>","<asset2>"],"selling":["<asset/sector being dumped>","<asset2>"],"watching":["<on-deck asset — may move next>"]}},"probabilityMatrix":{"methodology":"<1 sentence: basis for probability estimates — macro fundamentals, positioning, historical base rates>","timeHorizon":"<e.g. 3 months>","distributionType":"<NORMAL|FAT-TAIL|BIMODAL>","tailRiskNote":"<1-2 sentences: why tail risk is elevated or suppressed right now>","scenarios":[{"name":"<scenario name e.g. Soft Landing|Stagflation|Hard Landing|Geopolitical Shock|Deflation Scare>","type":"<BULL|BASE|BEAR|CRISIS|BLACK_SWAN>","probability":<0-100>,"description":"<2 sentences>","keyAssets":{"gold":"<BULLISH|BEARISH|NEUTRAL>","equities":"<BULLISH|BEARISH|NEUTRAL>","dxy":"<BULLISH|BEARISH|NEUTRAL>","bonds":"<BULLISH|BEARISH|NEUTRAL>","oil":"<BULLISH|BEARISH|NEUTRAL>"},"triggerConditions":["<c1>","<c2>"],"timeline":"<e.g. 1-3 months>"}],"cashRushScenario":{"probability":<0-100>,"phase":"<NOT STARTED|EARLY|DEVELOPING|ADVANCED>","isActive":<true|false>,"description":"<2 sentences: what cash rush looks like in current context — investors liquidating assets for USD/cash/T-bills>","triggers":["<specific trigger 1>","<specific trigger 2>","<specific trigger 3>"],"assetFlow":"<FROM: what assets are being sold → TO: where cash is going>","leadingIndicators":["<indicator currently showing stress>","<indicator2>"],"historicalAnalog":"<e.g. March 2020, 2008 Lehman, Sept 2022>","estimatedDuration":"<how long this phase typically lasts>","traderNote":"<1 sentence: how to position if this hits>"},"dollarDistrustScenario":{"probability":<0-100>,"phase":"<NOT STARTED|EARLY|DEVELOPING|ADVANCED>","isActive":<true|false>,"description":"<2 sentences: what dollar distrust/de-dollarization looks like and what drives it>","triggers":["<specific trigger 1>","<specific trigger 2>","<specific trigger 3>"],"assetFlow":"<FROM: USD-denominated assets → TO: gold, commodities, other currencies, BTC>","leadingIndicators":["<indicator1>","<indicator2>"],"historicalAnalog":"<e.g. 1971 Nixon shock, late 1970s dollar crisis>","estimatedDuration":"<months or years>","traderNote":"<1 sentence: how to position if this hits>"},"blackSwanEvents":[{"event":"<specific plausible black swan — e.g. China invades Taiwan, US debt default, Major bank collapse, Pandemic outbreak, Nuclear escalation>","category":"<GEOPOLITICAL|FINANCIAL|NATURAL|POLICY|PANDEMIC>","probability":<0-10>,"impactSeverity":"<HIGH|EXTREME|CATASTROPHIC>","marketShock":"<equities -X%, gold +Y%, oil +/-Z%>","timeToRecover":"<estimated recovery timeline>"},{"event":"<second black swan>","category":"<cat>","probability":<0-10>,"impactSeverity":"<HIGH|EXTREME|CATASTROPHIC>","marketShock":"<shock estimates>","timeToRecover":"<timeline>"},{"event":"<third black swan>","category":"<cat>","probability":<0-10>,"impactSeverity":"<HIGH|EXTREME|CATASTROPHIC>","marketShock":"<shock>","timeToRecover":"<timeline>"}]},"moneyFlowRotation":{"primaryFlow":"<FROM: X → TO: Y — 1 sentence explaining the institutional rotation>","institutionalBias":"<what large funds, hedge funds, CBs are doing>","retailVsInst":"<divergence or alignment between retail and institutional positioning>","sectorRotation":"<which sectors getting inflows and outflows right now>","assetClassRanking":["<#1 most favored asset class right now>","<#2>","<#3>","<#4>","<#5 least favored — avoid>"],"weeklySetup":"<3-4 sentences: what specifically to watch next week, key data releases and catalysts, how to position heading into next week, what event would change the thesis>"},"riskScenarios":[{"id":<1-5>,"category":"<GEOPOLITICAL|MONETARY|CREDIT|LIQUIDITY|GROWTH|INFLATION|ENERGY|CURRENCY>","title":"<n>","probabilityPct":<0-100>,"status":"<ACTIVE|WATCH|DORMANT>","description":"<2-3 sentences>","triggerEvents":["<e1>","<e2>"],"marketImpact":{"equities":"<BULLISH|BEARISH|NEUTRAL> — <why>","gold":"<BULLISH|BEARISH|NEUTRAL> — <why>","oil":"<BULLISH|BEARISH|NEUTRAL> — <why>","dxy":"<BULLISH|BEARISH|NEUTRAL> — <why>","bonds":"<BULLISH|BEARISH|NEUTRAL> — <why>"},"historicalAnalog":"<historical event and outcome>","timeline":"<timeframe>"}],"timelineOutlook":{"week":"<next 7 days>","month":"<next 30 days>","quarter":"<next 90 days>","year":"<12 month thesis>"},"historicPatterns":[{"pattern":"<n>","currentMatch":"<match>","historicalOutcome":"<outcome>","impliedMove":"<implied>"},{"pattern":"<n2>","currentMatch":"<m>","historicalOutcome":"<o>","impliedMove":"<i>"}],"moneyFlowAnalysis":"<3-4 sentences on institutional money movement>","keyWatchlist":[{"instrument":"<sym>","signal":"<watch>","threshold":"<level>","implication":"<means>"},{"instrument":"<s2>","signal":"<w>","threshold":"<l>","implication":"<m>"},{"instrument":"<s3>","signal":"<w2>","threshold":"<l2>","implication":"<m2>"}],"traderActionPlan":"<4-5 sentences: specific trades, sizing guidance, what to buy/sell/avoid this week>"}
-Provide exactly 5 riskScenarios ordered by probability. Scenarios in probabilityMatrix must sum to 100%. Provide exactly 3 blackSwanEvents (probability 0-10% each). Rate cashRushScenario and dollarDistrustScenario probability independently (not part of the 100% sum — these are conditional probabilities). Be precise and specific about current market conditions.`;
+{"title":"<analysis title>","overallRisk":"<LOW|MODERATE|HIGH|EXTREME>","marketRegime":"<RISK-ON|RISK-OFF|TRANSITION|CRISIS>","executiveSummary":"<3-4 sentences>","bookPlay":{"currentBook":"<dominant market narrative — e.g. STAGFLATION PLAYBOOK|OIL DEMAND SURGE|RISK-OFF CASH RUSH|INFLATIONARY SUPPLY SHOCK|DOLLAR WRECKING BALL|CREDIT CRUNCH|SOFT LANDING|HARD LANDING|CARRY TRADE UNWIND|GEOPOLITICAL RISK PREMIUM>","description":"<2-3 sentences: what narrative is driving markets RIGHT NOW, why it started, and how it is playing out across assets>","phase":"<EARLY|DEVELOPING|MATURE|EXHAUSTION>","historicalParallel":"<which historical period this most closely resembles and what eventually happened>","keyDrivers":["<d1>","<d2>","<d3>"],"impliedRotations":{"buying":["<asset/sector being accumulated>","<asset2>"],"selling":["<asset/sector being dumped>","<asset2>"],"watching":["<on-deck asset — may move next>"]}},"probabilityMatrix":{"methodology":"<1 sentence: basis for probability estimates — macro fundamentals, positioning, historical base rates>","timeHorizon":"<e.g. 3 months>","distributionType":"<NORMAL|FAT-TAIL|BIMODAL>","tailRiskNote":"<1-2 sentences: why tail risk is elevated or suppressed right now>","scenarios":[{"name":"<scenario name e.g. Soft Landing|Stagflation|Hard Landing|Geopolitical Shock|Deflation Scare>","type":"<BULL|BASE|BEAR|CRISIS|BLACK_SWAN>","probability":<0-100>,"description":"<2 sentences>","keyAssets":{"gold":"<BULLISH|BEARISH|NEUTRAL>","equities":"<BULLISH|BEARISH|NEUTRAL>","dxy":"<BULLISH|BEARISH|NEUTRAL>","bonds":"<BULLISH|BEARISH|NEUTRAL>","oil":"<BULLISH|BEARISH|NEUTRAL>"},"triggerConditions":["<c1>","<c2>"],"timeline":"<e.g. 1-3 months>"}],"cashRushScenario":{"probability":<0-100>,"phase":"<NOT STARTED|EARLY|DEVELOPING|ADVANCED>","isActive":<true|false>,"description":"<2 sentences: what cash rush looks like in current context — investors liquidating assets for USD/cash/T-bills>","triggers":["<specific trigger 1>","<specific trigger 2>","<specific trigger 3>"],"assetFlow":"<FROM: what assets are being sold → TO: where cash is going>","leadingIndicators":["<indicator currently showing stress>","<indicator2>"],"historicalAnalog":"<e.g. March 2020, 2008 Lehman, Sept 2022>","estimatedDuration":"<how long this phase typically lasts>","traderNote":"<1 sentence: how to position if this hits>"},"dollarDistrustScenario":{"probability":<0-100>,"phase":"<NOT STARTED|EARLY|DEVELOPING|ADVANCED>","isActive":<true|false>,"description":"<2 sentences: what dollar distrust/de-dollarization looks like and what drives it>","triggers":["<specific trigger 1>","<specific trigger 2>","<specific trigger 3>"],"assetFlow":"<FROM: USD-denominated assets → TO: gold, commodities, other currencies, BTC>","leadingIndicators":["<indicator1>","<indicator2>"],"historicalAnalog":"<e.g. 1971 Nixon shock, late 1970s dollar crisis>","estimatedDuration":"<months or years>","traderNote":"<1 sentence: how to position if this hits>"},"blackSwanEvents":[{"event":"<specific plausible black swan — e.g. China invades Taiwan, US debt default, Major bank collapse, Pandemic outbreak, Nuclear escalation>","category":"<GEOPOLITICAL|FINANCIAL|NATURAL|POLICY|PANDEMIC>","probability":<0-10>,"impactSeverity":"<HIGH|EXTREME|CATASTROPHIC>","marketShock":"<equities -X%, gold +Y%, oil +/-Z%>","timeToRecover":"<estimated recovery timeline>"},{"event":"<second black swan>","category":"<cat>","probability":<0-10>,"impactSeverity":"<HIGH|EXTREME|CATASTROPHIC>","marketShock":"<shock estimates>","timeToRecover":"<timeline>"},{"event":"<third black swan>","category":"<cat>","probability":<0-10>,"impactSeverity":"<HIGH|EXTREME|CATASTROPHIC>","marketShock":"<shock>","timeToRecover":"<timeline>"}]},"moneyFlowRotation":{"primaryFlow":"<FROM: X → TO: Y — 1 sentence explaining the institutional rotation>","institutionalBias":"<what large funds, hedge funds, CBs are doing>","retailVsInst":"<divergence or alignment between retail and institutional positioning>","sectorRotation":"<which sectors getting inflows and outflows right now>","assetClassRanking":["<#1 most favored asset class right now>","<#2>","<#3>","<#4>","<#5 least favored — avoid>"],"weeklySetup":"<3-4 sentences: what specifically to watch next week, key data releases and catalysts, how to position heading into next week, what event would change the thesis>"},"riskScenarios":[{"id":<1-5>,"category":"<GEOPOLITICAL|MONETARY|CREDIT|LIQUIDITY|GROWTH|INFLATION|ENERGY|CURRENCY>","title":"<n>","probabilityPct":<0-100>,"status":"<ACTIVE|WATCH|DORMANT>","description":"<2-3 sentences>","triggerEvents":["<e1>","<e2>"],"marketImpact":{"equities":"<BULLISH|BEARISH|NEUTRAL> — <why>","gold":"<BULLISH|BEARISH|NEUTRAL> — <why>","oil":"<BULLISH|BEARISH|NEUTRAL> — <why>","dxy":"<BULLISH|BEARISH|NEUTRAL> — <why>","bonds":"<BULLISH|BEARISH|NEUTRAL> — <why>"},"historicalAnalog":"<historical event and outcome>","timeline":"<timeframe>"}],"timelineOutlook":{"week":"<next 7 days>","month":"<next 30 days>","quarter":"<next 90 days>","year":"<12 month thesis>"},"historicPatterns":[{"pattern":"<n>","currentMatch":"<match>","historicalOutcome":"<outcome>","impliedMove":"<implied>"},{"pattern":"<n2>","currentMatch":"<m>","historicalOutcome":"<o>","impliedMove":"<i>"}],"moneyFlowAnalysis":"<3-4 sentences on institutional money movement>","keyWatchlist":[{"instrument":"<sym>","signal":"<watch>","threshold":"<level>","implication":"<means>"},{"instrument":"<s2>","signal":"<w>","threshold":"<l>","implication":"<m>"},{"instrument":"<s3>","signal":"<w2>","threshold":"<l2>","implication":"<m2>"}],"traderActionPlan":"<4-5 sentences: specific trades, sizing guidance, what to buy/sell/avoid this week>","eventRiskProbabilities":[{"event":"<specific event name e.g. US CPI April 2026 Release|FOMC Meeting|NFP Jobs Report|OPEC+ Meeting|Fed Chair Speech>","date":"<date or day e.g. Wed Apr 23>","type":"<CENTRAL_BANK|ECONOMIC_DATA|GEOPOLITICAL|ENERGY|POLICY|EARNINGS>","upside":{"outcome":"<better-than-expected scenario>","probability":<0-100>,"impact":{"gold":"<BULLISH|BEARISH|NEUTRAL>","equities":"<BULLISH|BEARISH|NEUTRAL>","dxy":"<BULLISH|BEARISH|NEUTRAL>","oil":"<BULLISH|BEARISH|NEUTRAL>"}},"baseCase":{"outcome":"<consensus/expected scenario>","probability":<0-100>,"impact":{"gold":"<BULLISH|BEARISH|NEUTRAL>","equities":"<BULLISH|BEARISH|NEUTRAL>","dxy":"<BULLISH|BEARISH|NEUTRAL>","oil":"<BULLISH|BEARISH|NEUTRAL>"}},"downside":{"outcome":"<worse-than-expected scenario>","probability":<0-100>,"impact":{"gold":"<BULLISH|BEARISH|NEUTRAL>","equities":"<BULLISH|BEARISH|NEUTRAL>","dxy":"<BULLISH|BEARISH|NEUTRAL>","oil":"<BULLISH|BEARISH|NEUTRAL>"}},"blackSwanRisk":{"outcome":"<extreme tail risk from this event>","probability":<0-10>,"impact":{"gold":"<BULLISH|BEARISH|NEUTRAL>","equities":"<BULLISH|BEARISH|NEUTRAL>","dxy":"<BULLISH|BEARISH|NEUTRAL>","oil":"<BULLISH|BEARISH|NEUTRAL>"}},"primaryImpactInstrument":"<the single most affected instrument e.g. XAU/USD>","traderNote":"<1 sentence actionable>"},{"event":"<second event>","date":"<date>","type":"<type>","upside":{"outcome":"<upside>","probability":<0-100>,"impact":{"gold":"<BULLISH|BEARISH|NEUTRAL>","equities":"<BULLISH|BEARISH|NEUTRAL>","dxy":"<BULLISH|BEARISH|NEUTRAL>","oil":"<BULLISH|BEARISH|NEUTRAL>"}},"baseCase":{"outcome":"<base>","probability":<0-100>,"impact":{"gold":"<BULLISH|BEARISH|NEUTRAL>","equities":"<BULLISH|BEARISH|NEUTRAL>","dxy":"<BULLISH|BEARISH|NEUTRAL>","oil":"<BULLISH|BEARISH|NEUTRAL>"}},"downside":{"outcome":"<down>","probability":<0-100>,"impact":{"gold":"<BULLISH|BEARISH|NEUTRAL>","equities":"<BULLISH|BEARISH|NEUTRAL>","dxy":"<BULLISH|BEARISH|NEUTRAL>","oil":"<BULLISH|BEARISH|NEUTRAL>"}},"blackSwanRisk":{"outcome":"<tail>","probability":<0-10>,"impact":{"gold":"<BULLISH|BEARISH|NEUTRAL>","equities":"<BULLISH|BEARISH|NEUTRAL>","dxy":"<BULLISH|BEARISH|NEUTRAL>","oil":"<BULLISH|BEARISH|NEUTRAL>"}},"primaryImpactInstrument":"<sym>","traderNote":"<1 sentence>"},{"event":"<third event>","date":"<date>","type":"<type>","upside":{"outcome":"<upside>","probability":<0-100>,"impact":{"gold":"<BULLISH|BEARISH|NEUTRAL>","equities":"<BULLISH|BEARISH|NEUTRAL>","dxy":"<BULLISH|BEARISH|NEUTRAL>","oil":"<BULLISH|BEARISH|NEUTRAL>"}},"baseCase":{"outcome":"<base>","probability":<0-100>,"impact":{"gold":"<BULLISH|BEARISH|NEUTRAL>","equities":"<BULLISH|BEARISH|NEUTRAL>","dxy":"<BULLISH|BEARISH|NEUTRAL>","oil":"<BULLISH|BEARISH|NEUTRAL>"}},"downside":{"outcome":"<down>","probability":<0-100>,"impact":{"gold":"<BULLISH|BEARISH|NEUTRAL>","equities":"<BULLISH|BEARISH|NEUTRAL>","dxy":"<BULLISH|BEARISH|NEUTRAL>","oil":"<BULLISH|BEARISH|NEUTRAL>"}},"blackSwanRisk":{"outcome":"<tail>","probability":<0-10>,"impact":{"gold":"<BULLISH|BEARISH|NEUTRAL>","equities":"<BULLISH|BEARISH|NEUTRAL>","dxy":"<BULLISH|BEARISH|NEUTRAL>","oil":"<BULLISH|BEARISH|NEUTRAL>"}},"primaryImpactInstrument":"<sym>","traderNote":"<1 sentence>"}]}
+Provide exactly 5 riskScenarios ordered by probability. Scenarios in probabilityMatrix must sum to 100%. Provide exactly 3 blackSwanEvents (probability 0-10% each). Rate cashRushScenario and dollarDistrustScenario probability independently (not part of the 100% sum — these are conditional probabilities). For eventRiskProbabilities provide exactly 3 upcoming critical events this week or month with upside/base/downside probabilities summing to 100% for each event plus a separate blackSwanRisk (0-10%). Be precise and specific about current market conditions.`;
 
 const BRIEF_SYS=`You are a senior macro strategist at a top-tier investment bank with access to live market data and current news. Generate a comprehensive Goldman Sachs-style market brief.
 
@@ -141,10 +141,14 @@ function callProxy(body,onSuccess,onError){
   var xhr=new XMLHttpRequest();
   xhr.open("POST","/api/analyze",true);
   xhr.setRequestHeader("Content-Type","application/json");
-  xhr.timeout=45000;
+  xhr.timeout=body.useWebSearch?90000:55000;
   xhr.onload=function(){
     try{
-      var d=JSON.parse(xhr.responseText);
+      var raw=(xhr.responseText||"").trim();
+      if(!raw.startsWith("{")&&!raw.startsWith("[")){
+        onError("Server error (timeout or gateway): "+raw.slice(0,180));return;
+      }
+      var d=JSON.parse(raw);
       if(d.error){
         var eType=d.error&&d.error.type;
         var eMsg=eType==="overloaded_error"?"Anthropic API overloaded — please try again in 1–2 min":
@@ -153,15 +157,16 @@ function callProxy(body,onSuccess,onError){
         onError(eMsg);return;
       }
       var txt=(d.content||[]).map(function(x){return x.type==="text"?x.text:"";}).join("");
-      if(!txt){onError("Empty response");return;}
+      if(!txt){onError("Empty response — web search may be unavailable, retry");return;}
       var clean=txt.split("```json").join("").split("```").join("").trim();
       var s=clean.indexOf("{"),ef=clean.lastIndexOf("}");
-      if(s!==-1&&ef>s)clean=clean.slice(s,ef+1);
+      if(s!==-1&&ef>s){clean=clean.slice(s,ef+1);}
+      else{onError("AI returned plain text instead of JSON: "+clean.slice(0,160)+"…");return;}
       onSuccess(JSON.parse(clean));
     }catch(e){onError("Parse error: "+e.message);}
   };
   xhr.onerror=function(){onError("Network error");};
-  xhr.ontimeout=function(){onError("Timed out — try again");};
+  xhr.ontimeout=function(){onError("Request timed out — web search takes up to 60s, please retry");};
   xhr.send(JSON.stringify(body));
 }
 
@@ -206,6 +211,7 @@ export default function Auxiron(){
   var [calTab,setCalTab]=useState("week");
   var [brief,setBrief]=useState(null);
   var [briefLoading,setBriefLoading]=useState(false);
+  var [briefErr,setBriefErr]=useState(null);
   var [edgeImages,setEdgeImages]=useState<{name:string;base64:string;mediaType:string}[]>([]);
   var cycleRef=useRef(0);
 
@@ -376,9 +382,10 @@ export default function Auxiron(){
       "2. PROBABILITY DISTRIBUTION MATRIX: Rate all macro scenarios with probabilities summing to 100%. Include 3+ main scenarios (Soft Landing, Stagflation, Hard Landing, Black Swan, etc). Provide CASH RUSH SCENARIO probability (independently rated 0-100%) — are investors running for cash right now? What phase is it? What are the triggers and asset flows? Provide DOLLAR DISTRUST SCENARIO probability (independently rated 0-100%) — is confidence in the USD eroding? What drives it? List 3 BLACK SWAN events with probability, market shock estimate, and recovery timeline.\n"+
       "3. MONEY FLOW ROTATION: Institutional flows, asset class ranking, sector rotation, weekly setup.\n"+
       "4. RISK SCENARIOS: Exactly 5 scenarios with probabilities, triggers, cross-asset impact.\n"+
-      "5. TRADER ACTION PLAN: Specific, actionable trades for this week with sizing guidance.";
+      "5. TRADER ACTION PLAN: Specific, actionable trades for this week with sizing guidance.\n"+
+      "6. EVENT RISK PROBABILITIES: For exactly 3 high-impact events scheduled this week or upcoming (e.g. CPI, FOMC, NFP, OPEC, geopolitical flashpoints), provide upside/base/downside probability outcomes (must sum to 100% per event) PLUS a separate black swan risk (0-10%). For each outcome show how it impacts gold, equities, DXY, and oil. This is the daily probability theory section — make it specific to actual upcoming events.";
     callProxy(
-      {model:"claude-haiku-4-5",max_tokens:5000,system:MACRO_SYS,
+      {model:"claude-haiku-4-5",max_tokens:7000,system:MACRO_SYS,
        messages:[{role:"user",content:msg}]},
       function(res){setMacroAnalysis(res);setMacroLoading(false);setMacroErr(null);},
       function(e){setMacroErr("Failed: "+e);setMacroLoading(false);}
@@ -395,7 +402,7 @@ export default function Auxiron(){
       "\n\nSearch for: latest market news overnight geopolitical events Fed speakers US economic data today Gold Oil price drivers SPX NDX sector rotation mega-cap movers investor sentiment put call ratio market breadth institutional flows bank forecasts."+
       "\n\nGenerate a comprehensive "+label+" intelligence report with: overnight digest, geopolitical events, dynamic market movers (AI picks most relevant today), Fed watch, economic events SGT times, COMMODITIES DEEP DIVE (Gold + Oil each with what moving now + buy/sell rumor detection + risk scenarios + price targets + futures curve), INDICES DEEP DIVE (SPX + NDX each with what moving + rumor detection + top 5 mega-caps + sector rotation inflows/outflows + investor sentiment put/call breadth institutional vs retail), key levels, instrument bias, trade focus for tonight.";
     callProxy(
-      {model:"claude-sonnet-4-6",max_tokens:4000,system:INTEL_SYS,
+      {model:"claude-sonnet-4-6",max_tokens:8000,system:INTEL_SYS,
        messages:[{role:"user",content:msg}],
        useWebSearch:true},
       function(res){setIntel(res);setIntelLoading(false);setIntelErr(null);},
@@ -404,18 +411,18 @@ export default function Auxiron(){
   }
 
   function fetchBrief(session){
-    setBriefLoading(true);setBrief(null);
+    setBriefLoading(true);setBrief(null);setBriefErr(null);
     var label=session==="asia"?"ASIA OPEN (SGT 8am-12pm)":"PRE-NY SESSION (SGT 8pm-10pm)";
     var msg="LIVE MARKET DATA:\n"+getSnap()+
       "\n\nSESSION: "+label+
       "\n\nToday's date: "+new Date().toDateString()+
       "\n\nPlease search the web for current market news, bank forecasts and economic calendar data, then generate a comprehensive market brief. Focus on US economic events primarily, then EUR, JPY and GBP. Include upcoming economic events for this week, this month and remaining quarter.";
     callProxy(
-      {model:"claude-sonnet-4-6",max_tokens:4000,system:BRIEF_SYS,
+      {model:"claude-sonnet-4-6",max_tokens:6000,system:BRIEF_SYS,
        messages:[{role:"user",content:msg}],
        useWebSearch:true},
-      function(res){setBrief(res);setBriefLoading(false);},
-      function(e){console.log("Brief error:",e);setBriefLoading(false);}
+      function(res){setBrief(res);setBriefLoading(false);setBriefErr(null);},
+      function(e){setBriefErr("Failed: "+e);setBriefLoading(false);}
     );
   }
 
@@ -1254,6 +1261,76 @@ export default function Auxiron(){
               <div style={{fontSize:10,color:C.gold,letterSpacing:".1em",marginBottom:6}}>💰 INSTITUTIONAL MONEY FLOW</div>
               <div style={{fontSize:13,color:C.txt0,lineHeight:1.75}}>{macroAnalysis.moneyFlowAnalysis}</div>
             </div>}
+
+            {macroAnalysis.eventRiskProbabilities&&macroAnalysis.eventRiskProbabilities.length>0&&(function(){
+              var typeClr=function(t:string){return t==="CENTRAL_BANK"?C.blue:t==="ECONOMIC_DATA"?C.up:t==="GEOPOLITICAL"?C.dn:t==="ENERGY"?C.amber:t==="POLICY"?C.vix:C.txt2;};
+              var impactIcon=function(v:string){return v==="BULLISH"?"↑":v==="BEARISH"?"↓":"→";};
+              var impactClrFn=function(v:string){return v==="BULLISH"?C.up:v==="BEARISH"?C.dn:C.txt3;};
+              return <div style={{marginBottom:10}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+                  <div style={{fontSize:10,color:"#ff8c42",letterSpacing:".12em",fontWeight:700}}>📊 EVENT RISK PROBABILITY — DAILY BRIEFING</div>
+                  <span style={{fontSize:8,color:C.txt3,fontStyle:"italic"}}>upside / base / downside per event</span>
+                </div>
+                <div style={{display:"grid",gap:8}}>
+                  {macroAnalysis.eventRiskProbabilities.map(function(ev:any,i:number){
+                    var tc=typeClr(ev.type);
+                    return <div key={i} style={{background:C.bg1,border:"1px solid "+C.border2,borderRadius:12,padding:"13px"}}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+                        <div>
+                          <div style={{fontSize:12,fontWeight:700,color:C.txt0,marginBottom:2}}>{ev.event}</div>
+                          <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                            {ev.date&&<span style={{fontSize:9,color:C.txt3}}>📅 {ev.date}</span>}
+                            {ev.type&&<span style={{fontSize:8,fontWeight:700,color:tc,background:"rgba(0,0,0,0.3)",border:"1px solid "+tc+"44",borderRadius:3,padding:"1px 6px"}}>{ev.type}</span>}
+                          </div>
+                        </div>
+                        {ev.primaryImpactInstrument&&<span style={{fontSize:10,fontWeight:600,color:C.goldL,background:"rgba(200,168,64,0.12)",border:"1px solid rgba(200,168,64,0.3)",borderRadius:5,padding:"3px 8px",flexShrink:0}}>{ev.primaryImpactInstrument}</span>}
+                      </div>
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:5,marginBottom:8}}>
+                        {[
+                          {k:"upside",label:"UPSIDE",icon:"▲",clr:C.up,bg:"rgba(40,204,120,0.08)",bdr:"rgba(40,204,120,0.25)"},
+                          {k:"baseCase",label:"BASE",icon:"◆",clr:C.blue,bg:"rgba(72,144,248,0.08)",bdr:"rgba(72,144,248,0.25)"},
+                          {k:"downside",label:"DOWNSIDE",icon:"▼",clr:C.dn,bg:"rgba(240,64,64,0.08)",bdr:"rgba(240,64,64,0.25)"},
+                        ].map(function(col){
+                          var sc=ev[col.k];if(!sc)return null;
+                          return <div key={col.k} style={{background:col.bg,border:"1px solid "+col.bdr,borderRadius:8,padding:"8px 9px"}}>
+                            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+                              <span style={{fontSize:8,color:col.clr,fontWeight:700,letterSpacing:".08em"}}>{col.icon} {col.label}</span>
+                              <span style={{fontFamily:"'Syne',sans-serif",fontSize:14,fontWeight:800,color:col.clr}}>{sc.probability}%</span>
+                            </div>
+                            <div style={{position:"relative",height:4,background:C.bg2,borderRadius:2,overflow:"hidden",marginBottom:5}}>
+                              <div style={{width:sc.probability+"%",height:"100%",background:col.clr,borderRadius:2,opacity:0.7}}></div>
+                            </div>
+                            <div style={{fontSize:9,color:C.txt1,lineHeight:1.45,marginBottom:5}}>{sc.outcome}</div>
+                            {sc.impact&&<div style={{display:"flex",gap:3,flexWrap:"wrap"}}>
+                              {Object.entries(sc.impact).map(function([k,v]:any){
+                                return <span key={k} style={{fontSize:7,color:impactClrFn(v),background:"rgba(0,0,0,0.3)",borderRadius:2,padding:"1px 4px"}}>{k.toUpperCase()} {impactIcon(v)}</span>;
+                              })}
+                            </div>}
+                          </div>;
+                        })}
+                      </div>
+                      {ev.blackSwanRisk&&<div style={{background:"rgba(255,24,64,0.06)",border:"1px solid rgba(255,24,64,0.25)",borderRadius:7,padding:"7px 10px",marginBottom:6}}>
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
+                          <span style={{fontSize:8,color:"#ff1840",fontWeight:700}}>☠ BLACK SWAN RISK</span>
+                          <span style={{fontFamily:"'Syne',sans-serif",fontSize:12,fontWeight:700,color:"#ff1840"}}>{ev.blackSwanRisk.probability}%</span>
+                        </div>
+                        <div style={{fontSize:9,color:C.txt1,lineHeight:1.4,marginBottom:4}}>{ev.blackSwanRisk.outcome}</div>
+                        {ev.blackSwanRisk.impact&&<div style={{display:"flex",gap:3,flexWrap:"wrap"}}>
+                          {Object.entries(ev.blackSwanRisk.impact).map(function([k,v]:any){
+                            return <span key={k} style={{fontSize:7,color:impactClrFn(v),background:"rgba(0,0,0,0.3)",borderRadius:2,padding:"1px 4px"}}>{k.toUpperCase()} {impactIcon(v)}</span>;
+                          })}
+                        </div>}
+                      </div>}
+                      {ev.traderNote&&<div style={{background:"rgba(40,204,120,0.07)",border:"1px solid rgba(40,204,120,0.2)",borderRadius:6,padding:"6px 9px"}}>
+                        <span style={{fontSize:8,color:C.up,fontWeight:600}}>◈ </span>
+                        <span style={{fontSize:10,color:C.txt0}}>{ev.traderNote}</span>
+                      </div>}
+                    </div>;
+                  })}
+                </div>
+              </div>;
+            })()}
+
             {macroAnalysis.riskScenarios&&macroAnalysis.riskScenarios.length>0&&<div style={{marginBottom:10}}>
               <div style={{fontSize:11,color:C.txt1,letterSpacing:".1em",marginBottom:8,fontWeight:600}}>⚠ RISK SCENARIO MATRIX</div>
               <div style={{display:"grid",gap:6}}>
