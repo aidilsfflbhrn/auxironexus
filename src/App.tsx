@@ -70,13 +70,22 @@ Provide 3 topMovers, 3 watchlist, 3 keyLevels, 2 riskEvents.`;
 const INST_SYS=`You are a professional market analyst. Respond ONLY with valid JSON:
 {"drivers":["<d1>","<d2>","<d3>"],"shortTerm":{"outlook":"<BULLISH|BEARISH|NEUTRAL>","timeframe":"1-7 days","analysis":"<2 sentences>","keyLevel":<number>,"keyLevelType":"<SUPPORT|RESISTANCE>"},"nearTerm":{"outlook":"<BULLISH|BEARISH|NEUTRAL>","timeframe":"1-4 weeks","analysis":"<2 sentences>","keyLevel":<number>,"keyLevelType":"<SUPPORT|RESISTANCE>"},"longTerm":{"outlook":"<BULLISH|BEARISH|NEUTRAL>","timeframe":"1-3 months","analysis":"<2 sentences>","keyLevel":<number>,"keyLevelType":"<SUPPORT|RESISTANCE>"},"monthlyOutlook":"<2 sentences>","quarterlyOutlook":"<2 sentences>","summary":"<3 sentences actionable>"}`;
 
-const INTEL_SYS=`You are a senior macro strategist, geopolitical analyst and market intelligence expert at a top investment bank. You have access to live market data and current news via web search. Generate a comprehensive session intelligence report.
+const INTEL_SYS=`You are a senior macro strategist combining Goldman Sachs, JPMorgan, Morgan Stanley, Citi and StoneX morning briefing styles. You have live market data and web search access.
 
-Search the web for: latest market news, overnight geopolitical events, Fed speaker statements, US economic data releases today, Gold price drivers, Oil supply disruptions, SPX NDX sector rotation, mega-cap stock movers, put/call ratio, market breadth, institutional flow data, bank forecasts.
+Search for:
+1. Trump Truth Social posts today and market impact
+2. Biggest market movers last 24 hours and why
+3. Institutional money flow and sector rotation today
+4. Latest bank forecasts (Goldman, JPMorgan, MS, Citi)
+5. Overnight geopolitical events
+6. Fed speaker statements today
+7. Economic calendar upcoming events with forecasts
+8. Gold price drivers and bank targets today
 
-Respond ONLY with valid JSON, no extra text:
-{"session":"<ASIA OPEN|LONDON OPEN|NY SESSION>","generatedAt":"<time SGT>","marketRegime":"<RISK-ON|RISK-OFF|NEUTRAL|MIXED>","headline":"<single most important market theme today>","overnightDigest":"<3-4 sentences: what happened overnight, key moves, why — reference actual events>","geopolitical":["<event1>","<event2>","<event3>"],"dynamicMovers":[{"symbol":"<sym>","name":"<name>","price":"<price>","change":"<+/-X.XX%>","dir":"<BULLISH|BEARISH>","why":"<2 sentences>","driver":"<key driver tag>"}],"fedWatch":{"speaker":"<name or NONE>","statement":"<what they said or current Fed stance>","marketRead":"<market interpretation>","impactGold":"<1 sentence>","impactDXY":"<1 sentence>"},"econ":[{"time":"<SGT time>","country":"<US|EUR|JPY|GBP>","event":"<name>","forecast":"<value>","prev":"<value>","impact":"<HIGH|MEDIUM|LOW>"}],"gold":{"price":"<price>","chg":"<change>","drivers":["<d1>","<d2>","<d3>","<d4>"],"rumor":{"phase":"<RUMOR|FACT REACTION|POST-FACT>","signal":"<specific signal name>","analysis":"<2-3 sentences>","analog":"<historical analog and outcome>","conviction":"<HIGH|MEDIUM|LOW>"},"scenarios":[{"s":"<scenario>","p":<probability>,"target":"<price range>","trigger":"<trigger event>","tf":"<timeframe>"}],"curve":{"signal":"<BACKWARDATION|CONTANGO|FLAT>","meaning":"<1 sentence>","impl":"<implication>"},"note":"<2-3 sentences actionable>"},"oil":{"price":"<price>","chg":"<change>","drivers":["<d1>","<d2>","<d3>","<d4>"],"rumor":{"phase":"<RUMOR|FACT REACTION|POST-FACT>","signal":"<signal>","analysis":"<2-3 sentences>","analog":"<historical analog>","conviction":"<HIGH|MEDIUM|LOW>"},"scenarios":[{"s":"<scenario>","p":<probability>,"target":"<price range>","trigger":"<trigger>","tf":"<timeframe>"}],"curve":{"signal":"<BACKWARDATION|CONTANGO|FLAT>","meaning":"<1 sentence>","impl":"<implication>"},"note":"<2-3 sentences actionable>"},"spx":{"price":"<price>","chg":"<change>","what":"<2 sentences what is moving SPX today>","rumor":{"phase":"<RUMOR|FACT REACTION|POST-FACT>","signal":"<signal>","analysis":"<2-3 sentences>","analog":"<historical analog>","conviction":"<HIGH|MEDIUM|LOW>"},"megacaps":[{"t":"<ticker>","w":"<index weight>","m":"<move today>","why":"<1 sentence>","sent":"<BULLISH|BEARISH|NEUTRAL>"}],"sectors":[{"s":"<sector>","c":"<change>","f":"<IN|OUT>","r":"<1 sentence reason>"}],"sentiment":{"pc":"<put/call ratio and interpretation>","breadth":"<advancing/declining and interpretation>","inst":"<institutional flow>","retail":"<retail sentiment AAII or similar>"},"note":"<2-3 sentences actionable>"},"ndx":{"price":"<price>","chg":"<change>","what":"<2 sentences>","rumor":{"phase":"<RUMOR|FACT REACTION|POST-FACT>","signal":"<signal>","analysis":"<2-3 sentences>","analog":"<historical analog>","conviction":"<HIGH|MEDIUM|LOW>"},"tech":[{"sub":"<subsector>","perf":"<performance>","leaders":"<key stocks>","note":"<1 sentence>"}],"instView":"<what major banks say about NDX/tech>","retailVsInst":"<retail vs institutional positioning>","note":"<2-3 sentences actionable>"},"keyLevels":[{"sym":"<sym>","s":<support>,"r":<resistance>,"note":"<why matters>"}],"bias":{"gold":"<BULLISH|BEARISH|NEUTRAL>","oil":"<BULLISH|BEARISH|NEUTRAL>","spx":"<BULLISH|BEARISH|NEUTRAL>","ndx":"<BULLISH|BEARISH|NEUTRAL>","dxy":"<BULLISH|BEARISH|NEUTRAL>","bonds":"<BULLISH|BEARISH|NEUTRAL>"},"tradeFocus":"<4-5 sentences: specific instruments, entry zones, what to avoid, key levels tonight>"}
-Provide 3 dynamicMovers, 3 geopolitical events, 3-4 econ events, 3-4 gold scenarios, 4 oil scenarios, 5 megacaps, 5-6 sector rotation entries, 4 key levels. Reference live prices throughout.`;
+Respond ONLY with valid JSON:
+{"session":"<ASIA OPEN|LONDON OPEN|NY SESSION>","generatedAt":"<time SGT>","marketRegime":"<RISK-ON|RISK-OFF|NEUTRAL|MIXED>","headline":"<single most important story today>","macroTheme":"<2 sentences: what this means across all assets>","trump":{"riskLevel":"<LOW|MODERATE|HIGH|CRITICAL>","latestPosts":[{"time":"<EST time>","post":"<what he posted>","impact":"<market reaction>"}],"marketImpact":{"gold":{"bias":"<BULLISH|BEARISH|MIXED>","reason":"<1 sentence>"},"dxy":{"bias":"<BULLISH|BEARISH|MIXED>","reason":"<1 sentence>"},"oil":{"bias":"<BULLISH|BEARISH|MIXED>","reason":"<1 sentence>"},"spx":{"bias":"<BULLISH|BEARISH|MIXED>","reason":"<1 sentence>"}},"watchFor":"<what to monitor tonight>"},"overnightDigest":"<3-4 sentences overnight summary referencing real sources>","geopolitical":["<event1>","<event2>","<event3>"],"marketFlow":{"topMovers":[{"market":"<name>","change":"<+/-X.XX%>","reason":"<why it moved>","flow":"<INFLOW|OUTFLOW|RISING|FALLING>"}],"rotationInto":["<market1>","<market2>","<market3>"],"rotationOutOf":["<market1>","<market2>"],"pricedIn":"<2 sentences: what market has already priced in>","institutionalNote":"<1-2 sentences on hedge fund or institutional positioning>"},"bankForecasts":[{"bank":"<Goldman Sachs|JPMorgan|Morgan Stanley|Citi|StoneX>","call":"<their current price target or view>","conviction":"<HIGH|MEDIUM|LOW>","rationale":"<1-2 sentences>"}],"economicCalendar":{"today":[{"time":"<SGT time>","flag":"<country flag emoji>","event":"<event name>","forecast":"<expected value>","prev":"<previous value>","impact":"<HIGH|MEDIUM|LOW|CRITICAL>","note":"<trading implication 1 sentence>"}],"thisWeek":[{"date":"<day date>","flag":"<emoji>","event":"<name>","impact":"<HIGH|MEDIUM|LOW|CRITICAL>","note":"<why it matters>"}],"nextWeek":[{"date":"<day date>","flag":"<emoji>","event":"<name>","impact":"<HIGH|MEDIUM|LOW|CRITICAL>","note":"<why it matters>"}]},"goldFocus":{"price":"<current price>","change":"<+/-X.XX%>","weeklyTarget":"<price range>","keySupport":"<price or range>","keyResistance":"<price or range>","drivers":["<driver1>","<driver2>","<driver3>","<driver4>"],"setupTonight":"<3-4 sentences: specific entry zone, stop, target, catalyst>"},"weekAhead":"<2-3 sentences: dominant theme and binary event this week>","tradeFocus":"<4-5 sentences: specific instruments, entry zones, what to avoid, key catalysts>"}
+
+Provide: 2-3 trump posts (or state NONE if no posts), 5 top movers, 3 rotation into, 3 rotation out of, 5 bank forecasts, 3-4 today events, 2-3 this week, 2-3 next week, 4 gold drivers.`;
 
 const MACRO_SYS=`You are a world-class macro strategist, financial historian, quant analyst and trading desk head. Respond ONLY with valid JSON:
 {"title":"<analysis title>","overallRisk":"<LOW|MODERATE|HIGH|EXTREME>","marketRegime":"<RISK-ON|RISK-OFF|TRANSITION|CRISIS>","executiveSummary":"<3-4 sentences>","bookPlay":{"currentBook":"<dominant market narrative — e.g. STAGFLATION PLAYBOOK|OIL DEMAND SURGE|RISK-OFF CASH RUSH|INFLATIONARY SUPPLY SHOCK|DOLLAR WRECKING BALL|CREDIT CRUNCH|SOFT LANDING|HARD LANDING|CARRY TRADE UNWIND|GEOPOLITICAL RISK PREMIUM>","description":"<2-3 sentences: what narrative is driving markets RIGHT NOW, why it started, and how it is playing out across assets>","phase":"<EARLY|DEVELOPING|MATURE|EXHAUSTION>","historicalParallel":"<which historical period this most closely resembles and what eventually happened>","keyDrivers":["<d1>","<d2>","<d3>"],"impliedRotations":{"buying":["<asset/sector being accumulated>","<asset2>"],"selling":["<asset/sector being dumped>","<asset2>"],"watching":["<on-deck asset — may move next>"]}},"probabilityMatrix":{"methodology":"<1 sentence: basis for probability estimates — macro fundamentals, positioning, historical base rates>","timeHorizon":"<e.g. 3 months>","distributionType":"<NORMAL|FAT-TAIL|BIMODAL>","tailRiskNote":"<1-2 sentences: why tail risk is elevated or suppressed right now>","scenarios":[{"name":"<scenario name e.g. Soft Landing|Stagflation|Hard Landing|Geopolitical Shock|Deflation Scare>","type":"<BULL|BASE|BEAR|CRISIS|BLACK_SWAN>","probability":<0-100>,"description":"<2 sentences>","keyAssets":{"gold":"<BULLISH|BEARISH|NEUTRAL>","equities":"<BULLISH|BEARISH|NEUTRAL>","dxy":"<BULLISH|BEARISH|NEUTRAL>","bonds":"<BULLISH|BEARISH|NEUTRAL>","oil":"<BULLISH|BEARISH|NEUTRAL>"},"triggerConditions":["<c1>","<c2>"],"timeline":"<e.g. 1-3 months>"}],"cashRushScenario":{"probability":<0-100>,"phase":"<NOT STARTED|EARLY|DEVELOPING|ADVANCED>","isActive":<true|false>,"description":"<2 sentences: what cash rush looks like in current context — investors liquidating assets for USD/cash/T-bills>","triggers":["<specific trigger 1>","<specific trigger 2>","<specific trigger 3>"],"assetFlow":"<FROM: what assets are being sold → TO: where cash is going>","leadingIndicators":["<indicator currently showing stress>","<indicator2>"],"historicalAnalog":"<e.g. March 2020, 2008 Lehman, Sept 2022>","estimatedDuration":"<how long this phase typically lasts>","traderNote":"<1 sentence: how to position if this hits>"},"dollarDistrustScenario":{"probability":<0-100>,"phase":"<NOT STARTED|EARLY|DEVELOPING|ADVANCED>","isActive":<true|false>,"description":"<2 sentences: what dollar distrust/de-dollarization looks like and what drives it>","triggers":["<specific trigger 1>","<specific trigger 2>","<specific trigger 3>"],"assetFlow":"<FROM: USD-denominated assets → TO: gold, commodities, other currencies, BTC>","leadingIndicators":["<indicator1>","<indicator2>"],"historicalAnalog":"<e.g. 1971 Nixon shock, late 1970s dollar crisis>","estimatedDuration":"<months or years>","traderNote":"<1 sentence: how to position if this hits>"},"blackSwanEvents":[{"event":"<specific plausible black swan — e.g. China invades Taiwan, US debt default, Major bank collapse, Pandemic outbreak, Nuclear escalation>","category":"<GEOPOLITICAL|FINANCIAL|NATURAL|POLICY|PANDEMIC>","probability":<0-10>,"impactSeverity":"<HIGH|EXTREME|CATASTROPHIC>","marketShock":"<equities -X%, gold +Y%, oil +/-Z%>","timeToRecover":"<estimated recovery timeline>"},{"event":"<second black swan>","category":"<cat>","probability":<0-10>,"impactSeverity":"<HIGH|EXTREME|CATASTROPHIC>","marketShock":"<shock estimates>","timeToRecover":"<timeline>"},{"event":"<third black swan>","category":"<cat>","probability":<0-10>,"impactSeverity":"<HIGH|EXTREME|CATASTROPHIC>","marketShock":"<shock>","timeToRecover":"<timeline>"}]},"moneyFlowRotation":{"primaryFlow":"<FROM: X → TO: Y — 1 sentence explaining the institutional rotation>","institutionalBias":"<what large funds, hedge funds, CBs are doing>","retailVsInst":"<divergence or alignment between retail and institutional positioning>","sectorRotation":"<which sectors getting inflows and outflows right now>","assetClassRanking":["<#1 most favored asset class right now>","<#2>","<#3>","<#4>","<#5 least favored — avoid>"],"weeklySetup":"<3-4 sentences: what specifically to watch next week, key data releases and catalysts, how to position heading into next week, what event would change the thesis>"},"riskScenarios":[{"id":<1-5>,"category":"<GEOPOLITICAL|MONETARY|CREDIT|LIQUIDITY|GROWTH|INFLATION|ENERGY|CURRENCY>","title":"<n>","probabilityPct":<0-100>,"status":"<ACTIVE|WATCH|DORMANT>","description":"<2-3 sentences>","triggerEvents":["<e1>","<e2>"],"marketImpact":{"equities":"<BULLISH|BEARISH|NEUTRAL> — <why>","gold":"<BULLISH|BEARISH|NEUTRAL> — <why>","oil":"<BULLISH|BEARISH|NEUTRAL> — <why>","dxy":"<BULLISH|BEARISH|NEUTRAL> — <why>","bonds":"<BULLISH|BEARISH|NEUTRAL> — <why>"},"historicalAnalog":"<historical event and outcome>","timeline":"<timeframe>"}],"timelineOutlook":{"week":"<next 7 days>","month":"<next 30 days>","quarter":"<next 90 days>","year":"<12 month thesis>"},"historicPatterns":[{"pattern":"<n>","currentMatch":"<match>","historicalOutcome":"<outcome>","impliedMove":"<implied>"},{"pattern":"<n2>","currentMatch":"<m>","historicalOutcome":"<o>","impliedMove":"<i>"}],"moneyFlowAnalysis":"<3-4 sentences on institutional money movement>","keyWatchlist":[{"instrument":"<sym>","signal":"<watch>","threshold":"<level>","implication":"<means>"},{"instrument":"<s2>","signal":"<w>","threshold":"<l>","implication":"<m>"},{"instrument":"<s3>","signal":"<w2>","threshold":"<l2>","implication":"<m2>"}],"traderActionPlan":"<4-5 sentences: specific trades, sizing guidance, what to buy/sell/avoid this week>","eventRiskProbabilities":[{"event":"<specific event name e.g. US CPI April 2026 Release|FOMC Meeting|NFP Jobs Report|OPEC+ Meeting|Fed Chair Speech>","date":"<date or day e.g. Wed Apr 23>","type":"<CENTRAL_BANK|ECONOMIC_DATA|GEOPOLITICAL|ENERGY|POLICY|EARNINGS>","upside":{"outcome":"<better-than-expected scenario>","probability":<0-100>,"impact":{"gold":"<BULLISH|BEARISH|NEUTRAL>","equities":"<BULLISH|BEARISH|NEUTRAL>","dxy":"<BULLISH|BEARISH|NEUTRAL>","oil":"<BULLISH|BEARISH|NEUTRAL>"}},"baseCase":{"outcome":"<consensus/expected scenario>","probability":<0-100>,"impact":{"gold":"<BULLISH|BEARISH|NEUTRAL>","equities":"<BULLISH|BEARISH|NEUTRAL>","dxy":"<BULLISH|BEARISH|NEUTRAL>","oil":"<BULLISH|BEARISH|NEUTRAL>"}},"downside":{"outcome":"<worse-than-expected scenario>","probability":<0-100>,"impact":{"gold":"<BULLISH|BEARISH|NEUTRAL>","equities":"<BULLISH|BEARISH|NEUTRAL>","dxy":"<BULLISH|BEARISH|NEUTRAL>","oil":"<BULLISH|BEARISH|NEUTRAL>"}},"blackSwanRisk":{"outcome":"<extreme tail risk from this event>","probability":<0-10>,"impact":{"gold":"<BULLISH|BEARISH|NEUTRAL>","equities":"<BULLISH|BEARISH|NEUTRAL>","dxy":"<BULLISH|BEARISH|NEUTRAL>","oil":"<BULLISH|BEARISH|NEUTRAL>"}},"primaryImpactInstrument":"<the single most affected instrument e.g. XAU/USD>","traderNote":"<1 sentence actionable>"},{"event":"<second event>","date":"<date>","type":"<type>","upside":{"outcome":"<upside>","probability":<0-100>,"impact":{"gold":"<BULLISH|BEARISH|NEUTRAL>","equities":"<BULLISH|BEARISH|NEUTRAL>","dxy":"<BULLISH|BEARISH|NEUTRAL>","oil":"<BULLISH|BEARISH|NEUTRAL>"}},"baseCase":{"outcome":"<base>","probability":<0-100>,"impact":{"gold":"<BULLISH|BEARISH|NEUTRAL>","equities":"<BULLISH|BEARISH|NEUTRAL>","dxy":"<BULLISH|BEARISH|NEUTRAL>","oil":"<BULLISH|BEARISH|NEUTRAL>"}},"downside":{"outcome":"<down>","probability":<0-100>,"impact":{"gold":"<BULLISH|BEARISH|NEUTRAL>","equities":"<BULLISH|BEARISH|NEUTRAL>","dxy":"<BULLISH|BEARISH|NEUTRAL>","oil":"<BULLISH|BEARISH|NEUTRAL>"}},"blackSwanRisk":{"outcome":"<tail>","probability":<0-10>,"impact":{"gold":"<BULLISH|BEARISH|NEUTRAL>","equities":"<BULLISH|BEARISH|NEUTRAL>","dxy":"<BULLISH|BEARISH|NEUTRAL>","oil":"<BULLISH|BEARISH|NEUTRAL>"}},"primaryImpactInstrument":"<sym>","traderNote":"<1 sentence>"},{"event":"<third event>","date":"<date>","type":"<type>","upside":{"outcome":"<upside>","probability":<0-100>,"impact":{"gold":"<BULLISH|BEARISH|NEUTRAL>","equities":"<BULLISH|BEARISH|NEUTRAL>","dxy":"<BULLISH|BEARISH|NEUTRAL>","oil":"<BULLISH|BEARISH|NEUTRAL>"}},"baseCase":{"outcome":"<base>","probability":<0-100>,"impact":{"gold":"<BULLISH|BEARISH|NEUTRAL>","equities":"<BULLISH|BEARISH|NEUTRAL>","dxy":"<BULLISH|BEARISH|NEUTRAL>","oil":"<BULLISH|BEARISH|NEUTRAL>"}},"downside":{"outcome":"<down>","probability":<0-100>,"impact":{"gold":"<BULLISH|BEARISH|NEUTRAL>","equities":"<BULLISH|BEARISH|NEUTRAL>","dxy":"<BULLISH|BEARISH|NEUTRAL>","oil":"<BULLISH|BEARISH|NEUTRAL>"}},"blackSwanRisk":{"outcome":"<tail>","probability":<0-10>,"impact":{"gold":"<BULLISH|BEARISH|NEUTRAL>","equities":"<BULLISH|BEARISH|NEUTRAL>","dxy":"<BULLISH|BEARISH|NEUTRAL>","oil":"<BULLISH|BEARISH|NEUTRAL>"}},"primaryImpactInstrument":"<sym>","traderNote":"<1 sentence>"}]}
@@ -410,15 +419,14 @@ export default function Auxiron(){
 
   function fetchIntel(session){
     setIntelLoading(true);setIntel(null);
-    var SESSIONS_MAP={asia:"ASIA OPEN (SGT 8am-12pm) — focus on overnight moves and London setup",london:"LONDON OPEN (SGT 3pm-6pm) — focus on European data, FX pairs, NY overlap setup",ny:"NY SESSION (SGT 9pm-12am) — focus on Fed speakers, US data, trade setups for tonight"};
+    var SESSIONS_MAP={asia:"ASIA OPEN (SGT 8am-12pm) — overnight moves, what happened in US/EU sessions, London setup",london:"LONDON OPEN (SGT 3pm-6pm) — European data, FX focus, NY overlap preparation",ny:"NY SESSION (SGT 9pm-12am) — Fed speakers, US economic data, Gold/Oil trade setups, Trump activity"};
     var label=SESSIONS_MAP[session]||"NY SESSION";
     var msg="LIVE MARKET DATA:\n"+getSnap()+
       "\n\nSESSION: "+label+
       "\n\nToday: "+new Date().toDateString()+
-      "\n\nSearch for: latest market news overnight geopolitical events Fed speakers US economic data today Gold Oil price drivers SPX NDX sector rotation mega-cap movers investor sentiment put call ratio market breadth institutional flows bank forecasts."+
-      "\n\nGenerate a comprehensive "+label+" intelligence report with: overnight digest, geopolitical events, dynamic market movers (AI picks most relevant today), Fed watch, economic events SGT times, COMMODITIES DEEP DIVE (Gold + Oil each with what moving now + buy/sell rumor detection + risk scenarios + price targets + futures curve), INDICES DEEP DIVE (SPX + NDX each with what moving + rumor detection + top 5 mega-caps + sector rotation inflows/outflows + investor sentiment put/call breadth institutional vs retail), key levels, instrument bias, trade focus for tonight.";
+      "\n\nGenerate a full institutional session brief. Search for Trump posts, bank forecasts, market movers, sector rotation, economic calendar, Gold drivers. Tailor the report to the "+label+" context.";
     callProxy(
-      {model:"claude-sonnet-4-20250514",max_tokens:2000,system:INTEL_SYS,
+      {model:"claude-sonnet-4-6",max_tokens:3000,system:INTEL_SYS,
        messages:[{role:"user",content:msg}],
        useWebSearch:true},
       function(res){setIntel(res);setIntelLoading(false);setIntelErr(null);},
@@ -1470,8 +1478,8 @@ export default function Auxiron(){
           <div style={{padding:"12px"}} className="fu">
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
               <div>
-                <div style={{fontFamily:"'Syne',sans-serif",fontSize:14,fontWeight:700,color:C.txt0,letterSpacing:".06em"}}>MARKET INTELLIGENCE</div>
-                <div style={{fontSize:10,color:C.txt1,marginTop:1}}>Sonnet + web search · ~$0.06/report</div>
+                <div style={{fontFamily:"'Syne',sans-serif",fontSize:14,fontWeight:700,color:C.txt0,letterSpacing:".06em"}}>INSTITUTIONAL BRIEF</div>
+                <div style={{fontSize:10,color:C.txt1,marginTop:1}}>Sonnet + web search · Goldman/JPM/MS/Citi style · ~$0.08/report</div>
               </div>
             </div>
 
@@ -1504,10 +1512,10 @@ export default function Auxiron(){
             {intelLoading && (
               <div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:12,padding:"26px 20px",textAlign:"center",marginBottom:10}}>
                 <div className="sp" style={{width:22,height:22,border:"3px solid "+C.border2,borderTopColor:C.gold,borderRadius:"50%",margin:"0 auto 10px"}}></div>
-                <div style={{fontSize:11,color:C.goldL,letterSpacing:".08em",marginBottom:3}}>SEARCHING WEB + GENERATING</div>
-                <div style={{fontSize:9,color:C.txt2,marginBottom:6}}>Live news · Sector flows · Rumor detection</div>
+                <div style={{fontSize:11,color:C.goldL,letterSpacing:".08em",marginBottom:3}}>GENERATING INSTITUTIONAL BRIEF</div>
+                <div style={{fontSize:9,color:C.txt2,marginBottom:6}}>Trump watch · Bank forecasts · Market flow · Gold setup</div>
                 <div style={{fontSize:10,color:C.txt3,fontVariantNumeric:"tabular-nums"}}>
-                  {intelElapsed<5?"Starting up…":intelElapsed<15?"Searching the web…":intelElapsed<30?"Reading market data…":"Generating report…"}
+                  {intelElapsed<5?"Starting up…":intelElapsed<20?"Searching web…":intelElapsed<45?"Analyzing bank forecasts…":"Compiling brief…"}
                   <span style={{color:C.gold,marginLeft:6,fontWeight:600}}>{intelElapsed}s</span>
                 </div>
               </div>
@@ -1518,259 +1526,262 @@ export default function Auxiron(){
               <div style={{textAlign:"center",padding:"36px 20px",background:C.bg1,border:"1px solid "+C.border,borderRadius:12}}>
                 <div style={{fontFamily:"'Syne',sans-serif",fontSize:30,marginBottom:10,opacity:0.2}}>⬟</div>
                 <div style={{fontSize:12,color:C.txt2,letterSpacing:".08em",marginBottom:4}}>SELECT A SESSION ABOVE</div>
-                <div style={{fontSize:10,color:C.txt3}}>Commodities · Indices · Rumor Detection</div>
+                <div style={{fontSize:10,color:C.txt3}}>Trump · Bank Forecasts · Market Flow · Gold Focus</div>
               </div>
             )}
 
             {intel && !intelLoading && (
               <div className="fu">
+
+                {/* Headline card */}
                 <div style={{background:"linear-gradient(135deg,rgba(200,168,64,0.12),rgba(200,168,64,0.04))",border:"1px solid rgba(200,168,64,0.3)",borderRadius:10,padding:"12px",marginBottom:8}}>
-                  <div style={{fontSize:10,color:C.goldL,fontWeight:600,marginBottom:4}}>{intel.session} · {intel.generatedAt}</div>
-                  <div style={{fontSize:13,fontWeight:600,color:C.txt0,lineHeight:1.55}}>{intel.headline}</div>
-                  {intel.marketRegime && <div style={{marginTop:6,display:"inline-block",fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:4,background:"rgba(0,0,0,0.3)",color:intel.marketRegime==="RISK-OFF"?C.dn:intel.marketRegime==="RISK-ON"?C.up:C.amber,border:"1px solid "+(intel.marketRegime==="RISK-OFF"?C.dn:intel.marketRegime==="RISK-ON"?C.up:C.amber)+"44"}}>{intel.marketRegime}</div>}
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
+                    <div style={{fontSize:10,color:C.goldL,fontWeight:600}}>{intel.session} · {intel.generatedAt}</div>
+                    {intel.marketRegime&&<span style={{fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:4,background:"rgba(0,0,0,0.3)",color:intel.marketRegime==="RISK-OFF"?C.dn:intel.marketRegime==="RISK-ON"?C.up:C.amber,border:"1px solid "+(intel.marketRegime==="RISK-OFF"?C.dn:intel.marketRegime==="RISK-ON"?C.up:C.amber)+"44"}}>{intel.marketRegime}</span>}
+                  </div>
+                  <div style={{fontSize:14,fontWeight:700,color:C.txt0,lineHeight:1.4,marginBottom:6}}>{intel.headline}</div>
+                  {intel.macroTheme&&<div style={{fontSize:12,color:C.txt1,lineHeight:1.65}}>{intel.macroTheme}</div>}
                 </div>
 
-                {intel.overnightDigest && (
+                {/* Trump Market Meter */}
+                {intel.trump&&(function(){
+                  var t=intel.trump;
+                  var rClr=t.riskLevel==="CRITICAL"?"#ff1840":t.riskLevel==="HIGH"?C.dn:t.riskLevel==="MODERATE"?C.amber:C.up;
+                  var rBdr=t.riskLevel==="CRITICAL"?"rgba(255,24,64,0.5)":t.riskLevel==="HIGH"?"rgba(240,64,64,0.4)":t.riskLevel==="MODERATE"?"rgba(240,144,32,0.35)":"rgba(40,204,120,0.3)";
+                  var rBg=t.riskLevel==="CRITICAL"?"rgba(255,24,64,0.06)":t.riskLevel==="HIGH"?"rgba(240,64,64,0.06)":t.riskLevel==="MODERATE"?"rgba(240,144,32,0.05)":"rgba(40,204,120,0.05)";
+                  return <div style={{background:rBg,border:"2px solid "+rBdr,borderRadius:10,padding:"12px",marginBottom:8}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                      <div style={{fontSize:10,color:rClr,fontWeight:700,letterSpacing:".1em"}}>🇺🇸 TRUMP MARKET METER</div>
+                      <span style={{fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:4,background:"rgba(0,0,0,0.3)",color:rClr,border:"1px solid "+rClr+"55"}}>{t.riskLevel} RISK</span>
+                    </div>
+                    {t.latestPosts&&t.latestPosts.length>0&&(
+                      <div style={{marginBottom:8}}>
+                        <div style={{fontSize:9,color:C.txt3,letterSpacing:".08em",marginBottom:4}}>TRUTH SOCIAL</div>
+                        {t.latestPosts.map(function(p:any,i:number){
+                          return <div key={i} style={{background:"rgba(0,0,0,0.25)",border:"1px solid "+C.border,borderRadius:7,padding:"8px 10px",marginBottom:4}}>
+                            <div style={{fontSize:9,color:C.txt3,marginBottom:3}}>{p.time}</div>
+                            <div style={{fontSize:11,color:C.txt0,lineHeight:1.55,marginBottom:3}}>"{p.post}"</div>
+                            {p.impact&&<div style={{fontSize:10,color:rClr}}>→ {p.impact}</div>}
+                          </div>;
+                        })}
+                      </div>
+                    )}
+                    {t.marketImpact&&(
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5,marginBottom:6}}>
+                        {(["gold","dxy","oil","spx"] as string[]).map(function(k){
+                          var mi=(t.marketImpact as any)[k];if(!mi)return null;
+                          var bc=mi.bias==="BULLISH"?C.up:mi.bias==="BEARISH"?C.dn:C.amber;
+                          return <div key={k} style={{background:"rgba(0,0,0,0.2)",border:"1px solid "+C.border,borderRadius:6,padding:"6px 9px"}}>
+                            <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}>
+                              <span style={{fontSize:10,color:C.txt2,textTransform:"uppercase"}}>{k}</span>
+                              <span style={{fontSize:9,fontWeight:700,color:bc}}>{mi.bias}</span>
+                            </div>
+                            <div style={{fontSize:9,color:C.txt1,lineHeight:1.4}}>{mi.reason}</div>
+                          </div>;
+                        })}
+                      </div>
+                    )}
+                    {t.watchFor&&<div style={{fontSize:10,color:rClr,background:"rgba(0,0,0,0.2)",borderRadius:6,padding:"6px 9px"}}>👁 {t.watchFor}</div>}
+                  </div>;
+                })()}
+
+                {/* Overnight Digest */}
+                {intel.overnightDigest&&(
                   <div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,padding:"12px",marginBottom:8}}>
                     <div style={{fontSize:10,color:C.txt2,letterSpacing:".1em",fontWeight:600,marginBottom:6}}>🌙 OVERNIGHT DIGEST</div>
                     <div style={{fontSize:12,color:C.txt0,lineHeight:1.75,marginBottom:8}}>{intel.overnightDigest}</div>
-                    {intel.geopolitical && intel.geopolitical.length>0 && (
+                    {intel.geopolitical&&intel.geopolitical.length>0&&(
                       <div>
                         <div style={{fontSize:9,color:C.amber,letterSpacing:".08em",fontWeight:600,marginBottom:5}}>⚡ GEOPOLITICAL</div>
-                        {intel.geopolitical.map((g,i) => (
-                          <div key={i} style={{display:"flex",gap:7,padding:"5px 0",borderBottom:i<intel.geopolitical.length-1?"1px solid "+C.border:"none"}}>
+                        {intel.geopolitical.map(function(g:any,i:number){
+                          return <div key={i} style={{display:"flex",gap:7,padding:"5px 0",borderBottom:i<intel.geopolitical.length-1?"1px solid "+C.border:"none"}}>
                             <span style={{color:C.dn,flexShrink:0}}>→</span>
                             <span style={{fontSize:11,color:C.txt1,lineHeight:1.5}}>{g}</span>
-                          </div>
-                        ))}
+                          </div>;
+                        })}
                       </div>
                     )}
                   </div>
                 )}
 
-                {intel.dynamicMovers && intel.dynamicMovers.length>0 && (
-                  <div style={{marginBottom:8}}>
-                    <div style={{fontSize:10,color:C.goldL,letterSpacing:".1em",fontWeight:600,marginBottom:6}}>📊 TODAY'S MARKET MOVERS — AI SELECTED</div>
-                    <div style={{display:"grid",gap:5}}>
-                      {intel.dynamicMovers.map((m,i) => {
-                        var isUp = m.dir==="BULLISH";
-                        var cl = isUp?C.up:C.dn;
-                        return (
-                          <div key={i} style={{background:C.bg1,border:"1px solid "+(isUp?"rgba(40,204,120,0.18)":"rgba(240,64,64,0.18)"),borderRadius:9,padding:"10px 12px"}}>
-                            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
-                              <span style={{fontFamily:"'Syne',sans-serif",fontSize:14,fontWeight:700,color:C.txt0}}>{m.symbol}</span>
-                              <div style={{textAlign:"right"}}>
-                                <div style={{fontSize:12,fontWeight:600,color:C.txt0}}>{m.price}</div>
-                                <div style={{fontSize:10,color:cl,fontWeight:600}}>{m.change}</div>
+                {/* Market Flow Intelligence */}
+                {intel.marketFlow&&(function(){
+                  var mf=intel.marketFlow;
+                  var flowClr=function(f:string){return f==="INFLOW"||f==="RISING"?C.up:C.dn;};
+                  return <div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,padding:"12px",marginBottom:8}}>
+                    <div style={{fontSize:10,color:C.goldL,letterSpacing:".1em",fontWeight:600,marginBottom:8}}>💰 MARKET FLOW INTELLIGENCE</div>
+                    {mf.topMovers&&mf.topMovers.length>0&&(
+                      <div style={{marginBottom:8}}>
+                        <div style={{fontSize:9,color:C.txt3,letterSpacing:".08em",marginBottom:5}}>TOP MOVERS</div>
+                        <div style={{display:"grid",gap:4}}>
+                          {mf.topMovers.map(function(m:any,i:number){
+                            var up=m.change&&m.change.startsWith("+");
+                            return <div key={i} style={{background:C.bg2,border:"1px solid "+C.border,borderRadius:7,padding:"7px 10px"}}>
+                              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:2}}>
+                                <span style={{fontSize:12,fontWeight:600,color:C.txt0}}>{m.market}</span>
+                                <div style={{display:"flex",alignItems:"center",gap:6}}>
+                                  <span style={{fontSize:10,fontWeight:700,color:up?C.up:C.dn}}>{m.change}</span>
+                                  {m.flow&&<span style={{fontSize:8,fontWeight:600,color:flowClr(m.flow),background:"rgba(0,0,0,0.25)",border:"1px solid "+flowClr(m.flow)+"44",borderRadius:3,padding:"1px 5px"}}>{m.flow}</span>}
+                                </div>
                               </div>
-                            </div>
-                            <div style={{fontSize:11,color:C.txt0,lineHeight:1.55}}>{m.why}</div>
+                              <div style={{fontSize:10,color:C.txt1,lineHeight:1.4}}>{m.reason}</div>
+                            </div>;
+                          })}
+                        </div>
+                      </div>
+                    )}
+                    {(mf.rotationInto||mf.rotationOutOf)&&(
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:8}}>
+                        {mf.rotationInto&&mf.rotationInto.length>0&&(
+                          <div style={{background:"rgba(40,204,120,0.07)",border:"1px solid rgba(40,204,120,0.2)",borderRadius:7,padding:"7px 9px"}}>
+                            <div style={{fontSize:8,color:C.up,fontWeight:700,letterSpacing:".08em",marginBottom:4}}>▲ ROTATION INTO</div>
+                            {mf.rotationInto.map(function(r:string,i:number){return <div key={i} style={{fontSize:10,color:C.txt0,marginBottom:2}}>· {r}</div>;})}
                           </div>
-                        );
+                        )}
+                        {mf.rotationOutOf&&mf.rotationOutOf.length>0&&(
+                          <div style={{background:"rgba(240,64,64,0.07)",border:"1px solid rgba(240,64,64,0.2)",borderRadius:7,padding:"7px 9px"}}>
+                            <div style={{fontSize:8,color:C.dn,fontWeight:700,letterSpacing:".08em",marginBottom:4}}>▼ ROTATION OUT OF</div>
+                            {mf.rotationOutOf.map(function(r:string,i:number){return <div key={i} style={{fontSize:10,color:C.txt0,marginBottom:2}}>· {r}</div>;})}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {mf.pricedIn&&<div style={{fontSize:11,color:C.txt1,lineHeight:1.6,marginBottom:6}}>{mf.pricedIn}</div>}
+                    {mf.institutionalNote&&<div style={{background:"rgba(72,144,248,0.07)",border:"1px solid rgba(72,144,248,0.2)",borderRadius:6,padding:"6px 9px"}}>
+                      <span style={{fontSize:9,color:C.blue,fontWeight:600}}>🏦 </span>
+                      <span style={{fontSize:10,color:C.txt1}}>{mf.institutionalNote}</span>
+                    </div>}
+                  </div>;
+                })()}
+
+                {/* Bank Forecasts */}
+                {intel.bankForecasts&&intel.bankForecasts.length>0&&(
+                  <div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,padding:"12px",marginBottom:8}}>
+                    <div style={{fontSize:10,color:C.blue,letterSpacing:".1em",fontWeight:600,marginBottom:8}}>🏦 BANK FORECASTS</div>
+                    <div style={{display:"grid",gap:5}}>
+                      {intel.bankForecasts.map(function(b:any,i:number){
+                        var cc=b.conviction==="HIGH"?C.up:b.conviction==="MEDIUM"?C.amber:C.txt2;
+                        return <div key={i} style={{background:C.bg2,border:"1px solid "+C.border,borderRadius:7,padding:"8px 10px"}}>
+                          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+                            <span style={{fontSize:11,fontWeight:700,color:C.txt0}}>{b.bank}</span>
+                            <span style={{fontSize:8,fontWeight:600,color:cc,background:"rgba(0,0,0,0.25)",border:"1px solid "+cc+"44",borderRadius:3,padding:"1px 6px"}}>{b.conviction}</span>
+                          </div>
+                          <div style={{fontSize:12,color:C.goldL,fontWeight:600,marginBottom:3}}>{b.call}</div>
+                          <div style={{fontSize:10,color:C.txt1,lineHeight:1.5}}>{b.rationale}</div>
+                        </div>;
                       })}
                     </div>
                   </div>
                 )}
 
-                {intel.fedWatch && (
-                  <div style={{background:C.bg1,border:"1px solid rgba(72,144,248,0.2)",borderRadius:10,padding:"12px",marginBottom:8}}>
-                    <div style={{fontSize:10,color:C.blue,letterSpacing:".1em",fontWeight:600,marginBottom:6}}>🏛 FED WATCH{intel.fedWatch.speaker && intel.fedWatch.speaker!=="NONE"?" · "+intel.fedWatch.speaker:""}</div>
-                    <div style={{background:C.bg2,borderRadius:7,padding:"8px 10px",marginBottom:6}}>
-                      <div style={{fontSize:12,fontWeight:500,color:C.txt0,lineHeight:1.55,marginBottom:3}}>"{intel.fedWatch.statement}"</div>
-                      <div style={{fontSize:11,color:C.blue}}>{intel.fedWatch.marketRead}</div>
+                {/* Economic Calendar */}
+                {intel.economicCalendar&&(function(){
+                  var ec=intel.economicCalendar;
+                  var tabs=[{k:"today",l:"TODAY"},{k:"week",l:"THIS WEEK"},{k:"nextWeek",l:"NEXT WEEK"}];
+                  var impClr=function(imp:string){return imp==="CRITICAL"?"#ff1840":imp==="HIGH"?C.dn:imp==="MEDIUM"?C.amber:C.txt3;};
+                  var activeData:any[]=(calTab==="today"?ec.today:calTab==="week"?ec.thisWeek:ec.nextWeek)||[];
+                  return <div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,padding:"12px",marginBottom:8}}>
+                    <div style={{fontSize:10,color:C.txt2,letterSpacing:".1em",fontWeight:600,marginBottom:8}}>📅 ECONOMIC CALENDAR</div>
+                    <div style={{display:"flex",gap:4,marginBottom:8}}>
+                      {tabs.map(function(t){
+                        var active=calTab===t.k;
+                        return <button key={t.k} className="tap" onClick={function(){setCalTab(t.k);}}
+                          style={{flex:1,background:active?C.gold:"transparent",color:active?"#0c1118":C.txt2,border:"1px solid "+(active?C.gold:C.border),borderRadius:6,padding:"5px 6px",fontSize:9,fontWeight:600,letterSpacing:".05em"}}>{t.l}</button>;
+                      })}
                     </div>
-                  </div>
-                )}
-
-                {intel.gold && (
-                  <div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,padding:"12px",marginBottom:8}}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-                      <div style={{fontFamily:"'Syne',sans-serif",fontSize:14,fontWeight:700,color:C.gold}}>📦 GOLD DEEP DIVE</div>
-                      <div style={{textAlign:"right"}}>
-                        <div style={{fontSize:13,fontWeight:600,color:C.txt0}}>{intel.gold.price}</div>
-                        <div style={{fontSize:10,color:C.up,fontWeight:600}}>{intel.gold.chg}</div>
-                      </div>
-                    </div>
-                    {intel.gold.rumor && (
-                      <div style={{background:"rgba(184,88,240,0.07)",border:"1px solid rgba(184,88,240,0.25)",borderRadius:7,padding:"9px 11px",marginBottom:7}}>
-                        <div style={{fontSize:10,color:C.vix,fontWeight:600,marginBottom:4}}>📡 {intel.gold.rumor.signal}</div>
-                        <div style={{fontSize:11,color:C.txt0,lineHeight:1.55,marginBottom:4}}>{intel.gold.rumor.analysis}</div>
-                        <div style={{fontSize:10,color:C.blue,lineHeight:1.5}}>📚 {intel.gold.rumor.analog}</div>
-                      </div>
-                    )}
-                    {intel.gold.drivers && intel.gold.drivers.map((d,i) => (
-                      <div key={i} style={{display:"flex",gap:7,padding:"5px 0",borderBottom:i<intel.gold.drivers.length-1?"1px solid "+C.border:"none"}}>
-                        <span style={{color:C.gold}}>{i+1}</span>
-                        <span style={{fontSize:11,color:C.txt0,lineHeight:1.5}}>{d}</span>
-                      </div>
-                    ))}
-                    {intel.gold.scenarios && (
-                      <div style={{marginTop:8}}>
-                        <div style={{fontSize:9,color:C.amber,fontWeight:600,marginBottom:5}}>RISK SCENARIOS</div>
-                        {intel.gold.scenarios.map((sc,i) => (
-                          <div key={i} style={{background:C.bg2,borderRadius:6,padding:"6px 9px",marginBottom:3}}>
-                            <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}>
-                              <span style={{fontSize:11,fontWeight:600,color:C.txt0}}>{sc.s}</span>
-                              <span style={{fontSize:10,color:C.gold,fontWeight:600}}>{sc.p}% · {sc.target}</span>
+                    {activeData.length>0?(
+                      <div style={{display:"grid",gap:5}}>
+                        {activeData.map(function(ev:any,i:number){
+                          var ic=impClr(ev.impact);
+                          return <div key={i} style={{background:C.bg2,border:"1px solid "+C.border,borderRadius:7,padding:"8px 10px"}}>
+                            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:3}}>
+                              <div style={{display:"flex",alignItems:"center",gap:6}}>
+                                <span style={{fontSize:14}}>{ev.flag}</span>
+                                <div>
+                                  <div style={{fontSize:11,fontWeight:600,color:C.txt0}}>{ev.event}</div>
+                                  <div style={{fontSize:9,color:C.txt3}}>{ev.time||ev.date}</div>
+                                </div>
+                              </div>
+                              <span style={{fontSize:8,fontWeight:700,color:ic,background:"rgba(0,0,0,0.3)",border:"1px solid "+ic+"44",borderRadius:3,padding:"2px 6px",flexShrink:0}}>{ev.impact}</span>
                             </div>
-                            <div style={{fontSize:10,color:C.txt2}}>Trigger: {sc.trigger}</div>
-                          </div>
-                        ))}
+                            {(ev.forecast||ev.prev)&&<div style={{display:"flex",gap:10,marginBottom:3}}>
+                              {ev.forecast&&<span style={{fontSize:9,color:C.txt2}}>Forecast: <span style={{color:C.txt0}}>{ev.forecast}</span></span>}
+                              {ev.prev&&<span style={{fontSize:9,color:C.txt2}}>Prev: <span style={{color:C.txt1}}>{ev.prev}</span></span>}
+                            </div>}
+                            {ev.note&&<div style={{fontSize:10,color:C.amber,lineHeight:1.4}}>→ {ev.note}</div>}
+                          </div>;
+                        })}
                       </div>
-                    )}
-                    {intel.gold.note && (
-                      <div style={{marginTop:8,background:"rgba(40,204,120,0.07)",border:"1px solid rgba(40,204,120,0.2)",borderRadius:6,padding:"8px 10px"}}>
-                        <div style={{fontSize:9,color:C.up,marginBottom:2}}>◈ TRADER NOTE</div>
-                        <div style={{fontSize:11,color:C.txt0,lineHeight:1.55}}>{intel.gold.note}</div>
-                      </div>
-                    )}
-                  </div>
-                )}
+                    ):<div style={{fontSize:11,color:C.txt3,textAlign:"center",padding:"12px 0"}}>No events</div>}
+                  </div>;
+                })()}
 
-                {intel.oil && (
-                  <div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,padding:"12px",marginBottom:8}}>
+                {/* Gold Deep Focus */}
+                {intel.goldFocus&&(function(){
+                  var gf=intel.goldFocus;
+                  var chgUp=gf.change&&gf.change.startsWith("+");
+                  return <div style={{background:"linear-gradient(135deg,rgba(200,168,64,0.1),rgba(200,168,64,0.04))",border:"1px solid rgba(200,168,64,0.35)",borderRadius:10,padding:"12px",marginBottom:8}}>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-                      <div style={{fontFamily:"'Syne',sans-serif",fontSize:14,fontWeight:700,color:C.amber}}>🛢 OIL DEEP DIVE</div>
+                      <div style={{fontFamily:"'Syne',sans-serif",fontSize:14,fontWeight:700,color:C.gold}}>🥇 GOLD DEEP FOCUS</div>
                       <div style={{textAlign:"right"}}>
-                        <div style={{fontSize:13,fontWeight:600,color:C.txt0}}>{intel.oil.price}</div>
-                        <div style={{fontSize:10,color:C.up,fontWeight:600}}>{intel.oil.chg}</div>
+                        <div style={{fontSize:14,fontWeight:700,color:C.txt0}}>{gf.price}</div>
+                        <div style={{fontSize:10,fontWeight:600,color:chgUp?C.up:C.dn}}>{gf.change}</div>
                       </div>
                     </div>
-                    {intel.oil.rumor && (
-                      <div style={{background:"rgba(184,88,240,0.07)",border:"1px solid rgba(184,88,240,0.25)",borderRadius:7,padding:"9px 11px",marginBottom:7}}>
-                        <div style={{fontSize:10,color:C.vix,fontWeight:600,marginBottom:4}}>📡 {intel.oil.rumor.signal}</div>
-                        <div style={{fontSize:11,color:C.txt0,lineHeight:1.55,marginBottom:4}}>{intel.oil.rumor.analysis}</div>
-                        <div style={{fontSize:10,color:C.blue,lineHeight:1.5}}>📚 {intel.oil.rumor.analog}</div>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:5,marginBottom:8}}>
+                      <div style={{background:"rgba(0,0,0,0.25)",borderRadius:6,padding:"6px 9px",textAlign:"center"}}>
+                        <div style={{fontSize:8,color:C.txt3,marginBottom:2}}>WEEKLY TARGET</div>
+                        <div style={{fontSize:10,fontWeight:600,color:C.goldL}}>{gf.weeklyTarget}</div>
                       </div>
-                    )}
-                    {intel.oil.drivers && intel.oil.drivers.map((d,i) => (
-                      <div key={i} style={{display:"flex",gap:7,padding:"5px 0",borderBottom:i<intel.oil.drivers.length-1?"1px solid "+C.border:"none"}}>
-                        <span style={{color:C.amber}}>{i+1}</span>
-                        <span style={{fontSize:11,color:C.txt0,lineHeight:1.5}}>{d}</span>
+                      <div style={{background:"rgba(40,204,120,0.1)",borderRadius:6,padding:"6px 9px",textAlign:"center"}}>
+                        <div style={{fontSize:8,color:C.txt3,marginBottom:2}}>SUPPORT</div>
+                        <div style={{fontSize:10,fontWeight:600,color:C.up}}>{gf.keySupport}</div>
                       </div>
-                    ))}
-                    {intel.oil.note && (
-                      <div style={{marginTop:8,background:"rgba(40,204,120,0.07)",border:"1px solid rgba(40,204,120,0.2)",borderRadius:6,padding:"8px 10px"}}>
-                        <div style={{fontSize:9,color:C.up,marginBottom:2}}>◈ TRADER NOTE</div>
-                        <div style={{fontSize:11,color:C.txt0,lineHeight:1.55}}>{intel.oil.note}</div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {intel.spx && (
-                  <div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,padding:"12px",marginBottom:8}}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-                      <div style={{fontFamily:"'Syne',sans-serif",fontSize:14,fontWeight:700,color:C.up}}>📈 SPX DEEP DIVE</div>
-                      <div style={{textAlign:"right"}}>
-                        <div style={{fontSize:13,fontWeight:600,color:C.txt0}}>{intel.spx.price}</div>
-                        <div style={{fontSize:10,color:intel.spx.chg && intel.spx.chg.startsWith("+")?C.up:C.dn,fontWeight:600}}>{intel.spx.chg}</div>
+                      <div style={{background:"rgba(240,64,64,0.1)",borderRadius:6,padding:"6px 9px",textAlign:"center"}}>
+                        <div style={{fontSize:8,color:C.txt3,marginBottom:2}}>RESISTANCE</div>
+                        <div style={{fontSize:10,fontWeight:600,color:C.dn}}>{gf.keyResistance}</div>
                       </div>
                     </div>
-                    {intel.spx.what && <div style={{fontSize:11,color:C.txt0,lineHeight:1.65,marginBottom:7}}>{intel.spx.what}</div>}
-                    {intel.spx.rumor && (
-                      <div style={{background:"rgba(184,88,240,0.07)",border:"1px solid rgba(184,88,240,0.25)",borderRadius:7,padding:"9px 11px",marginBottom:7}}>
-                        <div style={{fontSize:10,color:C.vix,fontWeight:600,marginBottom:4}}>📡 {intel.spx.rumor.signal}</div>
-                        <div style={{fontSize:11,color:C.txt0,lineHeight:1.55}}>{intel.spx.rumor.analysis}</div>
+                    {gf.drivers&&gf.drivers.length>0&&(
+                      <div style={{marginBottom:8}}>
+                        <div style={{fontSize:9,color:C.gold,letterSpacing:".08em",fontWeight:600,marginBottom:5}}>DRIVERS</div>
+                        {gf.drivers.map(function(d:string,i:number){
+                          return <div key={i} style={{display:"flex",gap:7,padding:"4px 0",borderBottom:i<gf.drivers.length-1?"1px solid "+C.border:"none"}}>
+                            <span style={{color:C.gold,fontWeight:700,flexShrink:0}}>{i+1}</span>
+                            <span style={{fontSize:11,color:C.txt0,lineHeight:1.5}}>{d}</span>
+                          </div>;
+                        })}
                       </div>
                     )}
-                    {intel.spx.megacaps && (
-                      <div style={{marginBottom:7}}>
-                        <div style={{fontSize:9,color:C.blue,fontWeight:600,marginBottom:5}}>TOP MEGA-CAPS</div>
-                        {intel.spx.megacaps.map((m,i) => (
-                          <div key={i} style={{background:C.bg2,borderRadius:6,padding:"6px 9px",marginBottom:3}}>
-                            <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}>
-                              <span style={{fontSize:11,fontWeight:700,color:C.txt0}}>{m.t} <span style={{fontSize:9,color:C.txt3}}>{m.w}</span></span>
-                              <span style={{fontSize:10,fontWeight:600,color:m.m && m.m.startsWith("+")?C.up:C.dn}}>{m.m}</span>
-                            </div>
-                            <div style={{fontSize:10,color:C.txt1}}>{m.why}</div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    {intel.spx.sectors && (
-                      <div style={{marginBottom:7}}>
-                        <div style={{fontSize:9,color:C.amber,fontWeight:600,marginBottom:5}}>SECTOR ROTATION</div>
-                        {intel.spx.sectors.map((s,i) => (
-                          <div key={i} style={{background:C.bg2,borderRadius:6,padding:"6px 9px",marginBottom:3}}>
-                            <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}>
-                              <span style={{fontSize:11,fontWeight:600,color:C.txt0}}>{s.f==="IN"?"▲ ":"▼ "}{s.s}</span>
-                              <span style={{fontSize:10,fontWeight:600,color:s.c && s.c.startsWith("+")?C.up:C.dn}}>{s.c}</span>
-                            </div>
-                            <div style={{fontSize:10,color:C.txt2}}>{s.r}</div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    {intel.spx.sentiment && (
-                      <div style={{marginBottom:7}}>
-                        <div style={{fontSize:9,color:C.vix,fontWeight:600,marginBottom:5}}>INVESTOR SENTIMENT</div>
-                        <div style={{fontSize:10,color:C.txt1,lineHeight:1.6}}>Put/Call: {intel.spx.sentiment.pc}</div>
-                        <div style={{fontSize:10,color:C.txt1,lineHeight:1.6}}>Breadth: {intel.spx.sentiment.breadth}</div>
-                        <div style={{fontSize:10,color:C.txt1,lineHeight:1.6}}>Institutional: {intel.spx.sentiment.inst}</div>
-                      </div>
-                    )}
-                    {intel.spx.note && (
-                      <div style={{background:"rgba(40,204,120,0.07)",border:"1px solid rgba(40,204,120,0.2)",borderRadius:6,padding:"8px 10px"}}>
-                        <div style={{fontSize:9,color:C.up,marginBottom:2}}>◈ TRADER NOTE</div>
-                        <div style={{fontSize:11,color:C.txt0,lineHeight:1.55}}>{intel.spx.note}</div>
-                      </div>
-                    )}
-                  </div>
-                )}
+                    {gf.setupTonight&&<div style={{background:"rgba(200,168,64,0.08)",border:"1px solid rgba(200,168,64,0.25)",borderRadius:7,padding:"8px 10px"}}>
+                      <div style={{fontSize:9,color:C.gold,fontWeight:600,marginBottom:3}}>🎯 SETUP TONIGHT</div>
+                      <div style={{fontSize:11,color:C.txt0,lineHeight:1.6}}>{gf.setupTonight}</div>
+                    </div>}
+                  </div>;
+                })()}
 
-                {intel.ndx && (
+                {/* Week Ahead */}
+                {intel.weekAhead&&(
                   <div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,padding:"12px",marginBottom:8}}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-                      <div style={{fontFamily:"'Syne',sans-serif",fontSize:14,fontWeight:700,color:C.blue}}>📈 NDX DEEP DIVE</div>
-                      <div style={{textAlign:"right"}}>
-                        <div style={{fontSize:13,fontWeight:600,color:C.txt0}}>{intel.ndx.price}</div>
-                        <div style={{fontSize:10,color:intel.ndx.chg && intel.ndx.chg.startsWith("+")?C.up:C.dn,fontWeight:600}}>{intel.ndx.chg}</div>
-                      </div>
-                    </div>
-                    {intel.ndx.what && <div style={{fontSize:11,color:C.txt0,lineHeight:1.65,marginBottom:7}}>{intel.ndx.what}</div>}
-                    {intel.ndx.rumor && (
-                      <div style={{background:"rgba(184,88,240,0.07)",border:"1px solid rgba(184,88,240,0.25)",borderRadius:7,padding:"9px 11px",marginBottom:7}}>
-                        <div style={{fontSize:10,color:C.vix,fontWeight:600,marginBottom:4}}>📡 {intel.ndx.rumor.signal}</div>
-                        <div style={{fontSize:11,color:C.txt0,lineHeight:1.55}}>{intel.ndx.rumor.analysis}</div>
-                      </div>
-                    )}
-                    {intel.ndx.tech && (
-                      <div style={{marginBottom:7}}>
-                        <div style={{fontSize:9,color:C.blue,fontWeight:600,marginBottom:5}}>TECH SECTOR BREAKDOWN</div>
-                        {intel.ndx.tech.map((t,i) => (
-                          <div key={i} style={{background:C.bg2,borderRadius:6,padding:"6px 9px",marginBottom:3}}>
-                            <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}>
-                              <span style={{fontSize:11,fontWeight:600,color:C.txt0}}>{t.sub}</span>
-                              <span style={{fontSize:10,fontWeight:600,color:t.perf && t.perf.startsWith("+")?C.up:C.dn}}>{t.perf}</span>
-                            </div>
-                            <div style={{fontSize:9,color:C.blue,marginBottom:2}}>{t.leaders}</div>
-                            <div style={{fontSize:10,color:C.txt1}}>{t.note}</div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    {intel.ndx.note && (
-                      <div style={{background:"rgba(40,204,120,0.07)",border:"1px solid rgba(40,204,120,0.2)",borderRadius:6,padding:"8px 10px"}}>
-                        <div style={{fontSize:9,color:C.up,marginBottom:2}}>◈ TRADER NOTE</div>
-                        <div style={{fontSize:11,color:C.txt0,lineHeight:1.55}}>{intel.ndx.note}</div>
-                      </div>
-                    )}
+                    <div style={{fontSize:10,color:C.txt2,letterSpacing:".1em",fontWeight:600,marginBottom:6}}>📆 WEEK AHEAD</div>
+                    <div style={{fontSize:12,color:C.txt0,lineHeight:1.75}}>{intel.weekAhead}</div>
                   </div>
                 )}
 
-                {intel.tradeFocus && (
+                {/* Trade Focus */}
+                {intel.tradeFocus&&(
                   <div style={{background:"linear-gradient(135deg,rgba(40,204,120,0.08),rgba(40,204,120,0.03))",border:"1px solid rgba(40,204,120,0.25)",borderRadius:10,padding:"13px"}}>
                     <div style={{fontSize:10,color:C.up,letterSpacing:".1em",fontWeight:600,marginBottom:6}}>🎯 TRADE FOCUS</div>
                     <div style={{fontSize:13,color:C.txt0,lineHeight:1.8}}>{intel.tradeFocus}</div>
                   </div>
                 )}
+
               </div>
             )}
           </div>
         )}
 
-        {/* ── AI FILTER ── */}
+                {/* ── AI FILTER ── */}
         {tab==="filter"&&<div style={{padding:"12px"}}>
           <div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:12,padding:"13px",marginBottom:10}}>
             <div style={{fontSize:10,color:C.txt2,letterSpacing:".12em",marginBottom:4}}>PASTE HEADLINE OR GEOPOLITICAL EVENT</div>
