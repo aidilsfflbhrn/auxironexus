@@ -19,24 +19,25 @@ const ICFG={
 const SC={"RISK-ON":"#28cc78","RISK-OFF":"#f04040","NEUTRAL":"#486080","MIXED":"#f09020"};
 const DC={BULLISH:"#28cc78",BEARISH:"#f04040",NEUTRAL:"#486080"};
 const TIER1=["XAU/USD","XAG/USD","WTI/USD","SPX","NDX","DX","VIX"];
-const TIER2=["EUR/USD","GBP/USD","USD/JPY","AUD/USD","GBP/JPY","US10Y","US02Y","DJI"];
+const TIER2=["EUR/USD","GBP/USD","USD/JPY","AUD/USD","GBP/JPY","US10Y","US02Y","DJI","RUT"];
 const INSTRUMENTS=[
-  {s:"XAU/USD",l:"GOLD",       b:3230, cat:"Commodities",grp:"Metals", v:0.004,tier:1},
-  {s:"XAG/USD",l:"SILVER",     b:32.14,cat:"Commodities",grp:"Metals", v:0.005,tier:1},
-  {s:"WTI/USD",l:"OIL WTI",    b:61.85,cat:"Commodities",grp:"Energy", v:0.005,tier:1},
-  {s:"SPX",    l:"S&P 500",    b:5320, cat:"Indices",    grp:"US",     v:0.003,tier:1},
-  {s:"NDX",    l:"NASDAQ 100", b:18540,cat:"Indices",    grp:"US",     v:0.004,tier:1},
-  {s:"DJI",    l:"DOW 30",     b:39820,cat:"Indices",    grp:"US",     v:0.003,tier:2},
-  {s:"DX",     l:"DXY",        b:99.82,cat:"Indices",    grp:"US",     v:0.002,tier:1},
-  {s:"VIX",    l:"VIX",        b:21.50,cat:"Volatility", grp:"VIX",    v:0.025,tier:1},
-  {s:"EUR/USD",l:"EUR/USD",    b:1.1042,cat:"Forex",     grp:"Majors", v:0.002,tier:2},
-  {s:"GBP/USD",l:"GBP/USD",    b:1.2985,cat:"Forex",     grp:"Majors", v:0.002,tier:2},
-  {s:"USD/JPY",l:"USD/JPY",    b:143.25,cat:"Forex",     grp:"Majors", v:0.002,tier:2},
-  {s:"AUD/USD",l:"AUD/USD",    b:0.6312,cat:"Forex",     grp:"Majors", v:0.002,tier:2},
-  {s:"GBP/JPY",l:"GBP/JPY",   b:186.10,cat:"Forex",     grp:"Crosses",v:0.002,tier:2},
-  {s:"US10Y",  l:"US 10Y",    b:4.38,  cat:"Bonds",     grp:"Yields", v:0.006,tier:2},
-  {s:"US02Y",  l:"US 2Y",     b:4.02,  cat:"Bonds",     grp:"Yields", v:0.008,tier:2},
-  {s:"US30Y",  l:"US 30Y",    b:4.78,  cat:"Bonds",     grp:"Yields", v:0.005,tier:3},
+  {s:"XAU/USD",l:"GOLD",       b:3230, cat:"Commodities",grp:"Metals", roro:"OFF",v:0.004,tier:1},
+  {s:"XAG/USD",l:"SILVER",     b:32.14,cat:"Commodities",grp:"Metals", roro:"OFF",v:0.005,tier:1},
+  {s:"WTI/USD",l:"OIL WTI",    b:61.85,cat:"Commodities",grp:"Energy", roro:"ON",v:0.005,tier:1},
+  {s:"SPX",    l:"S&P 500",    b:5320, cat:"Indices",    grp:"US",     roro:"ON",v:0.003,tier:1},
+  {s:"NDX",    l:"NASDAQ 100", b:18540,cat:"Indices",    grp:"US",     roro:"ON",v:0.004,tier:1},
+  {s:"DJI",    l:"DOW 30",     b:39820,cat:"Indices",    grp:"US",     roro:"ON",v:0.003,tier:2},
+  {s:"RUT",    l:"RUSSELL 2K", b:1980, cat:"Indices",    grp:"US",     roro:"ON", v:0.005,tier:2},
+  {s:"DX",     l:"DXY",        b:99.82,cat:"Indices",    grp:"US",     roro:"OFF",v:0.002,tier:1},
+  {s:"VIX",    l:"VIX",        b:21.50,cat:"Volatility", grp:"VIX",    roro:"OFF",v:0.025,tier:1},
+  {s:"EUR/USD",l:"EUR/USD",    b:1.1042,cat:"Forex",     grp:"Majors", roro:"MIX",v:0.002,tier:2},
+  {s:"GBP/USD",l:"GBP/USD",    b:1.2985,cat:"Forex",     grp:"Majors", roro:"MIX",v:0.002,tier:2},
+  {s:"USD/JPY",l:"USD/JPY",    b:143.25,cat:"Forex",     grp:"Majors", roro:"OFF",v:0.002,tier:2},
+  {s:"AUD/USD",l:"AUD/USD",    b:0.6312,cat:"Forex",     grp:"Majors", roro:"ON",v:0.002,tier:2},
+  {s:"GBP/JPY",l:"GBP/JPY",   b:186.10,cat:"Forex",     grp:"Crosses",roro:"ON",v:0.002,tier:2},
+  {s:"US10Y",  l:"US 10Y",    b:4.38,  cat:"Bonds",     grp:"Yields", roro:"OFF",v:0.006,tier:2},
+  {s:"US02Y",  l:"US 2Y",     b:4.02,  cat:"Bonds",     grp:"Yields", roro:"OFF",v:0.008,tier:2},
+  {s:"US30Y",  l:"US 30Y",    b:4.78,  cat:"Bonds",     grp:"Yields", roro:"OFF",v:0.005,tier:3},
 ];
 const CATS=["Indices","Forex","Commodities","Bonds","Volatility","Crypto"];
 const DEFAULT_QUAD=["XAU/USD","SPX","DX","WTI/USD"];
@@ -378,7 +379,7 @@ export default function Auxiron(){
   var inverted=spread!==null&&spread<0;
   var anyLive=mkt.some(function(m){return m.live;});
   var stClr=anyLive?C.goldL:C.amber;
-  var displayed=mkt.filter(function(m){return catF==="All"?m.tier<=2:m.cat===catF;});
+  var displayed=mkt.filter(function(m){if(catF==="All")return m.tier<=2;if(catF==="Risk-On")return (m as any).roro==="ON";if(catF==="Risk-Off")return (m as any).roro==="OFF";if(catF==="FX")return m.cat==="Forex";if(catF==="Bonds")return m.cat==="Bonds";return m.tier<=2;});
 
   const NAV=[
     {key:"markets",icon:"◫",label:"Markets"},
@@ -542,52 +543,36 @@ export default function Auxiron(){
         {/* ── MARKETS ── */}
         {tab==="markets"&&<div>
           <div style={{padding:"8px 12px",display:"flex",gap:5,overflowX:"auto",borderBottom:"1px solid "+C.border}}>
-            {["All"].concat(CATS).map(function(c){
+            {["All","Risk-On","Risk-Off","FX","Bonds"].map(function(c){
               var a=catF===c;
               return <button key={c} className="tap" onClick={function(){setCatF(c);}}
                 style={{background:a?"rgba(200,168,64,0.12)":C.bg2,border:a?"1px solid rgba(200,168,64,0.38)":"1px solid "+C.border,
                   color:a?C.goldL:C.txt2,borderRadius:20,padding:"4px 11px",fontSize:9,fontWeight:500,whiteSpace:"nowrap"}}>
-                {c==="Volatility"?"VIX":c}
+                {c}
               </button>;
             })}
           </div>
-          {(catF==="All"||catF==="Bonds")&&y2&&y10&&<div style={{padding:"8px 12px",borderBottom:"1px solid "+C.border}}>
-            <div style={{fontSize:10,color:C.txt2,letterSpacing:".1em",marginBottom:6}}>YIELD CURVE</div>
-            <div style={{display:"flex",gap:6,overflowX:"auto"}}>
-              {[y2,y10].map(function(m){
-                return <div key={m.s}
-                  style={{background:C.bg2,border:"1px solid "+C.border,borderRadius:8,padding:"7px 12px",flexShrink:0,minWidth:88}}>
-                  <div style={{fontSize:9,color:C.bond,marginBottom:2}}>{m.l}</div>
-                  <div style={{fontSize:15,fontWeight:600,color:C.txt0,fontVariantNumeric:"tabular-nums"}}>{m.cur.toFixed(3)}<span style={{fontSize:9,color:C.txt2}}>%</span></div>
-                  <div style={{fontSize:10,color:m.chg>=0?C.dn:C.up}}>{m.chg>=0?"+":""}{m.chg.toFixed(3)}</div>
-                </div>;
-              })}
-              {spread!==null&&<div style={{background:inverted?"rgba(240,64,64,0.08)":"rgba(40,204,120,0.06)",border:"1px solid "+(inverted?C.dnD:C.upD),borderRadius:8,padding:"7px 12px",flexShrink:0,minWidth:88}}>
-                <div style={{fontSize:9,color:C.txt2,marginBottom:2}}>2s10s</div>
-                <div style={{fontSize:15,fontWeight:600,color:inverted?C.dn:C.up}}>{spread>0?"+":""}{spread}%</div>
-                <div style={{fontSize:9,color:inverted?C.dn:C.up}}>{inverted?"▼ INVERTED":"▲ NORMAL"}</div>
-              </div>}
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,padding:"8px 12px",borderBottom:"1px solid "+C.border}}>
+            <div style={{background:"rgba(40,204,120,0.05)",border:"1px solid rgba(40,204,120,0.25)",borderRadius:8,padding:"8px 10px"}}>
+              <div style={{fontSize:9,fontWeight:700,color:C.up,marginBottom:4}}>🟢 RISK-ON</div>
+              <div style={{fontSize:9,color:C.txt1}}>US Equities ▲ · Oil ▲ · AUD ▲ · GBP/JPY ▲</div>
             </div>
+            <div style={{background:"rgba(240,64,64,0.05)",border:"1px solid rgba(240,64,64,0.25)",borderRadius:8,padding:"8px 10px"}}>
+              <div style={{fontSize:9,fontWeight:700,color:C.dn,marginBottom:4}}>🔴 RISK-OFF</div>
+              <div style={{fontSize:9,color:C.txt1}}>Gold ▲ · JPY ▲ · DXY ▲ · Bonds ▲ · VIX ▲</div>
+            </div>
+          </div>
+          {(catF==="All"||catF==="Bonds")&&y2&&y10&&spread!==null&&<div style={{padding:"6px 12px",borderBottom:"1px solid "+C.border,display:"flex",alignItems:"center",gap:6}}>
+            <span style={{fontSize:9,color:C.txt2,letterSpacing:".08em"}}>2s10s:</span>
+            <span style={{fontSize:11,fontWeight:600,color:inverted?C.dn:C.up}}>{spread>0?"+":""}{spread}% {inverted?"▼ INVERTED":"▲ NORMAL"}</span>
           </div>}
-          {(catF==="All"||catF==="Volatility")&&vixI&&<div style={{padding:"8px 12px",borderBottom:"1px solid "+C.border}}>
+          {(catF==="All"||catF==="Risk-Off")&&vixI&&<div style={{padding:"8px 12px",borderBottom:"1px solid "+C.border}}>
             <div style={{fontSize:10,color:C.txt2,letterSpacing:".1em",marginBottom:6}}>VIX — FEAR INDEX</div>
             <div className="tap" style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,padding:"12px 14px",display:"flex",alignItems:"center",gap:12}}>
               <div style={{flex:1}}>
                 <div style={{fontSize:26,fontWeight:700,color:vixClr(vixI.cur),fontFamily:"'Syne',sans-serif"}}>{vixI.cur.toFixed(2)}</div>
                 <div style={{fontSize:11,fontWeight:600,color:vixClr(vixI.cur),marginTop:2}}>{vixLbl(vixI.cur)}</div>
                 <div style={{fontSize:10,color:C.txt2,marginTop:1}}>{vixI.pct>=0?"+":""}{vixI.pct.toFixed(2)}% today</div>
-              </div>
-              <div style={{flex:2}}>
-                <div style={{position:"relative",height:8,background:C.bg2,borderRadius:4,overflow:"hidden",marginBottom:6}}>
-                  {[{v:15,c:"#28cc78"},{v:20,c:"#e8c858"},{v:30,c:"#f09020"},{v:50,c:"#f04040"}].map(function(seg,idx,arr){
-                    var prev=idx===0?0:arr[idx-1].v;
-                    return <div key={idx} style={{position:"absolute",left:((prev/50)*100)+"%",width:(((seg.v-prev)/50)*100)+"%",height:"100%",background:seg.c,opacity:0.3}}></div>;
-                  })}
-                  <div style={{position:"absolute",left:Math.min(vixI.cur/50*100,98)+"%",top:-2,width:3,height:12,background:vixClr(vixI.cur),borderRadius:2}}></div>
-                </div>
-                <div style={{display:"flex",justifyContent:"space-between",fontSize:8,color:C.txt3}}>
-                  <span>0</span><span>15</span><span>20</span><span>30</span><span>50+</span>
-                </div>
               </div>
             </div>
           </div>}
@@ -751,21 +736,9 @@ export default function Auxiron(){
               })}
             </div>
           </div>
-          {y2&&y10&&<div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,padding:"12px",marginBottom:10}}>
-            <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
-              <div style={{fontSize:10,color:C.txt2,letterSpacing:".1em"}}>YIELD CURVE</div>
-              <div style={{fontSize:9,color:inverted?C.dn:C.up,fontWeight:600}}>{inverted?"▼ INVERTED":"▲ NORMAL"} {spread!==null&&(spread>0?"+":"")+spread+"%"}</div>
-            </div>
-            <div style={{display:"flex",alignItems:"flex-end",gap:6,height:60}}>
-              {[y2,y10].map(function(m,i){
-                var maxY=Math.max(y2.cur,y10.cur);var h=Math.max((m.cur/maxY)*50,8);
-                return <div key={m.s} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
-                  <div style={{fontSize:10,fontWeight:600,color:C.bond}}>{m.cur.toFixed(2)}%</div>
-                  <div style={{width:"100%",height:h,background:"rgba(64,200,208,0.20)",border:"1px solid "+C.bond,borderRadius:3}}></div>
-                  <div style={{fontSize:8,color:C.txt3}}>{["2Y","10Y"][i]}</div>
-                </div>;
-              })}
-            </div>
+          {y2&&y10&&spread!==null&&<div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,padding:"10px 12px",marginBottom:10,display:"flex",alignItems:"center",gap:6}}>
+            <span style={{fontSize:9,color:C.txt2,letterSpacing:".08em"}}>2s10s:</span>
+            <span style={{fontSize:12,fontWeight:600,color:inverted?C.dn:C.up}}>{spread>0?"+":""}{spread}% {inverted?"▼ INVERTED":"▲ NORMAL"}</span>
           </div>}
           {ctxErr&&<div style={{background:"rgba(240,64,64,0.07)",border:"1px solid rgba(240,64,64,0.2)",borderRadius:8,padding:"10px 12px",color:C.dn,fontSize:12,marginBottom:10}}>⚠ {ctxErr}</div>}
           {!ctx&&!ctxLoading&&!ctxErr&&<div style={{textAlign:"center",padding:"30px 20px",background:C.bg1,border:"1px solid "+C.border,borderRadius:10}}>
