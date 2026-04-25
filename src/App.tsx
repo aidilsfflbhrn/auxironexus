@@ -325,7 +325,7 @@ export default function Auxiron(){
     callProxy(
       {model:"claude-haiku-4-5",max_tokens:3500,system:AI_SYS,
        messages:[{role:"user",content:userContent}]},
-      function(res){setResult(res)setLoading(false);},
+      function(res){setResult(res);setLoading(false);},
       function(e){setErr("Failed: "+e);setLoading(false);}
     );
   }
