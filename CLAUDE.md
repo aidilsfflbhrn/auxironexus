@@ -23,6 +23,11 @@ React + TypeScript PWA deployed on Vercel. Single file architecture.
 1. npx tsc --noEmit → must show 0 errors
 2. Show only: pass/fail + error count
 3. Do NOT show the full TypeScript output unless there are errors
+## VERIFICATION — MANDATORY
+ALWAYS run: npm run build
+NEVER use: npx tsc --noEmit alone
+npm run build is the only check that matches Vercel exactly.
+Do not commit if npm run build shows any error.
 
 ## Critical Rules — Never Break These
 - NEVER change api/analyze.js
