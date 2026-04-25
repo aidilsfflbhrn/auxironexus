@@ -204,6 +204,7 @@ export default function Auxiron(){
   var [intelElapsed,setIntelElapsed]=useState(0);
   var [macroElapsed,setMacroElapsed]=useState(0);
   var [intelSession,setIntelSession]=useState("asia");
+  var [intelOpen,setIntelOpen]=useState<Record<string,boolean>>({});
   var [calTab,setCalTab]=useState("week");
   var [brief,setBrief]=useState(null);
   var [briefLoading,setBriefLoading]=useState(false);
@@ -1457,8 +1458,8 @@ export default function Auxiron(){
           <div style={{padding:"12px"}} className="fu">
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
               <div>
-                <div style={{fontFamily:"'Syne',sans-serif",fontSize:14,fontWeight:700,color:C.txt0,letterSpacing:".06em"}}>INSTITUTIONAL BRIEF</div>
-                <div style={{fontSize:10,color:C.txt1,marginTop:1}}>Sonnet + web search · Goldman/JPM/MS/Citi style · ~$0.08/report</div>
+                <div style={{fontFamily:"'Syne',sans-serif",fontSize:14,fontWeight:700,color:C.txt0,letterSpacing:".06em"}}>GOLD SESSION BRIEF</div>
+                <div style={{fontSize:10,color:C.txt1,marginTop:1}}>Sonnet + web search · Gold-focused · ~$0.06/report</div>
               </div>
             </div>
 
@@ -1491,10 +1492,10 @@ export default function Auxiron(){
             {intelLoading && (
               <div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:12,padding:"26px 20px",textAlign:"center",marginBottom:10}}>
                 <div className="sp" style={{width:22,height:22,border:"3px solid "+C.border2,borderTopColor:C.gold,borderRadius:"50%",margin:"0 auto 10px"}}></div>
-                <div style={{fontSize:11,color:C.goldL,letterSpacing:".08em",marginBottom:3}}>GENERATING INSTITUTIONAL BRIEF</div>
-                <div style={{fontSize:9,color:C.txt2,marginBottom:6}}>Trump watch · Bank forecasts · Market flow · Gold setup</div>
+                <div style={{fontSize:11,color:C.goldL,letterSpacing:".08em",marginBottom:3}}>GENERATING GOLD BRIEF</div>
+                <div style={{fontSize:9,color:C.txt2,marginBottom:6}}>Trump watch · Bank views · Gold drivers · Setup</div>
                 <div style={{fontSize:10,color:C.txt3,fontVariantNumeric:"tabular-nums"}}>
-                  {intelElapsed<5?"Starting up…":intelElapsed<20?"Searching web…":intelElapsed<45?"Analyzing bank forecasts…":"Compiling brief…"}
+                  {intelElapsed<5?"Starting up…":intelElapsed<20?"Searching web…":intelElapsed<45?"Analyzing Gold setup…":"Compiling brief…"}
                   <span style={{color:C.gold,marginLeft:6,fontWeight:600}}>{intelElapsed}s</span>
                 </div>
               </div>
@@ -1505,189 +1506,264 @@ export default function Auxiron(){
               <div style={{textAlign:"center",padding:"36px 20px",background:C.bg1,border:"1px solid "+C.border,borderRadius:12}}>
                 <div style={{fontFamily:"'Syne',sans-serif",fontSize:30,marginBottom:10,opacity:0.2}}>⬟</div>
                 <div style={{fontSize:12,color:C.txt2,letterSpacing:".08em",marginBottom:4}}>SELECT A SESSION ABOVE</div>
-                <div style={{fontSize:10,color:C.txt3}}>Trump · Bank Forecasts · Market Flow · Gold Focus</div>
+                <div style={{fontSize:10,color:C.txt3}}>Gold setup · Trump watch · Bank views · Econ calendar</div>
               </div>
             )}
 
             {intel && !intelLoading && (
               <div className="fu">
 
-                {/* Headline card */}
-                <div style={{background:"linear-gradient(135deg,rgba(200,168,64,0.12),rgba(200,168,64,0.04))",border:"1px solid rgba(200,168,64,0.3)",borderRadius:10,padding:"12px",marginBottom:8}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
-                    <div style={{fontSize:10,color:C.goldL,fontWeight:600}}>{intel.session} · {intel.generatedAt}</div>
-                    {intel.marketRegime&&<span style={{fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:4,background:"rgba(0,0,0,0.3)",color:intel.marketRegime==="RISK-OFF"?C.dn:intel.marketRegime==="RISK-ON"?C.up:C.amber,border:"1px solid "+(intel.marketRegime==="RISK-OFF"?C.dn:intel.marketRegime==="RISK-ON"?C.up:C.amber)+"44"}}>{intel.marketRegime}</span>}
-                  </div>
-                  <div style={{fontSize:14,fontWeight:700,color:C.txt0,lineHeight:1.4,marginBottom:6}}>{intel.headline}</div>
-                  {intel.macroTheme&&<div style={{fontSize:12,color:C.txt1,lineHeight:1.65}}>{intel.macroTheme}</div>}
+                {/* 1 — regime + trump risk + time */}
+                <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8,flexWrap:"wrap"}}>
+                  {intel.marketRegime&&<span style={{fontSize:9,fontWeight:700,padding:"3px 8px",borderRadius:4,background:"rgba(0,0,0,0.35)",color:intel.marketRegime==="RISK-OFF"?C.dn:intel.marketRegime==="RISK-ON"?C.up:intel.marketRegime==="MIXED"?C.amber:C.txt2,border:"1px solid "+(intel.marketRegime==="RISK-OFF"?C.dn:intel.marketRegime==="RISK-ON"?C.up:intel.marketRegime==="MIXED"?C.amber:C.txt2)+"44"}}>{intel.marketRegime}</span>}
+                  {intel.trumpRisk&&(function(){var rc=intel.trumpRisk==="CRITICAL"?"#ff1840":intel.trumpRisk==="HIGH"?C.dn:intel.trumpRisk==="MODERATE"?C.amber:C.up;return <span style={{fontSize:9,fontWeight:700,padding:"3px 8px",borderRadius:4,background:"rgba(0,0,0,0.35)",color:rc,border:"1px solid "+rc+"44"}}>🇺🇸 TRUMP {intel.trumpRisk}</span>;})()}
+                  {intel.generatedAt&&<span style={{fontSize:9,color:C.txt3,marginLeft:"auto"}}>{intel.session} · {intel.generatedAt}</span>}
                 </div>
 
-                {/* Trump Market Meter */}
-                {intel.trump&&(function(){
-                  var t=intel.trump;
-                  var rClr=t.riskLevel==="CRITICAL"?"#ff1840":t.riskLevel==="HIGH"?C.dn:t.riskLevel==="MODERATE"?C.amber:C.up;
-                  var rBdr=t.riskLevel==="CRITICAL"?"rgba(255,24,64,0.5)":t.riskLevel==="HIGH"?"rgba(240,64,64,0.4)":t.riskLevel==="MODERATE"?"rgba(240,144,32,0.35)":"rgba(40,204,120,0.3)";
-                  var rBg=t.riskLevel==="CRITICAL"?"rgba(255,24,64,0.06)":t.riskLevel==="HIGH"?"rgba(240,64,64,0.06)":t.riskLevel==="MODERATE"?"rgba(240,144,32,0.05)":"rgba(40,204,120,0.05)";
-                  return <div style={{background:rBg,border:"2px solid "+rBdr,borderRadius:10,padding:"12px",marginBottom:8}}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-                      <div style={{fontSize:10,color:rClr,fontWeight:700,letterSpacing:".1em"}}>🇺🇸 TRUMP MARKET METER</div>
-                      <span style={{fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:4,background:"rgba(0,0,0,0.3)",color:rClr,border:"1px solid "+rClr+"55"}}>{t.riskLevel} RISK</span>
-                    </div>
-                    {t.latestPosts&&t.latestPosts.length>0&&(
-                      <div style={{marginBottom:8}}>
-                        <div style={{fontSize:9,color:C.txt3,letterSpacing:".08em",marginBottom:4}}>TRUTH SOCIAL</div>
-                        {t.latestPosts.map(function(p:any,i:number){
-                          return <div key={i} style={{background:"rgba(0,0,0,0.25)",border:"1px solid "+C.border,borderRadius:7,padding:"8px 10px",marginBottom:4}}>
-                            <div style={{fontSize:9,color:C.txt3,marginBottom:3}}>{p.time}</div>
-                            <div style={{fontSize:11,color:C.txt0,lineHeight:1.55,marginBottom:3}}>"{p.post}"</div>
-                            {p.impact&&<div style={{fontSize:10,color:rClr}}>→ {p.impact}</div>}
-                          </div>;
-                        })}
-                      </div>
-                    )}
-                    {t.marketImpact&&(
-                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5,marginBottom:6}}>
-                        {(["gold","dxy","oil","spx"] as string[]).map(function(k){
-                          var mi=(t.marketImpact as any)[k];if(!mi)return null;
-                          var bc=mi.bias==="BULLISH"?C.up:mi.bias==="BEARISH"?C.dn:C.amber;
-                          return <div key={k} style={{background:"rgba(0,0,0,0.2)",border:"1px solid "+C.border,borderRadius:6,padding:"6px 9px"}}>
-                            <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}>
-                              <span style={{fontSize:10,color:C.txt2,textTransform:"uppercase"}}>{k}</span>
-                              <span style={{fontSize:9,fontWeight:700,color:bc}}>{mi.bias}</span>
+                {/* 2 — SESSION VERDICTS (collapsible) */}
+                {intel.verdicts&&intel.verdicts.length>0&&(function(){
+                  var vOpen=intelOpen&&intelOpen.v!==false;
+                  var vmap:any={TRADE:C.up,AVOID:C.dn,WAIT:C.amber};
+                  var dmap:any={LONG:C.up,SHORT:C.dn,NONE:C.txt3};
+                  return <div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,marginBottom:8,overflow:"hidden"}}>
+                    <button className="tap" onClick={function(){setIntelOpen(function(p:any){return {...p,v:vOpen?false:true};});}}
+                      style={{width:"100%",background:"transparent",border:"none",padding:"10px 12px",display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer"}}>
+                      <div style={{fontSize:10,color:C.txt1,fontWeight:600,letterSpacing:".1em"}}>SESSION VERDICTS</div>
+                      <span style={{fontSize:10,color:C.txt3}}>{vOpen?"▲":"▼"}</span>
+                    </button>
+                    {vOpen&&<div style={{padding:"0 12px 12px",display:"grid",gap:5}}>
+                      {intel.verdicts.map(function(v:any,i:number){
+                        var vc=vmap[v.verdict]||C.txt2;
+                        var dc=dmap[v.direction]||C.txt2;
+                        return <div key={i} style={{background:C.bg2,border:"1px solid "+C.border,borderRadius:7,padding:"8px 10px",display:"flex",alignItems:"flex-start",gap:10}}>
+                          <div style={{minWidth:72}}>
+                            <div style={{fontSize:11,fontWeight:700,color:C.txt0,marginBottom:3}}>{v.symbol}</div>
+                            <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+                              <span style={{fontSize:8,fontWeight:700,padding:"2px 6px",borderRadius:3,background:"rgba(0,0,0,0.3)",color:vc,border:"1px solid "+vc+"44"}}>{v.verdict}</span>
+                              {v.direction!=="NONE"&&<span style={{fontSize:8,fontWeight:700,padding:"2px 6px",borderRadius:3,background:"rgba(0,0,0,0.3)",color:dc,border:"1px solid "+dc+"44"}}>{v.direction}</span>}
                             </div>
-                            <div style={{fontSize:9,color:C.txt1,lineHeight:1.4}}>{mi.reason}</div>
-                          </div>;
-                        })}
-                      </div>
-                    )}
-                    {t.watchFor&&<div style={{fontSize:10,color:rClr,background:"rgba(0,0,0,0.2)",borderRadius:6,padding:"6px 9px"}}>👁 {t.watchFor}</div>}
-                  </div>;
-                })()}
-
-                {/* Overnight Digest */}
-                {intel.overnightDigest&&(
-                  <div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,padding:"12px",marginBottom:8}}>
-                    <div style={{fontSize:10,color:C.txt2,letterSpacing:".1em",fontWeight:600,marginBottom:6}}>🌙 OVERNIGHT DIGEST</div>
-                    <div style={{fontSize:12,color:C.txt0,lineHeight:1.75,marginBottom:8}}>{intel.overnightDigest}</div>
-                    {intel.geopolitical&&intel.geopolitical.length>0&&(
-                      <div>
-                        <div style={{fontSize:9,color:C.amber,letterSpacing:".08em",fontWeight:600,marginBottom:5}}>⚡ GEOPOLITICAL</div>
-                        {intel.geopolitical.map(function(g:any,i:number){
-                          return <div key={i} style={{display:"flex",gap:7,padding:"5px 0",borderBottom:i<intel.geopolitical.length-1?"1px solid "+C.border:"none"}}>
-                            <span style={{color:C.dn,flexShrink:0}}>→</span>
-                            <span style={{fontSize:11,color:C.txt1,lineHeight:1.5}}>{g}</span>
-                          </div>;
-                        })}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Market Flow Intelligence */}
-                {intel.marketFlow&&(function(){
-                  var mf=intel.marketFlow;
-                  var flowClr=function(f:string){return f==="INFLOW"||f==="RISING"?C.up:C.dn;};
-                  return <div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,padding:"12px",marginBottom:8}}>
-                    <div style={{fontSize:10,color:C.goldL,letterSpacing:".1em",fontWeight:600,marginBottom:8}}>💰 MARKET FLOW INTELLIGENCE</div>
-                    {mf.topMovers&&mf.topMovers.length>0&&(
-                      <div style={{marginBottom:8}}>
-                        <div style={{fontSize:9,color:C.txt3,letterSpacing:".08em",marginBottom:5}}>TOP MOVERS</div>
-                        <div style={{display:"grid",gap:4}}>
-                          {mf.topMovers.map(function(m:any,i:number){
-                            var up=m.change&&m.change.startsWith("+");
-                            return <div key={i} style={{background:C.bg2,border:"1px solid "+C.border,borderRadius:7,padding:"7px 10px"}}>
-                              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:2}}>
-                                <span style={{fontSize:12,fontWeight:600,color:C.txt0}}>{m.market}</span>
-                                <div style={{display:"flex",alignItems:"center",gap:6}}>
-                                  <span style={{fontSize:10,fontWeight:700,color:up?C.up:C.dn}}>{m.change}</span>
-                                  {m.flow&&<span style={{fontSize:8,fontWeight:600,color:flowClr(m.flow),background:"rgba(0,0,0,0.25)",border:"1px solid "+flowClr(m.flow)+"44",borderRadius:3,padding:"1px 5px"}}>{m.flow}</span>}
-                                </div>
-                              </div>
-                              <div style={{fontSize:10,color:C.txt1,lineHeight:1.4}}>{m.reason}</div>
-                            </div>;
-                          })}
-                        </div>
-                      </div>
-                    )}
-                    {(mf.rotationInto||mf.rotationOutOf)&&(
-                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:8}}>
-                        {mf.rotationInto&&mf.rotationInto.length>0&&(
-                          <div style={{background:"rgba(40,204,120,0.07)",border:"1px solid rgba(40,204,120,0.2)",borderRadius:7,padding:"7px 9px"}}>
-                            <div style={{fontSize:8,color:C.up,fontWeight:700,letterSpacing:".08em",marginBottom:4}}>▲ ROTATION INTO</div>
-                            {mf.rotationInto.map(function(r:string,i:number){return <div key={i} style={{fontSize:10,color:C.txt0,marginBottom:2}}>· {r}</div>;})}
                           </div>
-                        )}
-                        {mf.rotationOutOf&&mf.rotationOutOf.length>0&&(
-                          <div style={{background:"rgba(240,64,64,0.07)",border:"1px solid rgba(240,64,64,0.2)",borderRadius:7,padding:"7px 9px"}}>
-                            <div style={{fontSize:8,color:C.dn,fontWeight:700,letterSpacing:".08em",marginBottom:4}}>▼ ROTATION OUT OF</div>
-                            {mf.rotationOutOf.map(function(r:string,i:number){return <div key={i} style={{fontSize:10,color:C.txt0,marginBottom:2}}>· {r}</div>;})}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    {mf.pricedIn&&<div style={{fontSize:11,color:C.txt1,lineHeight:1.6,marginBottom:6}}>{mf.pricedIn}</div>}
-                    {mf.institutionalNote&&<div style={{background:"rgba(72,144,248,0.07)",border:"1px solid rgba(72,144,248,0.2)",borderRadius:6,padding:"6px 9px"}}>
-                      <span style={{fontSize:9,color:C.blue,fontWeight:600}}>🏦 </span>
-                      <span style={{fontSize:10,color:C.txt1}}>{mf.institutionalNote}</span>
+                          <div style={{fontSize:10,color:C.txt1,lineHeight:1.5,flex:1}}>{v.reason}</div>
+                        </div>;
+                      })}
                     </div>}
                   </div>;
                 })()}
 
-                {/* Bank Forecasts */}
-                {intel.bankForecasts&&intel.bankForecasts.length>0&&(
-                  <div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,padding:"12px",marginBottom:8}}>
-                    <div style={{fontSize:10,color:C.blue,letterSpacing:".1em",fontWeight:600,marginBottom:8}}>🏦 BANK FORECASTS</div>
-                    <div style={{display:"grid",gap:5}}>
-                      {intel.bankForecasts.map(function(b:any,i:number){
-                        var cc=b.conviction==="HIGH"?C.up:b.conviction==="MEDIUM"?C.amber:C.txt2;
-                        return <div key={i} style={{background:C.bg2,border:"1px solid "+C.border,borderRadius:7,padding:"8px 10px"}}>
-                          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
-                            <span style={{fontSize:11,fontWeight:700,color:C.txt0}}>{b.bank}</span>
-                            <span style={{fontSize:8,fontWeight:600,color:cc,background:"rgba(0,0,0,0.25)",border:"1px solid "+cc+"44",borderRadius:3,padding:"1px 6px"}}>{b.conviction}</span>
+                {/* 3 — GOLD DEEP FOCUS (collapsible, gold gradient) */}
+                {intel.gold&&(function(){
+                  var g=intel.gold;
+                  var gOpen=intelOpen&&intelOpen.g!==false;
+                  var chgUp=g.change&&(g.change.startsWith("+")||parseFloat(g.change)>0);
+                  var amap:any={BULLISH:C.up,BEARISH:C.dn,NEUTRAL:C.txt2};
+                  var vmap:any={ALIGNED:C.up,MIXED:C.amber,CONFLICTED:C.dn};
+                  var dmap:any={LONG:C.up,SHORT:C.dn,NONE:C.txt3};
+                  var kl=g.keyLevels;
+                  var setup=g.setup;
+                  return <div style={{background:"linear-gradient(135deg,rgba(200,168,64,0.1),rgba(200,168,64,0.04))",border:"1px solid rgba(200,168,64,0.35)",borderRadius:10,marginBottom:8,overflow:"hidden"}}>
+                    <button className="tap" onClick={function(){setIntelOpen(function(p:any){return {...p,g:gOpen?false:true};});}}
+                      style={{width:"100%",background:"transparent",border:"none",padding:"11px 12px",display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer"}}>
+                      <div style={{display:"flex",alignItems:"center",gap:10}}>
+                        <div style={{fontFamily:"'Syne',sans-serif",fontSize:13,fontWeight:700,color:C.gold}}>🥇 GOLD DEEP FOCUS</div>
+                        {g.sessionBias&&<span style={{fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:4,background:"rgba(0,0,0,0.3)",color:amap[g.sessionBias]||C.txt2,border:"1px solid "+(amap[g.sessionBias]||C.txt2)+"44"}}>{g.sessionBias}</span>}
+                      </div>
+                      <div style={{display:"flex",alignItems:"center",gap:10}}>
+                        {g.price&&<div style={{textAlign:"right"}}>
+                          <div style={{fontSize:13,fontWeight:700,color:C.txt0}}>{g.price}</div>
+                          {g.change&&<div style={{fontSize:9,fontWeight:600,color:chgUp?C.up:C.dn}}>{g.change}</div>}
+                        </div>}
+                        <span style={{fontSize:10,color:C.txt3}}>{gOpen?"▲":"▼"}</span>
+                      </div>
+                    </button>
+                    {gOpen&&<div style={{padding:"0 12px 12px"}}>
+                      {/* price strip — trend / momentum / volatility */}
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:5,marginBottom:10}}>
+                        {[{l:"TREND",v:g.trend},{l:"MOMENTUM",v:g.momentum},{l:"VOLATILITY",v:g.volatility}].map(function(x){
+                          var xc=x.v==="BULLISH"||x.v==="ACCELERATING"||x.v==="HIGH"?C.up:x.v==="BEARISH"||x.v==="FADING"?C.dn:C.txt2;
+                          return <div key={x.l} style={{background:"rgba(0,0,0,0.25)",borderRadius:6,padding:"6px 8px",textAlign:"center"}}>
+                            <div style={{fontSize:8,color:C.txt3,marginBottom:2}}>{x.l}</div>
+                            <div style={{fontSize:9,fontWeight:700,color:xc}}>{x.v||"—"}</div>
+                          </div>;
+                        })}
+                      </div>
+                      {/* alignment 3-row */}
+                      {g.alignment&&(
+                        <div style={{marginBottom:10}}>
+                          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}>
+                            <div style={{fontSize:9,color:C.gold,fontWeight:600,letterSpacing:".08em"}}>ALIGNMENT</div>
+                            {g.alignment.verdict&&<span style={{fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:3,background:"rgba(0,0,0,0.3)",color:vmap[g.alignment.verdict]||C.txt2,border:"1px solid "+(vmap[g.alignment.verdict]||C.txt2)+"44"}}>{g.alignment.verdict}</span>}
                           </div>
-                          <div style={{fontSize:12,color:C.goldL,fontWeight:600,marginBottom:3}}>{b.call}</div>
-                          <div style={{fontSize:10,color:C.txt1,lineHeight:1.5}}>{b.rationale}</div>
-                        </div>;
-                      })}
-                    </div>
-                  </div>
-                )}
+                          {[{k:"fundamental",l:"FUNDAMENTAL"},{k:"sentiment",l:"SENTIMENT"},{k:"technical",l:"TECHNICAL"}].map(function(row){
+                            var val=(g.alignment as any)[row.k];
+                            var note=(g.alignment as any)[row.k+"Note"];
+                            var rc=val==="BULLISH"?C.up:val==="BEARISH"?C.dn:C.txt2;
+                            return <div key={row.k} style={{background:"rgba(0,0,0,0.2)",border:"1px solid "+C.border,borderRadius:6,padding:"6px 10px",marginBottom:4}}>
+                              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:note?3:0}}>
+                                <span style={{fontSize:9,color:C.txt3}}>{row.l}</span>
+                                <span style={{fontSize:9,fontWeight:700,color:rc}}>{val||"—"}</span>
+                              </div>
+                              {note&&<div style={{fontSize:10,color:C.txt1,lineHeight:1.45}}>{note}</div>}
+                            </div>;
+                          })}
+                          {g.alignment.verdictNote&&<div style={{fontSize:10,color:C.amber,marginTop:4,paddingLeft:2}}>{g.alignment.verdictNote}</div>}
+                        </div>
+                      )}
+                      {/* key levels 5-box */}
+                      {kl&&<div style={{marginBottom:10}}>
+                        <div style={{fontSize:9,color:C.gold,fontWeight:600,letterSpacing:".08em",marginBottom:5}}>KEY LEVELS</div>
+                        <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:4,marginBottom:kl.note?6:0}}>
+                          {[{l:"STR SUP",v:kl.strongSupport,c:"rgba(40,204,120,0.15)"},{l:"SUPPORT",v:kl.support,c:"rgba(40,204,120,0.08)"},{l:"CURRENT",v:kl.current,c:"rgba(200,168,64,0.1)"},{l:"RESIST",v:kl.resistance,c:"rgba(240,64,64,0.08)"},{l:"STR RES",v:kl.strongResistance,c:"rgba(240,64,64,0.15)"}].map(function(box){
+                            var tc=box.l.includes("SUP")||box.l==="SUPPORT"?C.up:box.l==="CURRENT"?C.goldL:C.dn;
+                            return <div key={box.l} style={{background:box.c,borderRadius:5,padding:"5px 4px",textAlign:"center"}}>
+                              <div style={{fontSize:7,color:C.txt3,marginBottom:2}}>{box.l}</div>
+                              <div style={{fontSize:9,fontWeight:700,color:tc}}>{box.v||"—"}</div>
+                            </div>;
+                          })}
+                        </div>
+                        {kl.note&&<div style={{fontSize:10,color:C.txt1,background:"rgba(0,0,0,0.2)",borderRadius:5,padding:"5px 8px"}}>{kl.note}</div>}
+                      </div>}
+                      {/* setup box */}
+                      {setup&&(
+                        <div style={{background:setup.hasSetup?"rgba(40,204,120,0.07)":"rgba(0,0,0,0.2)",border:"1px solid "+(setup.hasSetup?"rgba(40,204,120,0.25)":C.border),borderRadius:8,padding:"10px",marginBottom:8}}>
+                          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                            <div style={{fontSize:9,fontWeight:700,color:setup.hasSetup?C.up:C.txt2,letterSpacing:".08em"}}>🎯 SETUP</div>
+                            {setup.direction&&setup.direction!=="NONE"&&<span style={{fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:3,background:"rgba(0,0,0,0.3)",color:dmap[setup.direction]||C.txt2,border:"1px solid "+(dmap[setup.direction]||C.txt2)+"44"}}>{setup.direction}</span>}
+                          </div>
+                          {setup.hasSetup?(
+                            <div>
+                              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5,marginBottom:6}}>
+                                {[{l:"ENTRY",v:setup.entryZone},{l:"STOP",v:setup.stopLoss},{l:"TARGET 1",v:setup.target1},{l:"TARGET 2",v:setup.target2}].map(function(f){
+                                  return <div key={f.l} style={{background:"rgba(0,0,0,0.2)",borderRadius:5,padding:"5px 8px"}}>
+                                    <div style={{fontSize:8,color:C.txt3,marginBottom:1}}>{f.l}</div>
+                                    <div style={{fontSize:10,fontWeight:600,color:C.txt0}}>{f.v||"—"}</div>
+                                  </div>;
+                                })}
+                              </div>
+                              {setup.riskReward&&<div style={{fontSize:10,color:C.goldL,marginBottom:5}}>R:R {setup.riskReward}</div>}
+                              {setup.setupNote&&<div style={{fontSize:11,color:C.txt0,lineHeight:1.6,marginBottom:setup.invalidation?6:0}}>{setup.setupNote}</div>}
+                              {setup.invalidation&&<div style={{fontSize:10,color:C.dn}}>✕ Invalidation: {setup.invalidation}</div>}
+                            </div>
+                          ):<div style={{fontSize:11,color:C.txt2}}>No clear setup for this session.</div>}
+                        </div>
+                      )}
+                      {/* avoidIf box */}
+                      {g.avoidIf&&g.avoidIf.length>0&&(
+                        <div style={{background:"rgba(240,64,64,0.06)",border:"1px solid rgba(240,64,64,0.2)",borderRadius:7,padding:"8px 10px"}}>
+                          <div style={{fontSize:9,color:C.dn,fontWeight:600,letterSpacing:".08em",marginBottom:5}}>⚠ AVOID IF</div>
+                          {g.avoidIf.map(function(a:string,i:number){
+                            return <div key={i} style={{display:"flex",gap:6,padding:"3px 0",borderBottom:i<g.avoidIf.length-1?"1px solid rgba(240,64,64,0.15)":"none"}}>
+                              <span style={{color:C.dn,flexShrink:0,fontSize:10}}>→</span>
+                              <span style={{fontSize:10,color:C.txt1,lineHeight:1.45}}>{a}</span>
+                            </div>;
+                          })}
+                        </div>
+                      )}
+                      {/* drivers */}
+                      {g.drivers&&(
+                        <div style={{marginTop:8,background:"rgba(0,0,0,0.15)",borderRadius:7,padding:"8px 10px"}}>
+                          <div style={{fontSize:9,color:C.gold,fontWeight:600,letterSpacing:".08em",marginBottom:5}}>DRIVERS</div>
+                          {[{l:"Primary",v:g.drivers.primaryDriver},{l:"DXY",v:g.drivers.dxy},{l:"Real Yields",v:g.drivers.realYields},{l:"Sentiment",v:g.drivers.sentiment},{l:"Catalyst",v:g.drivers.catalyst}].filter(function(d){return d.v;}).map(function(d){
+                            return <div key={d.l} style={{display:"flex",gap:6,padding:"3px 0",borderBottom:"1px solid "+C.border}}>
+                              <span style={{fontSize:9,color:C.txt3,minWidth:68,flexShrink:0}}>{d.l}</span>
+                              <span style={{fontSize:10,color:C.txt0,lineHeight:1.4}}>{d.v}</span>
+                            </div>;
+                          })}
+                        </div>
+                      )}
+                    </div>}
+                  </div>;
+                })()}
 
-                {/* Economic Calendar */}
-                {intel.economicCalendar&&(function(){
-                  var ec=intel.economicCalendar;
-                  var tabs=[{k:"today",l:"TODAY"},{k:"week",l:"THIS WEEK"},{k:"nextWeek",l:"NEXT WEEK"}];
+                {/* 4 — TRUMP METER (red border) */}
+                {intel.trump&&(function(){
+                  var t=intel.trump;
+                  var rClr=t.riskLevel==="CRITICAL"?"#ff1840":t.riskLevel==="HIGH"?C.dn:t.riskLevel==="MODERATE"?C.amber:C.up;
+                  var rBdr=t.riskLevel==="CRITICAL"?"rgba(255,24,64,0.45)":t.riskLevel==="HIGH"?"rgba(240,64,64,0.35)":t.riskLevel==="MODERATE"?"rgba(240,144,32,0.3)":"rgba(40,204,120,0.25)";
+                  var rBg=t.riskLevel==="CRITICAL"?"rgba(255,24,64,0.05)":t.riskLevel==="HIGH"?"rgba(240,64,64,0.05)":t.riskLevel==="MODERATE"?"rgba(240,144,32,0.04)":"rgba(40,204,120,0.04)";
+                  var gimp:any={BULLISH:C.up,BEARISH:C.dn,NEUTRAL:C.txt2};
+                  return <div style={{background:rBg,border:"2px solid "+rBdr,borderRadius:10,padding:"12px",marginBottom:8}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                      <div style={{fontSize:10,color:rClr,fontWeight:700,letterSpacing:".1em"}}>🇺🇸 TRUMP METER</div>
+                      <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                        {t.goldImpact&&<span style={{fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:4,background:"rgba(0,0,0,0.3)",color:gimp[t.goldImpact]||C.txt2,border:"1px solid "+(gimp[t.goldImpact]||C.txt2)+"44"}}>GOLD {t.goldImpact}</span>}
+                        <span style={{fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:4,background:"rgba(0,0,0,0.3)",color:rClr,border:"1px solid "+rClr+"55"}}>{t.riskLevel}</span>
+                      </div>
+                    </div>
+                    {t.summary&&<div style={{fontSize:11,color:C.txt0,lineHeight:1.6,marginBottom:t.watchFor?7:0}}>{t.summary}</div>}
+                    {t.watchFor&&<div style={{fontSize:10,color:rClr,background:"rgba(0,0,0,0.2)",borderRadius:6,padding:"6px 9px"}}>👁 {t.watchFor}</div>}
+                  </div>;
+                })()}
+
+                {/* 5 — MARKET CONTEXT (collapsible) */}
+                {intel.context&&(function(){
+                  var ctx=intel.context;
+                  var ctxOpen=intelOpen&&intelOpen.c!==false;
+                  return <div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,marginBottom:8,overflow:"hidden"}}>
+                    <button className="tap" onClick={function(){setIntelOpen(function(p:any){return {...p,c:ctxOpen?false:true};});}}
+                      style={{width:"100%",background:"transparent",border:"none",padding:"10px 12px",display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer"}}>
+                      <div style={{fontSize:10,color:C.txt1,fontWeight:600,letterSpacing:".1em"}}>MARKET CONTEXT</div>
+                      <span style={{fontSize:10,color:C.txt3}}>{ctxOpen?"▲":"▼"}</span>
+                    </button>
+                    {ctxOpen&&<div style={{padding:"0 12px 12px"}}>
+                      {ctx.overnightSummary&&<div style={{fontSize:12,color:C.txt0,lineHeight:1.75,marginBottom:8}}>{ctx.overnightSummary}</div>}
+                      {ctx.geopolitical&&<div style={{background:"rgba(240,144,32,0.07)",border:"1px solid rgba(240,144,32,0.2)",borderRadius:6,padding:"7px 10px",marginBottom:6}}>
+                        <div style={{fontSize:9,color:C.amber,fontWeight:600,marginBottom:3}}>⚡ GEOPOLITICAL</div>
+                        <div style={{fontSize:11,color:C.txt1,lineHeight:1.55}}>{ctx.geopolitical}</div>
+                      </div>}
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>
+                        {ctx.weekTheme&&<div style={{background:"rgba(0,0,0,0.2)",borderRadius:6,padding:"6px 9px"}}>
+                          <div style={{fontSize:8,color:C.txt3,marginBottom:2}}>WEEK THEME</div>
+                          <div style={{fontSize:10,color:C.txt0}}>{ctx.weekTheme}</div>
+                        </div>}
+                        {ctx.nextBigCatalyst&&<div style={{background:"rgba(0,0,0,0.2)",borderRadius:6,padding:"6px 9px"}}>
+                          <div style={{fontSize:8,color:C.txt3,marginBottom:2}}>NEXT CATALYST</div>
+                          <div style={{fontSize:10,color:C.goldL}}>{ctx.nextBigCatalyst}</div>
+                        </div>}
+                      </div>
+                    </div>}
+                  </div>;
+                })()}
+
+                {/* 6 — ECONOMIC CALENDAR (2 tabs: tonight/this week) */}
+                {intel.events&&intel.events.length>0&&(function(){
                   var impClr=function(imp:string){return imp==="CRITICAL"?"#ff1840":imp==="HIGH"?C.dn:imp==="MEDIUM"?C.amber:C.txt3;};
-                  var activeData:any[]=(calTab==="today"?ec.today:calTab==="week"?ec.thisWeek:ec.nextWeek)||[];
+                  var gimp:any={BULLISH:C.up,BEARISH:C.dn,NEUTRAL:C.txt2};
+                  var evTonight=intel.events.filter(function(ev:any){return ev.impact==="CRITICAL"||ev.impact==="HIGH";});
+                  var evWeek=intel.events;
+                  var showTonight=calTab==="today";
+                  var activeEvs:any[]=showTonight?(evTonight.length>0?evTonight:evWeek):evWeek;
                   return <div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,padding:"12px",marginBottom:8}}>
                     <div style={{fontSize:10,color:C.txt2,letterSpacing:".1em",fontWeight:600,marginBottom:8}}>📅 ECONOMIC CALENDAR</div>
                     <div style={{display:"flex",gap:4,marginBottom:8}}>
-                      {tabs.map(function(t){
+                      {[{k:"today",l:"TONIGHT"},{k:"week",l:"THIS WEEK"}].map(function(t){
                         var active=calTab===t.k;
                         return <button key={t.k} className="tap" onClick={function(){setCalTab(t.k);}}
                           style={{flex:1,background:active?C.gold:"transparent",color:active?"#0c1118":C.txt2,border:"1px solid "+(active?C.gold:C.border),borderRadius:6,padding:"5px 6px",fontSize:9,fontWeight:600,letterSpacing:".05em"}}>{t.l}</button>;
                       })}
                     </div>
-                    {activeData.length>0?(
+                    {activeEvs.length>0?(
                       <div style={{display:"grid",gap:5}}>
-                        {activeData.map(function(ev:any,i:number){
+                        {activeEvs.map(function(ev:any,i:number){
                           var ic=impClr(ev.impact);
+                          var gc=gimp[ev.goldImpact];
                           return <div key={i} style={{background:C.bg2,border:"1px solid "+C.border,borderRadius:7,padding:"8px 10px"}}>
                             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:3}}>
                               <div style={{display:"flex",alignItems:"center",gap:6}}>
                                 <span style={{fontSize:14}}>{ev.flag}</span>
                                 <div>
                                   <div style={{fontSize:11,fontWeight:600,color:C.txt0}}>{ev.event}</div>
-                                  <div style={{fontSize:9,color:C.txt3}}>{ev.time||ev.date}</div>
+                                  <div style={{fontSize:9,color:C.txt3}}>{ev.time}</div>
                                 </div>
                               </div>
-                              <span style={{fontSize:8,fontWeight:700,color:ic,background:"rgba(0,0,0,0.3)",border:"1px solid "+ic+"44",borderRadius:3,padding:"2px 6px",flexShrink:0}}>{ev.impact}</span>
+                              <div style={{display:"flex",gap:4,flexShrink:0}}>
+                                {ev.goldImpact&&gc&&<span style={{fontSize:8,fontWeight:700,color:gc,background:"rgba(0,0,0,0.3)",border:"1px solid "+gc+"44",borderRadius:3,padding:"2px 5px"}}>XAU {ev.goldImpact}</span>}
+                                <span style={{fontSize:8,fontWeight:700,color:ic,background:"rgba(0,0,0,0.3)",border:"1px solid "+ic+"44",borderRadius:3,padding:"2px 6px"}}>{ev.impact}</span>
+                              </div>
                             </div>
-                            {(ev.forecast||ev.prev)&&<div style={{display:"flex",gap:10,marginBottom:3}}>
-                              {ev.forecast&&<span style={{fontSize:9,color:C.txt2}}>Forecast: <span style={{color:C.txt0}}>{ev.forecast}</span></span>}
+                            {(ev.forecast||ev.prev)&&<div style={{display:"flex",gap:10}}>
+                              {ev.forecast&&<span style={{fontSize:9,color:C.txt2}}>Fcst: <span style={{color:C.txt0}}>{ev.forecast}</span></span>}
                               {ev.prev&&<span style={{fontSize:9,color:C.txt2}}>Prev: <span style={{color:C.txt1}}>{ev.prev}</span></span>}
                             </div>}
-                            {ev.note&&<div style={{fontSize:10,color:C.amber,lineHeight:1.4}}>→ {ev.note}</div>}
                           </div>;
                         })}
                       </div>
@@ -1695,63 +1771,32 @@ export default function Auxiron(){
                   </div>;
                 })()}
 
-                {/* Gold Deep Focus */}
-                {intel.goldFocus&&(function(){
-                  var gf=intel.goldFocus;
-                  var chgUp=gf.change&&gf.change.startsWith("+");
-                  return <div style={{background:"linear-gradient(135deg,rgba(200,168,64,0.1),rgba(200,168,64,0.04))",border:"1px solid rgba(200,168,64,0.35)",borderRadius:10,padding:"12px",marginBottom:8}}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-                      <div style={{fontFamily:"'Syne',sans-serif",fontSize:14,fontWeight:700,color:C.gold}}>🥇 GOLD DEEP FOCUS</div>
-                      <div style={{textAlign:"right"}}>
-                        <div style={{fontSize:14,fontWeight:700,color:C.txt0}}>{gf.price}</div>
-                        <div style={{fontSize:10,fontWeight:600,color:chgUp?C.up:C.dn}}>{gf.change}</div>
-                      </div>
-                    </div>
-                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:5,marginBottom:8}}>
-                      <div style={{background:"rgba(0,0,0,0.25)",borderRadius:6,padding:"6px 9px",textAlign:"center"}}>
-                        <div style={{fontSize:8,color:C.txt3,marginBottom:2}}>WEEKLY TARGET</div>
-                        <div style={{fontSize:10,fontWeight:600,color:C.goldL}}>{gf.weeklyTarget}</div>
-                      </div>
-                      <div style={{background:"rgba(40,204,120,0.1)",borderRadius:6,padding:"6px 9px",textAlign:"center"}}>
-                        <div style={{fontSize:8,color:C.txt3,marginBottom:2}}>SUPPORT</div>
-                        <div style={{fontSize:10,fontWeight:600,color:C.up}}>{gf.keySupport}</div>
-                      </div>
-                      <div style={{background:"rgba(240,64,64,0.1)",borderRadius:6,padding:"6px 9px",textAlign:"center"}}>
-                        <div style={{fontSize:8,color:C.txt3,marginBottom:2}}>RESISTANCE</div>
-                        <div style={{fontSize:10,fontWeight:600,color:C.dn}}>{gf.keyResistance}</div>
-                      </div>
-                    </div>
-                    {gf.drivers&&gf.drivers.length>0&&(
-                      <div style={{marginBottom:8}}>
-                        <div style={{fontSize:9,color:C.gold,letterSpacing:".08em",fontWeight:600,marginBottom:5}}>DRIVERS</div>
-                        {gf.drivers.map(function(d:string,i:number){
-                          return <div key={i} style={{display:"flex",gap:7,padding:"4px 0",borderBottom:i<gf.drivers.length-1?"1px solid "+C.border:"none"}}>
-                            <span style={{color:C.gold,fontWeight:700,flexShrink:0}}>{i+1}</span>
-                            <span style={{fontSize:11,color:C.txt0,lineHeight:1.5}}>{d}</span>
-                          </div>;
-                        })}
-                      </div>
-                    )}
-                    {gf.setupTonight&&<div style={{background:"rgba(200,168,64,0.08)",border:"1px solid rgba(200,168,64,0.25)",borderRadius:7,padding:"8px 10px"}}>
-                      <div style={{fontSize:9,color:C.gold,fontWeight:600,marginBottom:3}}>🎯 SETUP TONIGHT</div>
-                      <div style={{fontSize:11,color:C.txt0,lineHeight:1.6}}>{gf.setupTonight}</div>
-                    </div>}
-                  </div>;
-                })()}
-
-                {/* Week Ahead */}
-                {intel.weekAhead&&(
+                {/* 7 — BANK VIEWS */}
+                {intel.bankViews&&intel.bankViews.length>0&&(
                   <div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,padding:"12px",marginBottom:8}}>
-                    <div style={{fontSize:10,color:C.txt2,letterSpacing:".1em",fontWeight:600,marginBottom:6}}>📆 WEEK AHEAD</div>
-                    <div style={{fontSize:12,color:C.txt0,lineHeight:1.75}}>{intel.weekAhead}</div>
+                    <div style={{fontSize:10,color:C.blue,letterSpacing:".1em",fontWeight:600,marginBottom:8}}>🏦 BANK VIEWS</div>
+                    <div style={{display:"grid",gap:5}}>
+                      {intel.bankViews.map(function(b:any,i:number){
+                        return <div key={i} style={{background:C.bg2,border:"1px solid "+C.border,borderRadius:7,padding:"8px 10px",display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
+                          <div style={{flex:1}}>
+                            <div style={{fontSize:11,fontWeight:700,color:C.txt0,marginBottom:3}}>{b.bank}</div>
+                            <div style={{fontSize:10,color:C.txt1,lineHeight:1.5}}>{b.view}</div>
+                          </div>
+                          {b.target&&<div style={{textAlign:"right",flexShrink:0}}>
+                            <div style={{fontSize:8,color:C.txt3,marginBottom:1}}>TARGET</div>
+                            <div style={{fontSize:11,fontWeight:700,color:C.goldL}}>{b.target}</div>
+                          </div>}
+                        </div>;
+                      })}
+                    </div>
                   </div>
                 )}
 
-                {/* Trade Focus */}
-                {intel.tradeFocus&&(
-                  <div style={{background:"linear-gradient(135deg,rgba(40,204,120,0.08),rgba(40,204,120,0.03))",border:"1px solid rgba(40,204,120,0.25)",borderRadius:10,padding:"13px"}}>
-                    <div style={{fontSize:10,color:C.up,letterSpacing:".1em",fontWeight:600,marginBottom:6}}>🎯 TRADE FOCUS</div>
-                    <div style={{fontSize:13,color:C.txt0,lineHeight:1.8}}>{intel.tradeFocus}</div>
+                {/* 8 — SESSION SUMMARY (green gradient) */}
+                {intel.summary&&(
+                  <div style={{background:"linear-gradient(135deg,rgba(40,204,120,0.09),rgba(40,204,120,0.03))",border:"1px solid rgba(40,204,120,0.25)",borderRadius:10,padding:"13px"}}>
+                    <div style={{fontSize:10,color:C.up,letterSpacing:".1em",fontWeight:600,marginBottom:6}}>◈ SESSION SUMMARY</div>
+                    <div style={{fontSize:13,color:C.txt0,lineHeight:1.8}}>{intel.summary}</div>
                   </div>
                 )}
 
