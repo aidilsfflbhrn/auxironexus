@@ -340,8 +340,6 @@ export default function Auxiron(){
     );
   }
 
-  }
-
   function fetchBrief(session){
     setBriefLoading(true);setBrief(null);setBriefErr(null);
     var label=session==="asia"?"ASIA OPEN (SGT 8am-12pm)":"PRE-NY SESSION (SGT 8pm-10pm)";
@@ -704,6 +702,7 @@ export default function Auxiron(){
               </div>;
             })}
           </div>}
+        </div>}
 
 
         {/* ── SESSION BRIEFING ── */}
