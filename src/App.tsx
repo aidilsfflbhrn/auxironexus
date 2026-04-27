@@ -39,7 +39,6 @@ const INSTRUMENTS=[
   {s:"US02Y",  l:"US 2Y",     b:4.02,  cat:"Bonds",     grp:"Yields", roro:"OFF",v:0.008,tier:2},
   {s:"US30Y",  l:"US 30Y",    b:4.78,  cat:"Bonds",     grp:"Yields", roro:"OFF",v:0.005,tier:3},
 ];
-const CATS=["Indices","Forex","Commodities","Bonds","Volatility","Crypto"];
 const DEFAULT_QUAD=["XAU/USD","SPX","DX","WTI/USD"];
 const SAMPLES=[
   "Federal Reserve surprises with emergency 50bps rate cut amid banking stress",
@@ -60,14 +59,6 @@ Provide 3 topMovers, 3 watchlist, 3 keyLevels, 2 riskEvents.`;
 
 
 const INTEL_SYS=`You are a professional Gold market analyst. Generate a pre-session trading brief for a retail trader focused on Gold. Search for: 1. Gold price news and drivers today 2. Trump Truth Social posts affecting markets today 3. US economic data today and this week 4. DXY and bond yield movements 5. Bank forecasts for Gold. Respond ONLY with valid JSON: {"session":"<ASIA OPEN|LONDON OPEN|NY SESSION>","generatedAt":"<SGT time>","marketRegime":"<RISK-ON|RISK-OFF|NEUTRAL|MIXED>","trumpRisk":"<LOW|MODERATE|HIGH|CRITICAL>","verdicts":[{"symbol":"<sym>","verdict":"<TRADE|AVOID|WAIT>","direction":"<LONG|SHORT|NONE>","reason":"<1 sentence>"}],"gold":{"price":"<p>","change":"<c>","trend":"<BULLISH|BEARISH|RANGING>","momentum":"<ACCELERATING|FADING|FLAT>","volatility":"<HIGH|NORMAL|LOW>","sessionBias":"<BULLISH|BEARISH|NEUTRAL>","alignment":{"fundamental":"<BULLISH|BEARISH|NEUTRAL>","fundamentalNote":"<1-2 sentences>","sentiment":"<BULLISH|BEARISH|NEUTRAL>","sentimentNote":"<1-2 sentences>","technical":"<BULLISH|BEARISH|NEUTRAL>","technicalNote":"<1-2 sentences>","verdict":"<ALIGNED|MIXED|CONFLICTED>","verdictNote":"<1 sentence>"},"drivers":{"primaryDriver":"<most important>","dxy":"<DXY impact>","realYields":"<yields impact>","sentiment":"<ETF flows>","catalyst":"<key event>"},"keyLevels":{"strongSupport":<n>,"support":<n>,"current":<n>,"resistance":<n>,"strongResistance":<n>,"note":"<key level tonight>"},"setup":{"hasSetup":<true|false>,"direction":"<LONG|SHORT|NONE>","entryZone":"<range or NONE>","stopLoss":"<price or NONE>","target1":"<price or NONE>","target2":"<price or NONE>","riskReward":"<ratio or NONE>","setupNote":"<2-3 sentences>","invalidation":"<what cancels>"},"avoidIf":["<condition1>","<condition2>"]},"trump":{"active":<true|false>,"riskLevel":"<LOW|MODERATE|HIGH|CRITICAL>","summary":"<1-2 sentences>","goldImpact":"<BULLISH|BEARISH|NEUTRAL>","watchFor":"<what to monitor>"},"context":{"overnightSummary":"<2-3 sentences>","geopolitical":"<1-2 sentences>","weekTheme":"<theme>","nextBigCatalyst":"<next event>"},"events":[{"time":"<SGT>","flag":"<emoji>","event":"<name>","forecast":"<val>","prev":"<val>","impact":"<HIGH|MEDIUM|LOW|CRITICAL>","goldImpact":"<BULLISH|BEARISH|NEUTRAL>"}],"bankViews":[{"bank":"<name>","view":"<Gold view>","target":"<price target>"}],"summary":"<3-4 sentences: what to trade, avoid, key number>"}. Provide verdicts for GOLD, USD/JPY, GBP/JPY, WTI OIL, NDX, SPX, EUR/USD, NIKKEI. Provide 3-5 events, 2-3 bankViews. Be direct.`;
-
-const BRIEF_SYS=`You are a senior macro strategist at a top-tier investment bank with access to live market data and current news. Generate a comprehensive Goldman Sachs-style market brief.
-
-Search for: latest gold oil SPX Fed statements bank forecasts this week economic calendar upcoming US EUR JPY GBP economic events.
-
-Respond ONLY with valid JSON:
-{"sessionType":"<ASIA OPEN|PRE-NY>","headline":"<single most important market theme today>","overnightSummary":"<3-4 sentences: what happened overnight, key moves, why — reference actual recent events>","institutionalForecasts":[{"bank":"<Goldman Sachs|JPMorgan|Morgan Stanley|Citi|UBS>","instrument":"<sym>","forecast":"<their current view and target>","timeframe":"<1 week|1 month|Q2 2025>","rationale":"<why>"}],"instrumentReports":[{"symbol":"<sym>","name":"<full name>","currentPrice":<number>,"priceChange":"<+/-X.XX%>","fundamental":{"rating":"<BULLISH|BEARISH|NEUTRAL>","analysis":"<2-3 sentences>","keyDriver":"<most important factor>"},"sentiment":{"positioning":"<LONG HEAVY|LONG LIGHT|NEUTRAL|SHORT LIGHT|SHORT HEAVY>","institutionalBias":"<BULLISH|BEARISH|NEUTRAL>","cotNote":"<1 sentence>"},"technical":{"bias":"<BULLISH|BEARISH|NEUTRAL>","keySupport":<number>,"keyResistance":<number>,"pattern":"<current pattern>","note":"<1-2 sentences>"},"bankConsensus":"<what major banks expect>","riskReward":"<FAVORABLE|NEUTRAL|UNFAVORABLE>","traderNote":"<2 sentences actionable>"}],"economicCalendar":{"thisWeek":[{"date":"<day>","time":"<SGT>","country":"<US|EUR|JPY|GBP>","event":"<name>","impact":"<HIGH|MEDIUM|LOW>","forecast":"<expected>","previous":"<prior>","tradingImplication":"<1 sentence>"}],"thisMonth":[{"date":"<date>","country":"<country>","event":"<name>","impact":"<HIGH|MEDIUM|LOW>","whyItMatters":"<1 sentence>"}],"remainingQuarter":[{"month":"<month>","country":"<country>","event":"<name>","impact":"<HIGH|MEDIUM|LOW>","significance":"<1 sentence>"}]},"weeklyTheme":"<2-3 sentences dominant macro theme>","monthlyOutlook":"<2-3 sentences>","quarterlyView":"<2 sentences Q2 thesis>","traderFocus":"<4-5 sentences: what to trade today, what to avoid, key levels, sizing>","marketRisk":"<ELEVATED|NORMAL|LOW>"}
-Provide 3-4 institutional forecasts. Provide 3-4 instrument reports for most relevant instruments. Economic calendar: 4-5 this week HIGH impact events, 5-6 this month, 3-4 remaining quarter. Focus on US events primarily, then EUR/JPY/GBP.`;
 
 const dp=function(b){return b>=1000?2:b>=10?3:4;};
 const fmt=function(v,b){
@@ -180,10 +171,6 @@ export default function Auxiron(){
   var [intelElapsed,setIntelElapsed]=useState(0);
   var [intelSession,setIntelSession]=useState("asia");
   var [intelOpen,setIntelOpen]=useState<Record<string,boolean>>({});
-  var [calTab,setCalTab]=useState("week");
-  var [brief,setBrief]=useState(null);
-  var [briefLoading,setBriefLoading]=useState(false);
-  var [briefErr,setBriefErr]=useState(null);
   var [edgeImages,setEdgeImages]=useState<{name:string;base64:string;mediaType:string}[]>([]);
   var cycleRef=useRef(0);
 
@@ -337,22 +324,6 @@ export default function Auxiron(){
        messages:[{role:"user",content:"Live market: "+getSnap()+"\nGenerate session briefing."}]},
       function(res){setCtx(res);setLastRefresh(new Date());setCtxLoading(false);setCtxErr(null);},
       function(e){setCtxErr("Failed: "+e);setCtxLoading(false);}
-    );
-  }
-
-  function fetchBrief(session){
-    setBriefLoading(true);setBrief(null);setBriefErr(null);
-    var label=session==="asia"?"ASIA OPEN (SGT 8am-12pm)":"PRE-NY SESSION (SGT 8pm-10pm)";
-    var msg="LIVE MARKET DATA:\n"+getSnap()+
-      "\n\nSESSION: "+label+
-      "\n\nToday's date: "+new Date().toDateString()+
-      "\n\nPlease search the web for current market news, bank forecasts and economic calendar data, then generate a comprehensive market brief. Focus on US economic events primarily, then EUR, JPY and GBP. Include upcoming economic events for this week, this month and remaining quarter.";
-    callProxy(
-      {model:"claude-sonnet-4-6",max_tokens:6000,system:BRIEF_SYS,
-       messages:[{role:"user",content:msg}],
-       useWebSearch:true},
-      function(res){setBrief(res);setBriefLoading(false);setBriefErr(null);},
-      function(e){setBriefErr("Failed: "+e);setBriefLoading(false);}
     );
   }
 
@@ -1137,19 +1108,9 @@ export default function Auxiron(){
                 {intel.events&&intel.events.length>0&&(function(){
                   var impClr=function(imp:string){return imp==="CRITICAL"?"#ff1840":imp==="HIGH"?C.dn:imp==="MEDIUM"?C.amber:C.txt3;};
                   var gimp:any={BULLISH:C.up,BEARISH:C.dn,NEUTRAL:C.txt2};
-                  var evTonight=intel.events.filter(function(ev:any){return ev.impact==="CRITICAL"||ev.impact==="HIGH";});
-                  var evWeek=intel.events;
-                  var showTonight=calTab==="today";
-                  var activeEvs:any[]=showTonight?(evTonight.length>0?evTonight:evWeek):evWeek;
+                  var activeEvs:any[]=intel.events;
                   return <div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,padding:"12px",marginBottom:8}}>
                     <div style={{fontSize:10,color:C.txt2,letterSpacing:".1em",fontWeight:600,marginBottom:8}}>📅 ECONOMIC CALENDAR</div>
-                    <div style={{display:"flex",gap:4,marginBottom:8}}>
-                      {[{k:"today",l:"TONIGHT"},{k:"week",l:"THIS WEEK"}].map(function(t){
-                        var active=calTab===t.k;
-                        return <button key={t.k} className="tap" onClick={function(){setCalTab(t.k);}}
-                          style={{flex:1,background:active?C.gold:"transparent",color:active?"#0c1118":C.txt2,border:"1px solid "+(active?C.gold:C.border),borderRadius:6,padding:"5px 6px",fontSize:9,fontWeight:600,letterSpacing:".05em"}}>{t.l}</button>;
-                      })}
-                    </div>
                     {activeEvs.length>0?(
                       <div style={{display:"grid",gap:5}}>
                         {activeEvs.map(function(ev:any,i:number){
