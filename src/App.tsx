@@ -21,24 +21,24 @@ const DC={BULLISH:"#28cc78",BEARISH:"#f04040",NEUTRAL:"#486080"};
 const TIER1=["XAU/USD","XAG/USD","WTI/USD","SPX","NDX","DX","VIX"];
 const TIER2=["EUR/USD","GBP/USD","USD/JPY","AUD/USD","GBP/JPY","US10Y","US02Y","DJI","RUT"];
 const INSTRUMENTS=[
-  {s:"XAU/USD",l:"GOLD",       b:3230, cat:"Commodities",grp:"Metals", roro:"OFF",v:0.004,tier:1},
-  {s:"XAG/USD",l:"SILVER",     b:32.14,cat:"Commodities",grp:"Metals", roro:"OFF",v:0.005,tier:1},
-  {s:"WTI/USD",l:"OIL WTI",    b:61.85,cat:"Commodities",grp:"Energy", roro:"ON",v:0.005,tier:1},
-  {s:"SPX",    l:"S&P 500",    b:5320, cat:"Indices",    grp:"US",     roro:"ON",v:0.003,tier:1},
-  {s:"NDX",    l:"NASDAQ 100", b:18540,cat:"Indices",    grp:"US",     roro:"ON",v:0.004,tier:1},
-  {s:"DJI",    l:"DOW 30",     b:39820,cat:"Indices",    grp:"US",     roro:"ON",v:0.003,tier:2},
-  {s:"RUT",    l:"RUSSELL 2K", b:1980, cat:"Indices",    grp:"US",     roro:"ON", v:0.005,tier:2},
-  {s:"DX",     l:"DXY",        b:99.82,cat:"Indices",    grp:"US",     roro:"OFF",v:0.002,tier:1},
-  {s:"VIX",    l:"VIX",        b:21.50,cat:"Volatility", grp:"VIX",    roro:"OFF",v:0.025,tier:1},
-  {s:"EUR/USD",l:"EUR/USD",    b:1.1042,cat:"Forex",     grp:"Majors", roro:"MIX",v:0.002,tier:2},
-  {s:"GBP/USD",l:"GBP/USD",    b:1.2985,cat:"Forex",     grp:"Majors", roro:"MIX",v:0.002,tier:2},
-  {s:"USD/JPY",l:"USD/JPY",    b:143.25,cat:"Forex",     grp:"Majors", roro:"OFF",v:0.002,tier:2},
-  {s:"AUD/USD",l:"AUD/USD",    b:0.6312,cat:"Forex",     grp:"Majors", roro:"ON",v:0.002,tier:2},
-  {s:"GBP/JPY",l:"GBP/JPY",   b:186.10,cat:"Forex",     grp:"Crosses",roro:"ON",v:0.002,tier:2},
-  {s:"US10Y",  l:"US 10Y",    b:4.38,  cat:"Bonds",     grp:"Yields", roro:"OFF",v:0.006,tier:2},
-  {s:"US02Y",  l:"US 2Y",     b:4.02,  cat:"Bonds",     grp:"Yields", roro:"OFF",v:0.008,tier:2},
-  {s:"US30Y",  l:"US 30Y",    b:4.78,  cat:"Bonds",     grp:"Yields", roro:"OFF",v:0.005,tier:3},
+  {s:"XAU/USD",l:"GOLD",      b:3230, cat:"Commodities",grp:"Metals", roro:"OFF",v:0.004,tier:1},
+  {s:"XAG/USD",l:"SILVER",    b:32.14,cat:"Commodities",grp:"Metals", roro:"OFF",v:0.005,tier:1},
+  {s:"WTI/USD",l:"OIL WTI",   b:61.85,cat:"Commodities",grp:"Energy", roro:"ON", v:0.005,tier:1},
+  {s:"SPX",    l:"S&P 500",   b:5320, cat:"Indices",    grp:"US",     roro:"ON", v:0.003,tier:1},
+  {s:"NDX",    l:"NASDAQ 100",b:18540,cat:"Indices",    grp:"US",     roro:"ON", v:0.004,tier:1},
+  {s:"DJI",    l:"DOW 30",    b:39820,cat:"Indices",    grp:"US",     roro:"ON", v:0.003,tier:2},
+  {s:"RUT",    l:"RUSSELL 2K",b:1980, cat:"Indices",    grp:"US",     roro:"ON", v:0.005,tier:2},
+  {s:"DX",     l:"DXY",       b:99.82,cat:"Indices",    grp:"USD",    roro:"OFF",v:0.002,tier:1},
+  {s:"VIX",    l:"VIX",       b:21.50,cat:"Volatility", grp:"VIX",   roro:"OFF",v:0.025,tier:1},
+  {s:"EUR/USD",l:"EUR/USD",   b:1.1042,cat:"Forex",    grp:"Majors", roro:"MIX",v:0.002,tier:2},
+  {s:"GBP/USD",l:"GBP/USD",   b:1.2985,cat:"Forex",    grp:"Majors", roro:"MIX",v:0.002,tier:2},
+  {s:"USD/JPY",l:"USD/JPY",   b:143.25,cat:"Forex",    grp:"Majors", roro:"OFF",v:0.002,tier:2},
+  {s:"AUD/USD",l:"AUD/USD",   b:0.6312,cat:"Forex",    grp:"Majors", roro:"ON", v:0.002,tier:2},
+  {s:"GBP/JPY",l:"GBP/JPY",  b:186.10,cat:"Forex",    grp:"Crosses",roro:"ON", v:0.002,tier:2},
+  {s:"US10Y",  l:"US 10Y",   b:4.38,  cat:"Bonds",    grp:"Yields", roro:"OFF",v:0.006,tier:2},
+  {s:"US02Y",  l:"US 2Y",    b:4.02,  cat:"Bonds",    grp:"Yields", roro:"OFF",v:0.008,tier:2},
 ];
+const FILTER_CATS=["All","Risk-On","Risk-Off","FX","Bonds"];
 const DEFAULT_QUAD=["XAU/USD","SPX","DX","WTI/USD"];
 const SAMPLES=[
   "Federal Reserve surprises with emergency 50bps rate cut amid banking stress",
@@ -270,7 +270,7 @@ export default function Auxiron(){
 
   function getSnap(){
     return mkt.filter(function(i){
-      return["XAU/USD","WTI/USD","DX","US10Y","US02Y","VIX","SPX","NDX","EUR/USD","GBP/USD","USD/JPY","BRENT"].indexOf(i.s)>=0;
+      return["XAU/USD","WTI/USD","DX","US10Y","US02Y","VIX","SPX","NDX","EUR/USD","GBP/USD","USD/JPY"].indexOf(i.s)>=0;
     }).map(function(i){
       return i.l+": "+fmt(i.cur,i.b)+(i.cat==="Bonds"?"% yield":"")+
         " ("+(i.pct>=0?"+":"")+i.pct.toFixed(2)+"%)"+
@@ -327,6 +327,24 @@ export default function Auxiron(){
     );
   }
 
+  function fetchIntel(session){
+    setIntelLoading(true);setIntel(null);setIntelErr(null);
+    var SESSIONS_MAP:{[k:string]:string}={
+      asia:"ASIA OPEN (SGT 6am-3pm) — Sydney/Tokyo sessions, overnight moves, London setup",
+      london:"LONDON OPEN (SGT 4pm-1am) — European session, FX focus, London/NY overlap from 9pm",
+      ny:"NY SESSION (SGT 9pm-6am) — London/NY overlap 9pm-1am is prime window, Fed speakers, US data, Gold setup"
+    };
+    var label=SESSIONS_MAP[session]||"ASIA OPEN";
+    var msg="LIVE MARKET DATA:\n"+getSnap()+"\n\nSESSION: "+label+"\n\nToday's date: "+new Date().toDateString()+"\n\nGenerate a comprehensive Gold trading brief for this session.";
+    callProxy(
+      {model:"claude-sonnet-4-6",max_tokens:2500,system:INTEL_SYS,
+       messages:[{role:"user",content:msg}],
+       useWebSearch:true},
+      function(res){setIntel(res);setIntelLoading(false);setIntelErr(null);},
+      function(e){setIntelErr("Failed: "+e);setIntelLoading(false);}
+    );
+  }
+
   function toggleQuad(sym){
     setQuad(function(prev){
       if(prev.indexOf(sym)>=0)return prev.length>1?prev.filter(function(s){return s!==sym;}):prev;
@@ -346,7 +364,12 @@ export default function Auxiron(){
   var inverted=spread!==null&&spread<0;
   var anyLive=mkt.some(function(m){return m.live;});
   var stClr=anyLive?C.goldL:C.amber;
-  var displayed=mkt.filter(function(m){if(catF==="All")return m.tier<=2;if(catF==="Risk-On")return (m as any).roro==="ON";if(catF==="Risk-Off")return (m as any).roro==="OFF";if(catF==="FX")return m.cat==="Forex";if(catF==="Bonds")return m.cat==="Bonds";return m.tier<=2;});
+  var displayed=catF==="All"?mkt.filter(function(m){return m.tier<=2;}):
+    catF==="Risk-On"?mkt.filter(function(m){return m.roro==="ON";}):
+    catF==="Risk-Off"?mkt.filter(function(m){return m.roro==="OFF";}):
+    catF==="FX"?mkt.filter(function(m){return m.cat==="Forex";}):
+    catF==="Bonds"?mkt.filter(function(m){return m.cat==="Bonds";}):
+    mkt.filter(function(m){return m.tier<=2;});
 
   const NAV=[
     {key:"markets",icon:"◫",label:"Markets"},
