@@ -148,6 +148,46 @@ function ChartTip(props){
   </div>;
 }
 
+function calcROROScore(mkt){
+  var score=50;
+  var vix=mkt.find(function(m){return m.s==="VIX";});
+  var dxy=mkt.find(function(m){return m.s==="DX";});
+  var spx=mkt.find(function(m){return m.s==="SPX";});
+  var gold=mkt.find(function(m){return m.s==="XAU/USD";});
+  var usdjpy=mkt.find(function(m){return m.s==="USD/JPY";});
+  if(vix){score+=vix.pct>1?-15:vix.pct<-1?15:vix.pct*-5;}
+  if(dxy){score+=dxy.pct>0.3?-10:dxy.pct<-0.3?10:dxy.pct*-15;}
+  if(spx){score+=spx.pct>0.5?15:spx.pct<-0.5?-15:spx.pct*10;}
+  if(gold){score+=gold.pct>0.5?-8:gold.pct<-0.5?8:gold.pct*-5;}
+  if(usdjpy){score+=usdjpy.pct>0.3?8:usdjpy.pct<-0.3?-8:usdjpy.pct*10;}
+  return Math.max(0,Math.min(100,score));
+}
+function getROROLabel(score){
+  if(score>=65)return{label:"RISK-ON",color:"#28cc78",desc:"Equities bid · Gold offered · JPY weak"};
+  if(score<=35)return{label:"RISK-OFF",color:"#f04040",desc:"Gold bid · JPY strong · Equities offered"};
+  return{label:"NEUTRAL",color:"#f09020",desc:"Mixed signals · No clear regime"};
+}
+function calcGoldBias(mkt){
+  var gold=mkt.find(function(m){return m.s==="XAU/USD";});
+  var dxy=mkt.find(function(m){return m.s==="DX";});
+  var vix=mkt.find(function(m){return m.s==="VIX";});
+  if(!gold||!dxy||!vix)return"NEUTRAL";
+  var score=0;
+  if(gold.pct>0.3)score+=2;if(gold.pct<-0.3)score-=2;
+  if(dxy.pct<-0.2)score+=2;if(dxy.pct>0.2)score-=2;
+  if(vix.pct>1)score+=1;if(vix.pct<-1)score-=1;
+  if(score>=2)return"BULLISH";if(score<=-2)return"BEARISH";return"NEUTRAL";
+}
+function getSessionLabel(){
+  var h=new Date(Date.now()+8*60*60*1000).getUTCHours();
+  if(h>=6&&h<8)return{label:"SYDNEY",color:"#40c8d0"};
+  if(h>=8&&h<16)return{label:"ASIA/TOKYO",color:"#40c8d0"};
+  if(h>=16&&h<20)return{label:"LONDON",color:"#4890f8"};
+  if(h>=20&&h<21)return{label:"LDN/NY OVERLAP",color:"#e8c858"};
+  if((h>=21&&h<=23)||(h>=0&&h<4))return{label:"NY SESSION",color:"#e8c858"};
+  return{label:"OFF-HOURS",color:"#243347"};
+}
+
 export default function Auxiron(){
   var [tab,setTab]=useState("markets");
   var [mkt,setMkt]=useState(initMkt);
@@ -171,6 +211,7 @@ export default function Auxiron(){
   var [intelElapsed,setIntelElapsed]=useState(0);
   var [intelSession,setIntelSession]=useState("asia");
   var [intelOpen,setIntelOpen]=useState<Record<string,boolean>>({});
+  var [sessionLbl,setSessionLbl]=useState(getSessionLabel());
   var [edgeImages,setEdgeImages]=useState<{name:string;base64:string;mediaType:string}[]>([]);
   var cycleRef=useRef(0);
 
@@ -186,6 +227,11 @@ export default function Auxiron(){
     var id=setInterval(function(){setIntelElapsed(function(n){return n+1;});},1000);
     return function(){clearInterval(id);};
   },[intelLoading]);
+
+  useEffect(function(){
+    var id=setInterval(function(){setSessionLbl(getSessionLabel());},60000);
+    return function(){clearInterval(id);};
+  },[]);
 
 
   function applyPrices(combined){
@@ -364,6 +410,10 @@ export default function Auxiron(){
   var inverted=spread!==null&&spread<0;
   var anyLive=mkt.some(function(m){return m.live;});
   var stClr=anyLive?C.goldL:C.amber;
+  var roro_score=calcROROScore(mkt);
+  var roro=getROROLabel(roro_score);
+  var goldBias=calcGoldBias(mkt);
+  var goldBiasColor=goldBias==="BULLISH"?"#28cc78":goldBias==="BEARISH"?"#f04040":"#f09020";
   var displayed=catF==="All"?mkt.filter(function(m){return m.tier<=2;}):
     catF==="Risk-On"?mkt.filter(function(m){return m.roro==="ON";}):
     catF==="Risk-Off"?mkt.filter(function(m){return m.roro==="OFF";}):
@@ -489,28 +539,56 @@ export default function Auxiron(){
       <div className="auxiron-main">
 
       {/* HEADER */}
-      <div style={{background:C.bg1,borderBottom:"1px solid "+C.border,padding:"10px 14px",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
-        <div style={{display:"flex",alignItems:"center",gap:8}}>
-          <div style={{width:7,height:7,borderRadius:"50%",background:stClr,boxShadow:"0 0 8px "+stClr}} className="pd"/>
-          <span style={{fontFamily:"'Syne',sans-serif",fontSize:16,fontWeight:800,letterSpacing:".1em",color:C.txt0}}>AUX</span>
-          <span style={{fontFamily:"'Syne',sans-serif",fontSize:16,fontWeight:700,letterSpacing:".1em",color:C.gold}}>IRON</span>
-          <span style={{fontSize:8,background:"rgba(200,168,64,0.12)",color:C.gold,padding:"2px 6px",borderRadius:3,letterSpacing:".1em",border:"1px solid rgba(200,168,64,0.22)"}}>PRO</span>
+      <div style={{background:C.bg1,borderBottom:"1px solid "+C.border,padding:"10px 14px",flexShrink:0}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <div style={{width:7,height:7,borderRadius:"50%",background:stClr,boxShadow:"0 0 8px "+stClr}} className="pd"/>
+            <span style={{fontFamily:"'Syne',sans-serif",fontSize:16,fontWeight:800,letterSpacing:".1em",color:C.txt0}}>AUX</span>
+            <span style={{fontFamily:"'Syne',sans-serif",fontSize:16,fontWeight:700,letterSpacing:".1em",color:C.gold}}>IRON</span>
+            <span style={{fontSize:8,background:"rgba(200,168,64,0.12)",color:C.gold,padding:"2px 6px",borderRadius:3,letterSpacing:".1em",border:"1px solid rgba(200,168,64,0.22)"}}>PRO</span>
+          </div>
+          <div style={{display:"flex",alignItems:"center",gap:5}}>
+            <div style={{background:"rgba(0,0,0,0.3)",border:"1px solid "+sessionLbl.color+"44",borderRadius:6,padding:"3px 7px"}}>
+              <span style={{fontSize:8,color:sessionLbl.color,fontWeight:600}}>{sessionLbl.label}</span>
+            </div>
+            <div style={{background:"rgba(0,0,0,0.3)",border:"1px solid "+roro.color+"44",borderRadius:6,padding:"3px 8px"}}>
+              <span style={{fontSize:8,fontWeight:700,color:roro.color}}>{roro.label}</span>
+            </div>
+            <span style={{fontSize:8,color:stClr,letterSpacing:".05em"}}>● {anyLive?"LIVE":"SIM"}</span>
+          </div>
         </div>
-        <div style={{display:"flex",alignItems:"center",gap:5}}>
-          {goldI&&<div style={{background:C.bg2,border:"1px solid "+C.border,borderRadius:6,padding:"3px 7px",display:"flex",alignItems:"center",gap:4}}>
+        <div style={{marginBottom:5}}>
+          <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}>
+            <span style={{fontSize:7,color:"#f04040"}}>RISK-OFF</span>
+            <span style={{fontSize:7,color:C.txt3}}>{roro.desc}</span>
+            <span style={{fontSize:7,color:"#28cc78"}}>RISK-ON</span>
+          </div>
+          <div style={{height:4,background:C.bg2,borderRadius:2,overflow:"hidden",position:"relative"}}>
+            <div style={{position:"absolute",left:0,width:"50%",height:"100%",background:"rgba(240,64,64,0.3)"}}/>
+            <div style={{position:"absolute",right:0,width:"50%",height:"100%",background:"rgba(40,204,120,0.3)"}}/>
+            <div style={{position:"absolute",left:roro_score+"%",transform:"translateX(-50%)",width:8,height:8,borderRadius:"50%",background:roro.color,top:-2,boxShadow:"0 0 6px "+roro.color}}/>
+          </div>
+        </div>
+        <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
+          {goldI&&<div style={{background:C.bg2,border:"1px solid rgba(200,168,64,0.2)",borderRadius:6,padding:"3px 7px",display:"flex",alignItems:"center",gap:4}}>
             <span style={{fontSize:8,color:C.gold}}>AU</span>
-            <span style={{fontSize:11,fontWeight:600,color:goldI.pct>=0?C.up:C.dn,fontVariantNumeric:"tabular-nums"}}>{fmt(goldI.cur,goldI.b)}</span>
-            <span style={{fontSize:8,color:goldI.pct>=0?C.up:C.dn}}>{goldI.pct>=0?"+":""}{goldI.pct.toFixed(1)}%</span>
+            <span style={{fontSize:10,fontWeight:600,color:goldI.pct>=0?C.up:C.dn,fontVariantNumeric:"tabular-nums"}}>{fmt(goldI.cur,goldI.b)}</span>
+            <span style={{fontSize:8,fontWeight:700,color:goldBiasColor}}>{goldBias}</span>
           </div>}
           {vixI&&<div style={{background:C.bg2,border:"1px solid "+C.border,borderRadius:6,padding:"3px 7px",display:"flex",alignItems:"center",gap:4}}>
             <span style={{fontSize:8,color:C.txt2}}>VIX</span>
-            <span style={{fontSize:11,fontWeight:600,color:vixClr(vixI.cur)}}>{vixI.cur.toFixed(2)}</span>
+            <span style={{fontSize:10,fontWeight:600,color:vixClr(vixI.cur)}}>{vixI.cur.toFixed(2)}</span>
+            <span style={{fontSize:7,color:C.txt3}}>{vixLbl(vixI.cur)}</span>
           </div>}
           {dxyI&&<div style={{background:C.bg2,border:"1px solid "+C.border,borderRadius:6,padding:"3px 7px",display:"flex",alignItems:"center",gap:4}}>
             <span style={{fontSize:8,color:C.txt2}}>DXY</span>
-            <span style={{fontSize:11,fontWeight:600,color:dxyI.pct>=0?C.dn:C.up}}>{dxyI.cur.toFixed(2)}</span>
+            <span style={{fontSize:10,fontWeight:600,color:dxyI.pct>=0?C.dn:C.up}}>{dxyI.cur.toFixed(2)}</span>
           </div>}
-          <span style={{fontSize:8,color:stClr,letterSpacing:".05em"}}>● {anyLive?"LIVE":"SIM"}</span>
+          {spread!==null&&<div style={{background:C.bg2,border:"1px solid "+(inverted?C.dn:C.up)+"44",borderRadius:6,padding:"3px 7px",display:"flex",alignItems:"center",gap:4}}>
+            <span style={{fontSize:8,color:C.txt2}}>2s10s</span>
+            <span style={{fontSize:10,fontWeight:600,color:inverted?C.dn:C.up}}>{spread>0?"+":""}{spread}%</span>
+            <span style={{fontSize:7,color:inverted?C.dn:C.up}}>{inverted?"INV":"NRM"}</span>
+          </div>}
         </div>
       </div>
 
