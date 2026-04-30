@@ -60,13 +60,14 @@ const CTX_SYS=`You are a professional macro market analyst. Respond ONLY with va
 {"sessionBias":"<RISK-ON|RISK-OFF|NEUTRAL|MIXED>","sessionNote":"<2-3 sentences>","dxyDominance":{"status":"<LEADING|LAGGING|NEUTRAL>","analysis":"<2 sentences>","vsGold":"<INVERSE|CORRELATED|DECOUPLED>","vsBonds":"<1 sentence>"},"yieldCurve":{"status":"<NORMAL|INVERTED|FLATTENING|STEEPENING>","analysis":"<2 sentences>"},"moneyFlow":"<2 sentences on institutional positioning>","topMovers":[{"symbol":"<sym>","direction":"<BULLISH|BEARISH>","potentialMove":"<e.g.+2%>","reason":"<1 sentence>"}],"watchlist":[{"symbol":"<sym>","bias":"<BULLISH|BEARISH|NEUTRAL>","entryZone":"<price range>","reason":"<1 sentence>"}],"keyLevels":[{"symbol":"<sym>","level":<number>,"type":"<RESISTANCE|SUPPORT>","note":"<why>"}],"weeklyOutlook":"<2-3 sentences>","riskEvents":["<event1>","<event2>"],"goldBias":"<BULLISH|BEARISH|NEUTRAL>","oilOutlook":"<1 sentence>"}
 Provide 3 topMovers, 3 watchlist, 3 keyLevels, 2 riskEvents.`;
 
-const INTEL_SYS=`You are a senior macro strategist, geopolitical analyst and market intelligence expert at a top investment bank. You have access to live market data and current news via web search. Generate a comprehensive session intelligence report.
+const INTEL_SYS=`You are a senior macro strategist and market intelligence expert at a top investment bank. You have access to live market data and current news via web search. Generate a focused session intelligence report for a Gold trader.
 
-Search the web for: latest market news, overnight geopolitical events, Fed speaker statements, US economic data releases today, Gold price drivers, Oil supply disruptions, SPX NDX sector rotation, mega-cap stock movers, put/call ratio, market breadth, institutional flow data, bank forecasts.
+Search the web for: latest Gold price news and drivers, DXY movement and Fed commentary, US economic data today, overnight geopolitical events, SPX NDX brief summary, bank forecasts for Gold this week.
 
 Respond ONLY with valid JSON, no extra text:
-{"session":"<ASIA OPEN|LONDON OPEN|NY SESSION>","generatedAt":"<time SGT>","marketRegime":"<RISK-ON|RISK-OFF|NEUTRAL|MIXED>","headline":"<single most important market theme today>","overnightDigest":"<3-4 sentences: what happened overnight, key moves, why — reference actual events>","geopolitical":["<event1>","<event2>","<event3>"],"dynamicMovers":[{"symbol":"<sym>","name":"<name>","price":"<price>","change":"<+/-X.XX%>","dir":"<BULLISH|BEARISH>","why":"<2 sentences>","driver":"<key driver tag>"}],"fedWatch":{"speaker":"<name or NONE>","statement":"<what they said or current Fed stance>","marketRead":"<market interpretation>","impactGold":"<1 sentence>","impactDXY":"<1 sentence>"},"econ":[{"time":"<SGT time>","country":"<US|EUR|JPY|GBP>","event":"<name>","forecast":"<value>","prev":"<value>","impact":"<HIGH|MEDIUM|LOW>"}],"gold":{"price":"<price>","chg":"<change>","drivers":["<d1>","<d2>","<d3>","<d4>"],"rumor":{"phase":"<RUMOR|FACT REACTION|POST-FACT>","signal":"<specific signal name>","analysis":"<2-3 sentences>","analog":"<historical analog and outcome>","conviction":"<HIGH|MEDIUM|LOW>"},"scenarios":[{"s":"<scenario>","p":<probability>,"target":"<price range>","trigger":"<trigger event>","tf":"<timeframe>"}],"note":"<2-3 sentences actionable>"},"oil":{"price":"<price>","chg":"<change>","drivers":["<d1>","<d2>","<d3>","<d4>"],"rumor":{"phase":"<RUMOR|FACT REACTION|POST-FACT>","signal":"<signal>","analysis":"<2-3 sentences>","analog":"<historical analog>","conviction":"<HIGH|MEDIUM|LOW>"},"scenarios":[{"s":"<scenario>","p":<probability>,"target":"<price range>","trigger":"<trigger>","tf":"<timeframe>"}],"note":"<2-3 sentences actionable>"},"spx":{"price":"<price>","chg":"<change>","what":"<2 sentences what is moving SPX today>","rumor":{"phase":"<RUMOR|FACT REACTION|POST-FACT>","signal":"<signal>","analysis":"<2-3 sentences>","analog":"<historical analog>","conviction":"<HIGH|MEDIUM|LOW>"},"megacaps":[{"t":"<ticker>","w":"<index weight>","m":"<move today>","why":"<1 sentence>","sent":"<BULLISH|BEARISH|NEUTRAL>"}],"sectors":[{"s":"<sector>","c":"<change>","f":"<IN|OUT>","r":"<1 sentence reason>"}],"sentiment":{"pc":"<put/call ratio and interpretation>","breadth":"<advancing/declining and interpretation>","inst":"<institutional flow>","retail":"<retail sentiment>"},"note":"<2-3 sentences actionable>"},"ndx":{"price":"<price>","chg":"<change>","what":"<2 sentences>","tech":[{"sub":"<subsector>","perf":"<performance>","leaders":"<key stocks>","note":"<1 sentence>"}],"note":"<2-3 sentences actionable>"},"keyLevels":[{"sym":"<sym>","s":<support>,"r":<resistance>,"note":"<why matters>"}],"bias":{"gold":"<BULLISH|BEARISH|NEUTRAL>","oil":"<BULLISH|BEARISH|NEUTRAL>","spx":"<BULLISH|BEARISH|NEUTRAL>","ndx":"<BULLISH|BEARISH|NEUTRAL>","dxy":"<BULLISH|BEARISH|NEUTRAL>","bonds":"<BULLISH|BEARISH|NEUTRAL>"},"tradeFocus":"<4-5 sentences: specific instruments, entry zones, what to avoid, key levels tonight>"}
-Provide 3 dynamicMovers, 3 geopolitical events, 3-4 econ events, 3-4 gold scenarios, 4 key levels.`;
+{"session":"<ASIA OPEN|LONDON OPEN|NY SESSION>","generatedAt":"<time SGT>","marketRegime":"<RISK-ON|RISK-OFF|NEUTRAL|MIXED>","headline":"<single most important market theme today>","overnightDigest":"<3-4 sentences: what happened overnight, key moves and why>","geopolitical":["<event1>","<event2>"],"fedWatch":{"speaker":"<name or NONE>","statement":"<what they said or current Fed stance>","marketRead":"<market interpretation>","impactGold":"<1 sentence>","impactDXY":"<1 sentence>"},"econ":[{"time":"<SGT>","country":"<US|EUR|JPY|GBP>","event":"<name>","forecast":"<value>","prev":"<value>","impact":"<HIGH|MEDIUM|LOW>","goldImpact":"<BULLISH|BEARISH|NEUTRAL if beats forecast>"}],"gold":{"price":"<price>","chg":"<change>","bias":"<BULLISH|BEARISH|NEUTRAL>","drivers":["<d1>","<d2>","<d3>"],"rumor":{"phase":"<RUMOR|FACT REACTION|POST-FACT>","signal":"<signal name>","analysis":"<2 sentences>","conviction":"<HIGH|MEDIUM|LOW>"},"keyLevels":{"support":<number>,"resistance":<number>,"note":"<most important level tonight>"},"scenarios":[{"s":"<scenario>","p":<probability>,"target":"<price>","trigger":"<trigger>"},{"s":"<scenario2>","p":<probability>,"target":"<price>","trigger":"<trigger>"}],"note":"<2-3 sentences actionable trader note>"},"dxy":{"price":"<price>","chg":"<change>","bias":"<BULLISH|BEARISH|NEUTRAL>","analysis":"<2 sentences on DXY and its impact on Gold>","keyLevel":<number>,"note":"<1 sentence>"},"indices":{"spx":{"price":"<price>","chg":"<change>","bias":"<BULLISH|BEARISH|NEUTRAL>","note":"<1 sentence summary>"},"ndx":{"price":"<price>","chg":"<change>","bias":"<BULLISH|BEARISH|NEUTRAL>","note":"<1 sentence summary>"},"regime":"<1-2 sentences: what indices tell us about risk sentiment tonight>"},"watchlist":[{"symbol":"<sym>","bias":"<BULLISH|BEARISH|NEUTRAL>","note":"<1 sentence why to watch>","keyLevel":<number>}],"tradeFocus":"<3-4 sentences: what to trade tonight, key levels, what to avoid, most important number to watch>"}
+Provide 2-3 econ events, 2 gold scenarios, 3 watchlist items (focus on USD/JPY, WTI, GBP/USD or most relevant tonight). Keep responses concise and actionable.`;
+
 
 const dp=function(b:number){return b>=1000?2:b>=10?3:4;};
 const fmt=function(v:any,b:number){
@@ -389,7 +390,7 @@ export default function Auxiron(){
       "\n\nSearch for: latest market news overnight geopolitical events Fed speakers US economic data today Gold Oil price drivers SPX NDX sector rotation mega-cap movers investor sentiment put call ratio market breadth institutional flows bank forecasts."+
       "\n\nGenerate a comprehensive "+label+" intelligence report with: overnight digest, geopolitical events, dynamic market movers, Fed watch, economic events SGT times, GOLD DEEP DIVE (what moving now + buy/sell rumor detection + risk scenarios + price targets), OIL deep dive, SPX+NDX analysis, key levels, instrument bias, trade focus tonight.";
     callProxy(
-      {model:"claude-sonnet-4-6",max_tokens:6000,system:INTEL_SYS,
+      {model:"claude-sonnet-4-6",max_tokens:3000,system:INTEL_SYS,
        messages:[{role:"user",content:msg}],useWebSearch:true},
       function(res:any){setIntel(res);setIntelLoading(false);setIntelErr(null);},
       function(e:string){setIntelErr("Failed: "+e);setIntelLoading(false);}
@@ -1215,6 +1216,63 @@ export default function Auxiron(){
                     )}
                   </div>
                 )}
+                {intel.dxy&&(
+  <div style={{background:C.bg1,border:"1px solid rgba(72,144,248,0.2)",borderRadius:10,padding:"12px",marginBottom:8}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+      <div style={{fontFamily:"'Syne',sans-serif",fontSize:14,fontWeight:700,color:C.blue}}>DXY — GOLD DRIVER</div>
+      <div style={{textAlign:"right"}}>
+        <div style={{fontSize:13,fontWeight:600,color:C.txt0}}>{intel.dxy.price}</div>
+        <div style={{fontSize:10,color:intel.dxy.chg&&intel.dxy.chg.startsWith("-")?C.up:C.dn,fontWeight:600}}>{intel.dxy.chg}</div>
+      </div>
+    </div>
+    <div style={{fontSize:11,color:C.txt0,lineHeight:1.65,marginBottom:6}}>{intel.dxy.analysis}</div>
+    {intel.dxy.note&&<div style={{background:"rgba(72,144,248,0.07)",borderRadius:6,padding:"7px 10px",fontSize:11,color:C.blue}}>{intel.dxy.note}</div>}
+  </div>
+)}
+{intel.indices&&(
+  <div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,padding:"12px",marginBottom:8}}>
+    <div style={{fontSize:10,color:C.txt2,letterSpacing:".1em",fontWeight:600,marginBottom:8}}>INDICES SNAPSHOT</div>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:8}}>
+      {intel.indices.spx&&<div style={{background:C.bg2,border:"1px solid "+C.border,borderRadius:7,padding:"8px 10px"}}>
+        <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
+          <span style={{fontSize:11,fontWeight:600,color:C.txt0}}>SPX</span>
+          <span style={{fontSize:10,color:intel.indices.spx.chg&&intel.indices.spx.chg.startsWith("+")?C.up:C.dn,fontWeight:600}}>{intel.indices.spx.chg}</span>
+        </div>
+        <div style={{fontSize:10,color:C.txt1}}>{intel.indices.spx.note}</div>
+      </div>}
+      {intel.indices.ndx&&<div style={{background:C.bg2,border:"1px solid "+C.border,borderRadius:7,padding:"8px 10px"}}>
+        <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
+          <span style={{fontSize:11,fontWeight:600,color:C.txt0}}>NDX</span>
+          <span style={{fontSize:10,color:intel.indices.ndx.chg&&intel.indices.ndx.chg.startsWith("+")?C.up:C.dn,fontWeight:600}}>{intel.indices.ndx.chg}</span>
+        </div>
+        <div style={{fontSize:10,color:C.txt1}}>{intel.indices.ndx.note}</div>
+      </div>}
+    </div>
+    {intel.indices.regime&&<div style={{fontSize:11,color:C.txt0,lineHeight:1.6}}>{intel.indices.regime}</div>}
+  </div>
+)}
+{intel.watchlist&&intel.watchlist.length>0&&(
+  <div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,padding:"12px",marginBottom:8}}>
+    <div style={{fontSize:10,color:C.txt2,letterSpacing:".1em",fontWeight:600,marginBottom:8}}>WATCHLIST TONIGHT</div>
+    <div style={{display:"grid",gap:5}}>
+      {intel.watchlist.map(function(w,i){
+        var bc=w.bias==="BULLISH"?C.up:w.bias==="BEARISH"?C.dn:C.amber;
+        var inst=mkt.find(function(d){return d.s===w.symbol||d.l===w.symbol;});
+        return <div key={i} style={{background:C.bg2,border:"1px solid "+C.border,borderRadius:8,padding:"9px 12px"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
+            <div style={{display:"flex",alignItems:"center",gap:7}}>
+              <span style={{fontSize:13,fontWeight:600,color:C.txt0}}>{w.symbol}</span>
+              <span style={{fontSize:9,fontWeight:700,color:bc,background:"rgba(0,0,0,0.3)",padding:"1px 6px",borderRadius:3}}>{w.bias}</span>
+            </div>
+            {inst&&<span style={{fontSize:11,color:inst.pct>=0?C.up:C.dn}}>{fmt(inst.cur,inst.b)}</span>}
+          </div>
+          <div style={{fontSize:11,color:C.txt1,lineHeight:1.5,marginBottom:w.keyLevel?3:0}}>{w.note}</div>
+          {w.keyLevel&&<div style={{fontSize:10,color:C.gold}}>Key level: {w.keyLevel}</div>}
+        </div>;
+      })}
+    </div>
+  </div>
+)}
                 {intel.tradeFocus&&(
                   <div style={{background:"linear-gradient(135deg,rgba(40,204,120,0.08),rgba(40,204,120,0.03))",border:"1px solid rgba(40,204,120,0.25)",borderRadius:10,padding:"13px"}}>
                     <div style={{fontSize:10,color:C.up,letterSpacing:".1em",fontWeight:600,marginBottom:6}}>🎯 TRADE FOCUS</div>
