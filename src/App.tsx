@@ -390,7 +390,7 @@ export default function Auxiron(){
       "\n\nSearch for: latest market news overnight geopolitical events Fed speakers US economic data today Gold Oil price drivers SPX NDX sector rotation mega-cap movers investor sentiment put call ratio market breadth institutional flows bank forecasts."+
       "\n\nGenerate a comprehensive "+label+" intelligence report with: overnight digest, geopolitical events, dynamic market movers, Fed watch, economic events SGT times, GOLD DEEP DIVE (what moving now + buy/sell rumor detection + risk scenarios + price targets), OIL deep dive, SPX+NDX analysis, key levels, instrument bias, trade focus tonight.";
     callProxy(
-      {model:"claude-sonnet-4-6",max_tokens:3000,system:INTEL_SYS,
+      {model:"claude-sonnet-4-6",max_tokens:8000,system:INTEL_SYS,
        messages:[{role:"user",content:msg}],useWebSearch:true},
       function(res:any){setIntel(res);setIntelLoading(false);setIntelErr(null);},
       function(e:string){setIntelErr("Failed: "+e);setIntelLoading(false);}
