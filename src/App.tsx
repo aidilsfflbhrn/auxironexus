@@ -111,7 +111,7 @@ function callProxy(body:any,onSuccess:Function,onError:Function){
   var xhr=new XMLHttpRequest();
   xhr.open("POST","/api/analyze",true);
   xhr.setRequestHeader("Content-Type","application/json");
-  xhr.timeout=body.useWebSearch?90000:55000;
+  xhr.timeout=body.useWebSearch?270000:55000;
   xhr.onload=function(){
     try{
       var raw=(xhr.responseText||"").trim();
