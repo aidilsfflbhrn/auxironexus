@@ -56,17 +56,60 @@ const AI_SYS=`You are an elite macro financial analyst and geopolitical strategi
 {"impactScore":<0-100>,"impactLevel":"<NOISE|LOW|MODERATE|HIGH|CRITICAL>","marketSentiment":"<RISK-ON|RISK-OFF|NEUTRAL|MIXED>","sentimentShift":"<BULLISH|BEARISH|NEUTRAL>","immediateImpact":"<2-3 sentences>","moneyFlow":"<2 sentences on institutional money movement>","geopoliticalCascade":"<2-3 sentences: full transmission chain>","affectedInstruments":[{"symbol":"<sym>","direction":"<BULLISH|BEARISH|NEUTRAL>","confidence":<0-100>,"currentPrice":<number>,"targetLevel":<number>,"reason":"<one sentence>"}],"keyDrivers":["<d1>","<d2>","<d3>"],"edgeFinderOverride":{"triggered":<true|false>,"reason":"<why geopolitical conditions override scoring model>"},"edgeFinderCrossCheck":{"hasData":<true|false>,"cotAlignment":"<CONFIRMS|CONTRADICTS|MIXED|N/A>","cotNote":"<1-2 sentences: what COT data shows vs the event, or N/A>","setupAlignment":"<CONFIRMS|CONTRADICTS|MIXED|N/A>","setupNote":"<1-2 sentences: what top setups show vs event direction, or N/A>","keyContradiction":"<the single most important conflict between EdgeFinder data and the news event, or null>","resolution":"<2 sentences: how to reconcile conflicting signals, which to prioritize and why>","tradeVerdict":"<EDGEFINDER WINS|NEWS WINS|WAIT FOR CONFIRMATION|SPLIT — explain briefly>"},"scenarios":[{"type":"BEARISH_EXTREME","title":"<n>","probability":<0-100>,"timeline":"<e.g. 2-5 days>","description":"<2 sentences>","watchFor":"<trigger>","instruments":[{"symbol":"<sym>","move":"<e.g.+8%>"}]},{"type":"BASE_CASE","title":"<n>","probability":<0-100>,"timeline":"<e.g. 1-3 days>","description":"<2 sentences>","watchFor":"<trigger>","instruments":[{"symbol":"<sym>","move":"<e.g.+3%>"}]},{"type":"BULLISH_REVERSAL","title":"<n>","probability":<0-100>,"timeline":"<e.g. 1 week>","description":"<2 sentences>","watchFor":"<trigger>","instruments":[{"symbol":"<sym>","move":"<e.g.-2%>"}]}],"keyLevelsToWatch":[{"symbol":"<sym>","level":<number>,"significance":"<why critical now>"}],"traderNote":"<3-4 sentences actionable>","timeHorizon":"<INTRADAY|SHORT-TERM|MEDIUM-TERM|LONG-TERM>","nextCatalysts":["<event1>","<event2>"]}
 Probabilities sum to 100. List 3-5 affected instruments. List 3 key levels. Always explain full transmission chain. If EdgeFinder screenshots are attached, read the COT data, top setups, and any positioning data shown, then fill edgeFinderCrossCheck.hasData=true and provide a full cross-analysis highlighting contradictions. If no images provided, set hasData=false and all alignment fields to "N/A".`;
 
-const CTX_SYS=`You are a professional macro market analyst. Respond ONLY with valid JSON:
-{"sessionBias":"<RISK-ON|RISK-OFF|NEUTRAL|MIXED>","sessionNote":"<2-3 sentences>","dxyDominance":{"status":"<LEADING|LAGGING|NEUTRAL>","analysis":"<2 sentences>","vsGold":"<INVERSE|CORRELATED|DECOUPLED>","vsBonds":"<1 sentence>"},"yieldCurve":{"status":"<NORMAL|INVERTED|FLATTENING|STEEPENING>","analysis":"<2 sentences>"},"moneyFlow":"<2 sentences on institutional positioning>","topMovers":[{"symbol":"<sym>","direction":"<BULLISH|BEARISH>","potentialMove":"<e.g.+2%>","reason":"<1 sentence>"}],"watchlist":[{"symbol":"<sym>","bias":"<BULLISH|BEARISH|NEUTRAL>","entryZone":"<price range>","reason":"<1 sentence>"}],"keyLevels":[{"symbol":"<sym>","level":<number>,"type":"<RESISTANCE|SUPPORT>","note":"<why>"}],"weeklyOutlook":"<2-3 sentences>","riskEvents":["<event1>","<event2>"],"goldBias":"<BULLISH|BEARISH|NEUTRAL>","oilOutlook":"<1 sentence>"}
-Provide 3 topMovers, 3 watchlist, 3 keyLevels, 2 riskEvents.`;
+const CTX_SYS=`You are a senior market analyst with access to live news via web search. Generate a concise breaking news briefing covering what has happened in the LAST 1-2 HOURS during this trading session.
 
-const INTEL_SYS=`You are a senior macro strategist and market intelligence expert at a top investment bank. You have access to live market data and current news via web search. Generate a focused session intelligence report for a Gold trader.
+Search the web RIGHT NOW for: breaking market news last 2 hours, latest Gold and DXY price movement and catalyst, any Fed speaker statements today, JPY or BOJ activity, geopolitical breaking developments, any surprise economic data that just printed.
 
-Search the web for: latest Gold price news and drivers, DXY movement and Fed commentary, US economic data today, overnight geopolitical events, SPX NDX brief summary, bank forecasts for Gold this week.
+Respond ONLY with valid JSON:
+{"sessionBias":"<RISK-ON|RISK-OFF|NEUTRAL|MIXED>","regimeUpdate":"<1 sentence: what is driving the current market regime RIGHT NOW>","breaking":[{"time":"<SGT time>","type":"<ECONOMIC DATA|FED SPEAKER|CENTRAL BANK|GEOPOLITICAL|MARKET MOVE>","typeColor":"<use: ECONOMIC DATA=#22c55e, FED SPEAKER=#818cf8, CENTRAL BANK=#fb923c, GEOPOLITICAL=#ef4444, MARKET MOVE=#3b82f6>","headline":"<specific factual headline — what actually happened>","impact":"<BULLISH GOLD|BEARISH GOLD|BULLISH USD|BEARISH USD|RISK-ON|RISK-OFF|NEUTRAL>","detail":"<2-3 sentences: exactly what happened, the specific numbers or statements, and why it matters for traders>","goldReaction":"<how Gold actually moved or is moving in response — be specific with price levels>","tradingNote":"<1 sentence: the single most actionable thing a trader should know right now>"}],"marketMoves":[{"symbol":"<sym>","from":"<price>","to":"<price>","change":"<+/-amount>","direction":"<up|down>","note":"<1 sentence: what caused this move>"}],"nextUp":[{"time":"<SGT>","event":"<specific upcoming event or risk>","impact":"<HIGH|MEDIUM>","note":"<1 sentence why it matters>"}],"goldBias":"<BULLISH|BEARISH|NEUTRAL>","dxyBias":"<BULLISH|BEARISH|NEUTRAL>","sessionSummary":"<2 sentences: plain English summary of what has happened this session so far and what traders should be focused on right now>"}
+Provide 1-3 breaking items covering only GENUINELY NEW developments from the last 2 hours — not background context or old news. If nothing significant happened, say so honestly. Provide 3-5 market moves. Provide 2-3 next up items. No economic calendar — that lives in the Intel report only.`;
+const INTEL_SYS=`You are a senior macro strategist and market intelligence analyst at a top-tier investment bank. You have access to live market data and real-time news via web search. Generate a comprehensive pre-session intelligence briefing in the style of a JPMorgan morning research note.
 
-Respond ONLY with valid JSON, no extra text:
-{"session":"<ASIA OPEN|LONDON OPEN|NY SESSION>","generatedAt":"<time SGT>","marketRegime":"<RISK-ON|RISK-OFF|NEUTRAL|MIXED>","headline":"<single most important market theme today>","overnightDigest":"<3-4 sentences: what happened overnight, key moves and why>","geopolitical":["<event1>","<event2>"],"fedWatch":{"speaker":"<name or NONE>","statement":"<what they said or current Fed stance>","marketRead":"<market interpretation>","impactGold":"<1 sentence>","impactDXY":"<1 sentence>"},"econ":[{"time":"<SGT>","country":"<US|EUR|JPY|GBP>","event":"<name>","forecast":"<value>","prev":"<value>","impact":"<HIGH|MEDIUM|LOW>","goldImpact":"<BULLISH|BEARISH|NEUTRAL if beats forecast>"}],"gold":{"price":"<price>","chg":"<change>","bias":"<BULLISH|BEARISH|NEUTRAL>","drivers":["<d1>","<d2>","<d3>"],"rumor":{"phase":"<RUMOR|FACT REACTION|POST-FACT>","signal":"<signal name>","analysis":"<2 sentences>","conviction":"<HIGH|MEDIUM|LOW>"},"keyLevels":{"support":<number>,"resistance":<number>,"note":"<most important level tonight>"},"scenarios":[{"s":"<scenario>","p":<probability>,"target":"<price>","trigger":"<trigger>"},{"s":"<scenario2>","p":<probability>,"target":"<price>","trigger":"<trigger>"}],"note":"<2-3 sentences actionable trader note>"},"dxy":{"price":"<price>","chg":"<change>","bias":"<BULLISH|BEARISH|NEUTRAL>","analysis":"<2 sentences on DXY and its impact on Gold>","keyLevel":<number>,"note":"<1 sentence>"},"indices":{"spx":{"price":"<price>","chg":"<change>","bias":"<BULLISH|BEARISH|NEUTRAL>","note":"<1 sentence summary>"},"ndx":{"price":"<price>","chg":"<change>","bias":"<BULLISH|BEARISH|NEUTRAL>","note":"<1 sentence summary>"},"regime":"<1-2 sentences: what indices tell us about risk sentiment tonight>"},"watchlist":[{"symbol":"<sym>","bias":"<BULLISH|BEARISH|NEUTRAL>","note":"<1 sentence why to watch>","keyLevel":<number>}],"tradeFocus":"<3-4 sentences: what to trade tonight, key levels, what to avoid, most important number to watch>"}
-Provide 2-3 econ events, 2 gold scenarios, 3 watchlist items (focus on USD/JPY, WTI, GBP/USD or most relevant tonight). Keep responses concise and actionable.`;
+Search the web thoroughly for ALL of the following:
+1. GOLD: Latest price drivers, institutional positioning, ETF flows, central bank buying activity, technical levels, bank forecasts for Gold this week
+2. DXY AND FED: Current DXY level and trend, latest Fed speaker statements, CME FedWatch cut probabilities, real yields (10Y TIPS), any Fed communication today
+3. JPY AND CARRY TRADE: USD/JPY level vs BOJ intervention history, any BOJ or Finance Ministry statements today, carry trade positioning signals, GBP/JPY and AUD/JPY as carry indicators
+4. CENTRAL BANKS: ECB rate outlook and any ECB speaker statements, BOE policy stance, BOJ rate hike expectations, any surprise central bank communications
+5. GEOPOLITICAL: Active geopolitical risks (Middle East, Russia-Ukraine, China-Taiwan, any others), any escalation or de-escalation in last 24 hours, commodity supply disruption risks
+6. ECONOMIC CALENDAR: Upcoming high-impact events for THIS SESSION ONLY (see session rules below)
+7. EQUITY MARKETS: SPX and NDX direction and key drivers, market breadth, any major earnings or sector moves affecting sentiment
+8. MARKET SENTIMENT: Overall risk-on or risk-off regime, institutional vs retail positioning divergence, any significant flow data
+
+Respond ONLY with valid JSON, absolutely no extra text outside the JSON:
+{"session":"<ASIA OPEN|LONDON OPEN|NY SESSION>","generatedAt":"<time SGT>","validFor":"<session window e.g. 9pm-1am SGT>","marketRegime":"<RISK-ON|RISK-OFF|NEUTRAL|MIXED>","regimeDrivers":"<1-2 sentences: specifically what is driving the current risk regime>","headline":"<the single most important market theme for this session — be specific>","executiveSummary":"<3-4 sentences written like a JPMorgan morning note: what the macro picture looks like right now, what the key risks are tonight, and what traders should be positioned for>","alerts":[{"priority":<1,2,or3>,"type":"<INTERVENTION RISK|BINARY EVENT|CENTRAL BANK|GEOPOLITICAL|EARNINGS|DATA RISK>","color":"<#ff1840 for critical|#f0a500 for high|#fb923c for medium>","headline":"<specific alert headline>","detail":"<3-4 sentences: full context, historical precedent if relevant, probability assessment, exact levels that matter>","monitor":"<1-2 sentences: exactly what to watch and what the trigger levels are>"}],"markets":[{"asset":"<full name e.g. Gold XAU/USD>","price":"<current price>","chg":"<+/-X.XX%>","bias":"<BULLISH|BEARISH|NEUTRAL|AVOID LONGS|WATCH>","note":"<2 sentences: what is driving this instrument and what matters for it tonight>"}],"macro":[{"heading":"<section heading e.g. Federal Reserve — Policy Path>","color":"<hex color for this section>","body":"<3-4 sentences: comprehensive analysis of this macro theme, specific data points, current probabilities, historical context where relevant>","keyData":"<key data points separated by ·>"}],"calendar":[{"time":"<SGT>","flag":"<country flag emoji>","event":"<event name>","stars":<2or3>,"forecast":"<value or —>","prev":"<value or —>","impact":"<CRITICAL|HIGH|MEDIUM>","goldBull":"<specific condition that would be bullish for Gold>","goldBear":"<specific condition that would be bearish for Gold>","analysis":"<2 sentences: why this event matters for markets, what the transmission mechanism is to Gold and DXY>"}],"instruments":[{"name":"<instrument name>","color":"<hex>","price":"<price>","bias":"<BULLISH|BEARISH|NEUTRAL|AVOID LONGS|WATCH>","conviction":"<HIGH|MEDIUM|LOW>","summary":"<3-4 sentences: comprehensive view — macro drivers, key levels context, what would change the thesis, risk/reward assessment>","levels":{"s2":<number>,"s1":<number>,"now":<number>,"r1":<number>,"r2":<number>},"setup":"<specific actionable approach: entry zone, stop, target, R/R ratio, or NO SETUP with reason>","avoid":["<condition1>","<condition2>"]}],"watchlist":[{"symbol":"<sym>","price":"<price>","bias":"<BULLISH|BEARISH|NEUTRAL|AVOID|WATCH>","priority":"<CRITICAL|HIGH|MEDIUM>","color":"<hex>","note":"<1-2 sentences: why this is on the watchlist tonight and what level matters>"}],"tradeFocus":"<4-5 sentences written like a senior analyst talking directly to a trader: what the primary trade opportunity is tonight, what the key event risks are, what to avoid and why, the single most important number or level to watch, and how to think about position sizing given tonight's volatility environment>"}
+
+CRITICAL SESSION CALENDAR RULES — only include events relevant to this session window:
+ASIA session (6am-3pm SGT): JPY data only (BOJ meetings, Tankan, CPI, Trade Balance, Unemployment), AUD (RBA decisions, Employment, CPI), CNY (PMI, Trade Balance), NZD
+LONDON session (4pm-1am SGT): EUR data only (ECB meetings/speeches, CPI, PMI Flash, GDP, IFO, ZEW), GBP (BOE meetings, CPI, Retail Sales, PMI), CHF
+NY session (9pm-6am SGT): USD data only (NFP, CPI, PCE, FOMC decisions/minutes, ISM, PPI, JOLTS, Jobless Claims, Retail Sales, GDP, Consumer Sentiment), CAD
+Include ONLY 2-star and 3-star impact events. Skip all 1-star events entirely.
+3-star events: NFP, CPI, PCE, FOMC rate decisions, FOMC minutes, GDP advance, central bank rate decisions, PMI Flash composite
+2-star events: ISM manufacturing/services, PPI, Retail Sales, Jobless Claims, JOLTS, IFO Business Climate, ZEW sentiment, Trade Balance, Unemployment Rate
+
+INSTRUMENT RULES:
+Always include Gold (XAU/USD) as the first instrument.
+Always include DXY as second instrument.
+Include USD/JPY if intervention risk is present OR if BOJ is active.
+Include EUR/USD if ECB is relevant OR if DXY is breaking key levels.
+Include GBP/JPY if carry trade risk is elevated.
+Include WTI Oil if geopolitical risk is elevated OR if OPEC news today.
+Include 3-5 instruments total — only ones that are actually relevant tonight, not every instrument every time.
+
+ALERT RULES:
+Only include alerts for genuinely active risks — do not manufacture alerts on quiet sessions.
+Priority 1 (P1): Imminent binary risk in next 2 hours (intervention trigger, major data release, emergency Fed communication)
+Priority 2 (P2): Active elevated risk for the full session (geopolitical escalation, central bank meeting, earnings from major company)
+Priority 3 (P3): Background risk to monitor (developing situation, data releasing later this week)
+Maximum 3 alerts. Minimum 0 alerts on genuinely quiet sessions.
+
+MACRO SECTIONS:
+Always include Federal Reserve section.
+Always include the most relevant central bank for this session (BOJ for Asia, ECB/BOE for London, Fed for NY).
+Include Geopolitical section only if there is an active risk worth monitoring.
+Include Carry Trade section only if JPY positioning or carry trade is a live market concern.
+3-4 macro sections maximum.
+
+Write in the style of a JPMorgan or Goldman Sachs morning research note: confident, specific, data-driven, with clear actionable conclusions. Avoid vague generalisations. Every claim should reference a specific price level, probability, or data point.`;
 
 
 const dp=function(b:number){return b>=1000?2:b>=10?3:4;};
@@ -367,14 +410,20 @@ export default function Auxiron(){
   }
 
   function fetchCtx(){
-    setCtxLoading(true);setCtx(null);
-    callProxy(
-      {model:"claude-haiku-4-5",max_tokens:1800,system:CTX_SYS,
-       messages:[{role:"user",content:"Live market: "+getSnap()+"\nGenerate session briefing."}]},
-      function(res:any){setCtx(res);setLastRefresh(new Date());setCtxLoading(false);setCtxErr(null);},
-      function(e:string){setCtxErr("Failed: "+e);setCtxLoading(false);}
-    );
-  }
+  setCtxLoading(true);setCtx(null);setCtxErr(null);
+  var msg="LIVE MARKET DATA:\n"+getSnap()+
+    "\n\nCurrent time SGT: "+new Date().toLocaleString("en-SG",{timeZone:"Asia/Singapore"})+
+    "\n\nGenerate a breaking news briefing for what has happened in the last 1-2 hours. Search for the latest news right now.";
+  callProxy(
+    {model:"claude-haiku-4-5",max_tokens:2000,system:CTX_SYS,
+     messages:[{role:"user",content:msg}],
+     useWebSearch:true},
+    function(res){setCtx(res);setLastRefresh(new Date());setCtxLoading(false);setCtxErr(null);},
+    function(e){setCtxErr("Failed: "+e);setCtxLoading(false);}
+  );
+}
+    
+  
 
   function fetchIntel(session:string){
     setIntelLoading(true);setIntel(null);setIntelErr(null);
