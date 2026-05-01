@@ -154,7 +154,7 @@ function callProxy(body:any,onSuccess:Function,onError:Function){
   var xhr=new XMLHttpRequest();
   xhr.open("POST","/api/analyze",true);
   xhr.setRequestHeader("Content-Type","application/json");
-  xhr.timeout=body.useWebSearch?270000:55000;
+  xhr.timeout=body.useWebSearch?295000:55000;
   xhr.onload=function(){
     try{
       var raw=(xhr.responseText||"").trim();
@@ -415,7 +415,7 @@ export default function Auxiron(){
     "\n\nCurrent time SGT: "+new Date().toLocaleString("en-SG",{timeZone:"Asia/Singapore"})+
     "\n\nGenerate a breaking news briefing for what has happened in the last 1-2 hours. Search for the latest news right now.";
   callProxy(
-    {model:"claude-haiku-4-5",max_tokens:2000,system:CTX_SYS,
+    {model:"claude-haiku-4-5",max_tokens:3000,system:CTX_SYS,
      messages:[{role:"user",content:msg}],
      useWebSearch:true},
     function(res){setCtx(res);setLastRefresh(new Date());setCtxLoading(false);setCtxErr(null);},
@@ -439,7 +439,7 @@ export default function Auxiron(){
       "\n\nSearch for: latest market news overnight geopolitical events Fed speakers US economic data today Gold Oil price drivers SPX NDX sector rotation mega-cap movers investor sentiment put call ratio market breadth institutional flows bank forecasts."+
       "\n\nGenerate a comprehensive "+label+" intelligence report with: overnight digest, geopolitical events, dynamic market movers, Fed watch, economic events SGT times, GOLD DEEP DIVE (what moving now + buy/sell rumor detection + risk scenarios + price targets), OIL deep dive, SPX+NDX analysis, key levels, instrument bias, trade focus tonight.";
     callProxy(
-      {model:"claude-sonnet-4-6",max_tokens:8000,system:INTEL_SYS,
+      {model:"claude-sonnet-4-6",max_tokens:12000,system:INTEL_SYS,
        messages:[{role:"user",content:msg}],useWebSearch:true},
       function(res:any){setIntel(res);setIntelLoading(false);setIntelErr(null);},
       function(e:string){setIntelErr("Failed: "+e);setIntelLoading(false);}
