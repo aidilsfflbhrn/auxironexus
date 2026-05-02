@@ -892,119 +892,87 @@ export default function Auxiron(){
             <div style={{fontSize:10,color:C.txt3,marginTop:4,opacity:0.6}}>DXY dominance · Money flow · Weekly outlook · Risk-On/Off analysis</div>
           </div>}
           {ctx&&<div className="fu">
+            {/* Regime bar */}
             <div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,padding:"12px",marginBottom:8}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-                <div style={{fontSize:10,color:C.txt2,letterSpacing:".1em"}}>SESSION BIAS</div>
-                <div style={{display:"flex",alignItems:"center",gap:8}}>
-                  <span style={{fontSize:13,fontWeight:700,color:SC[ctx.sessionBias as keyof typeof SC]||C.txt1,background:"rgba(0,0,0,0.2)",border:"1px solid rgba(200,200,200,0.1)",borderRadius:6,padding:"3px 10px"}}>{ctx.sessionBias}</span>
-                  {lastRefresh&&<span style={{fontSize:9,color:C.txt3}}>{lastRefresh.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</span>}
-                </div>
-              </div>
-              <div style={{fontSize:13,color:C.txt0,lineHeight:1.75,marginBottom:8}}>{ctx.sessionNote}</div>
-              {ctx.moneyFlow&&<div style={{background:C.bg2,border:"1px solid "+C.border,borderRadius:7,padding:"8px 10px"}}>
-                <div style={{fontSize:9,color:C.txt2,letterSpacing:".1em",marginBottom:3}}>💰 MONEY FLOW</div>
-                <div style={{fontSize:12,color:C.txt1,lineHeight:1.6}}>{ctx.moneyFlow}</div>
-              </div>}
-            </div>
-            {ctx.dxyDominance&&<div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,padding:"12px",marginBottom:8}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-                <div style={{fontSize:10,color:C.txt2,letterSpacing:".1em"}}>DXY DOMINANCE</div>
-                <span style={{fontSize:11,fontWeight:700,color:ctx.dxyDominance.status==="LEADING"?C.dn:ctx.dxyDominance.status==="LAGGING"?C.up:C.amber,background:"rgba(0,0,0,0.2)",border:"1px solid rgba(200,200,200,0.1)",borderRadius:5,padding:"2px 8px"}}>{ctx.dxyDominance.status}</span>
-              </div>
-              <div style={{fontSize:12,color:C.txt0,lineHeight:1.7,marginBottom:8}}>{ctx.dxyDominance.analysis}</div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
-                <div style={{background:C.bg2,border:"1px solid "+C.border,borderRadius:7,padding:"7px 10px"}}>
-                  <div style={{fontSize:9,color:C.txt3,letterSpacing:".1em",marginBottom:3}}>vs GOLD</div>
-                  <div style={{fontSize:11,fontWeight:600,color:ctx.dxyDominance.vsGold==="INVERSE"?C.amber:ctx.dxyDominance.vsGold==="CORRELATED"?C.up:C.txt2}}>{ctx.dxyDominance.vsGold}</div>
-                </div>
-                <div style={{background:C.bg2,border:"1px solid "+C.border,borderRadius:7,padding:"7px 10px"}}>
-                  <div style={{fontSize:9,color:C.txt3,letterSpacing:".1em",marginBottom:3}}>vs BONDS</div>
-                  <div style={{fontSize:10,color:C.txt1,lineHeight:1.5}}>{ctx.dxyDominance.vsBonds}</div>
-                </div>
-              </div>
-            </div>}
-            {ctx.yieldCurve&&<div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,padding:"12px",marginBottom:8}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-                <div style={{fontSize:10,color:C.txt2,letterSpacing:".1em"}}>YIELD CURVE SIGNAL</div>
-                <span style={{fontSize:11,fontWeight:700,color:ctx.yieldCurve.status==="INVERTED"?C.dn:ctx.yieldCurve.status==="NORMAL"?C.up:C.amber,background:"rgba(0,0,0,0.2)",border:"1px solid rgba(200,200,200,0.1)",borderRadius:5,padding:"2px 8px"}}>{ctx.yieldCurve.status}</span>
+                <div style={{display:"flex",alignItems:"center",gap:7}}>
+                  <span style={{fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:5,
+                    color:SC[ctx.sessionBias as keyof typeof SC]||C.txt1,
+                    background:(SC[ctx.sessionBias as keyof typeof SC]||C.txt1)+"18",
+                    border:"1px solid "+(SC[ctx.sessionBias as keyof typeof SC]||C.txt1)+"44"}}>
+                    {ctx.sessionBias}
+                  </span>
+                  {ctx.goldBias&&<span style={{fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:5,
+                    color:DC[ctx.goldBias as keyof typeof DC]||C.txt1,
+                    background:(DC[ctx.goldBias as keyof typeof DC]||C.txt1)+"18",
+                    border:"1px solid "+(DC[ctx.goldBias as keyof typeof DC]||C.txt1)+"44"}}>
+                    AU {ctx.goldBias}
+                  </span>}
+                </div>
+                {lastRefresh&&<span style={{fontSize:9,color:C.txt3}}>{lastRefresh.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</span>}
               </div>
-              <div style={{fontSize:12,color:C.txt0,lineHeight:1.65}}>{ctx.yieldCurve.analysis}</div>
-            </div>}
-            {ctx.weeklyOutlook&&<div style={{background:"rgba(72,144,248,0.07)",border:"1px solid rgba(72,144,248,0.2)",borderRadius:10,padding:"12px",marginBottom:8}}>
-              <div style={{fontSize:10,color:C.blue,letterSpacing:".1em",marginBottom:5}}>📅 WEEKLY OUTLOOK</div>
-              <div style={{fontSize:12,color:C.txt0,lineHeight:1.75}}>{ctx.weeklyOutlook}</div>
-            </div>}
-            {ctx.topMovers&&ctx.topMovers.length>0&&<div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,padding:"12px",marginBottom:8}}>
-              <div style={{fontSize:10,color:C.txt2,letterSpacing:".1em",marginBottom:8}}>🔥 TOP MOVERS</div>
-              <div style={{display:"grid",gap:6}}>
-                {ctx.topMovers.map(function(m:any,i:number){
-                  var inst=mkt.find(function(d){return d.s===m.symbol||d.l===m.symbol;});
-                  var isUp=m.direction==="BULLISH";
-                  return <div key={i} style={{background:C.bg2,border:"1px solid "+(isUp?C.upD:C.dnD),borderRadius:8,padding:"10px 12px"}}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
-                      <div style={{display:"flex",alignItems:"center",gap:8}}>
-                        <span style={{fontSize:13,fontWeight:600,color:C.txt0}}>{m.symbol}</span>
-                        <span style={{fontSize:10,fontWeight:600,color:isUp?C.up:C.dn}}>{isUp?"▲":"▼"} {m.direction}</span>
-                      </div>
-                      <span style={{fontSize:13,fontWeight:700,color:isUp?C.up:C.dn}}>{m.potentialMove}</span>
+              {ctx.sessionSummary&&<div style={{fontSize:12,color:C.txt0,lineHeight:1.75}}>{ctx.sessionSummary}</div>}
+              {ctx.regimeUpdate&&!ctx.sessionSummary&&<div style={{fontSize:12,color:C.txt0,lineHeight:1.75}}>{ctx.regimeUpdate}</div>}
+            </div>
+            {/* Breaking news */}
+            {ctx.breaking&&ctx.breaking.length>0&&<div style={{marginBottom:8}}>
+              <div style={{fontSize:10,color:C.txt2,letterSpacing:".1em",fontWeight:600,marginBottom:7}}>⚡ BREAKING</div>
+              {ctx.breaking.map(function(item:any,i:number){
+                var ic=item.impact&&item.impact.includes("BULLISH")?C.up:item.impact&&item.impact.includes("BEARISH")?C.dn:item.impact==="RISK-OFF"?C.dn:item.impact==="RISK-ON"?C.up:C.amber;
+                var tc=item.typeColor||C.blue;
+                return <div key={i} style={{background:C.bg1,border:"1px solid "+ic+"33",borderLeft:"3px solid "+ic,borderRadius:9,padding:"11px 13px",marginBottom:6}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}>
+                    <div style={{display:"flex",alignItems:"center",gap:6}}>
+                      <span style={{fontSize:9,fontWeight:700,color:tc,background:tc+"18",padding:"1px 6px",borderRadius:3}}>{item.type}</span>
+                      <span style={{fontSize:9,color:C.txt3}}>{item.time}</span>
                     </div>
-                    <div style={{fontSize:11,color:C.txt1,lineHeight:1.5}}>{m.reason}</div>
-                    {inst&&<div style={{fontSize:10,color:C.txt3,marginTop:3}}>Now: {fmt(inst.cur,inst.b)} ({inst.pct>=0?"+":""}{inst.pct.toFixed(2)}%)</div>}
-                  </div>;
-                })}
-              </div>
-            </div>}
-            {ctx.watchlist&&ctx.watchlist.length>0&&<div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,padding:"12px",marginBottom:8}}>
-              <div style={{fontSize:10,color:C.txt2,letterSpacing:".1em",marginBottom:8}}>◈ WATCHLIST</div>
-              <div style={{display:"grid",gap:5}}>
-                {ctx.watchlist.map(function(item:any,i:number){
-                  var inst=mkt.find(function(d){return d.s===item.symbol||d.l===item.symbol;});
-                  return <div key={i} style={{background:C.bg2,border:"1px solid "+C.border,borderRadius:8,padding:"10px 12px"}}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
-                      <div style={{display:"flex",alignItems:"center",gap:7}}>
-                        <span style={{fontSize:13,fontWeight:600,color:C.txt0}}>{item.symbol}</span>
-                        <span style={{fontSize:10,fontWeight:600,color:item.bias==="BULLISH"?C.up:item.bias==="BEARISH"?C.dn:C.amber}}>{item.bias}</span>
-                      </div>
-                      {inst&&<span style={{fontSize:11,color:inst.pct>=0?C.up:C.dn}}>{fmt(inst.cur,inst.b)}</span>}
-                    </div>
-                    <div style={{fontSize:10,color:C.gold,marginBottom:3}}>Entry: {item.entryZone}</div>
-                    <div style={{fontSize:11,color:C.txt1,lineHeight:1.5}}>{item.reason}</div>
-                  </div>;
-                })}
-              </div>
-            </div>}
-            {ctx.keyLevels&&ctx.keyLevels.length>0&&<div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,padding:"12px",marginBottom:8}}>
-              <div style={{fontSize:10,color:C.txt2,letterSpacing:".1em",marginBottom:7}}>KEY LEVELS</div>
-              {ctx.keyLevels.map(function(kl:any,i:number){
-                return <div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:i<ctx.keyLevels.length-1?6:0,background:C.bg2,borderRadius:7,padding:"8px 10px",border:"1px solid "+C.border}}>
-                  <div style={{fontSize:10,fontWeight:600,color:C.txt0,minWidth:65}}>{kl.symbol}</div>
-                  <div style={{fontSize:12,fontWeight:600,color:kl.type==="RESISTANCE"?C.dn:C.up,minWidth:60}}>{kl.level}</div>
-                  <div style={{fontSize:9,color:kl.type==="RESISTANCE"?C.dn:C.up,minWidth:68}}>{kl.type}</div>
-                  <div style={{flex:1,fontSize:10,color:C.txt1}}>{kl.note}</div>
+                    <span style={{fontSize:9,fontWeight:700,color:ic,background:ic+"18",padding:"2px 7px",borderRadius:4,border:"1px solid "+ic+"44"}}>{item.impact}</span>
+                  </div>
+                  <div style={{fontSize:13,fontWeight:600,color:C.txt0,lineHeight:1.45,marginBottom:6}}>{item.headline}</div>
+                  <div style={{fontSize:12,color:C.txt1,lineHeight:1.7,marginBottom:6}}>{item.detail}</div>
+                  {item.goldReaction&&<div style={{background:"rgba(0,0,0,0.2)",borderRadius:5,padding:"5px 8px",marginBottom:5}}>
+                    <span style={{fontSize:9,color:C.gold,fontWeight:600}}>Gold: </span>
+                    <span style={{fontSize:10,color:C.txt0}}>{item.goldReaction}</span>
+                  </div>}
+                  {item.tradingNote&&<div style={{borderLeft:"2px solid "+ic,paddingLeft:8}}>
+                    <span style={{fontSize:9,color:ic,fontWeight:600}}>NOW: </span>
+                    <span style={{fontSize:10,color:C.txt0}}>{item.tradingNote}</span>
+                  </div>}
                 </div>;
               })}
             </div>}
-            <div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,padding:"12px"}}>
-              {ctx.riskEvents&&ctx.riskEvents.length>0&&<div style={{marginBottom:10}}>
-                <div style={{fontSize:10,color:C.txt2,letterSpacing:".1em",marginBottom:6}}>⚠ RISK EVENTS</div>
-                {ctx.riskEvents.map(function(ev:string,i:number){
-                  return <div key={i} style={{display:"flex",alignItems:"flex-start",gap:7,marginBottom:4,background:"rgba(240,144,32,0.07)",border:"1px solid rgba(240,144,32,0.2)",borderRadius:7,padding:"7px 10px"}}>
-                    <span style={{color:C.amber,fontSize:11,flexShrink:0}}>→</span>
-                    <span style={{fontSize:11,color:C.txt1,lineHeight:1.6}}>{ev}</span>
+            {/* Market moves */}
+            {ctx.marketMoves&&ctx.marketMoves.length>0&&<div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,padding:"12px",marginBottom:8}}>
+              <div style={{fontSize:10,color:C.txt2,letterSpacing:".1em",fontWeight:600,marginBottom:7}}>MARKET MOVES</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>
+                {ctx.marketMoves.map(function(m:any,i:number){
+                  var up=m.direction==="up";
+                  return <div key={i} style={{background:C.bg2,border:"1px solid "+C.border,borderRadius:7,padding:"8px 10px"}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:2}}>
+                      <span style={{fontSize:12,fontWeight:600,color:C.txt0}}>{m.symbol}</span>
+                      <span style={{fontSize:11,fontWeight:600,color:up?C.up:C.dn}}>{m.change}</span>
+                    </div>
+                    {m.from&&m.to&&<div style={{fontSize:9,color:C.txt3,marginBottom:2}}>{m.from} → {m.to}</div>}
+                    {m.note&&<div style={{fontSize:10,color:C.txt2,lineHeight:1.4}}>{m.note}</div>}
                   </div>;
                 })}
-              </div>}
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-                <div>
-                  <div style={{fontSize:9,color:C.txt3,letterSpacing:".1em",marginBottom:3}}>GOLD BIAS</div>
-                  <div style={{fontSize:13,fontWeight:700,color:DC[ctx.goldBias as keyof typeof DC]||C.txt1}}>{ctx.goldBias}</div>
-                </div>
-                {ctx.oilOutlook&&<div>
-                  <div style={{fontSize:9,color:C.txt3,letterSpacing:".1em",marginBottom:3}}>OIL OUTLOOK</div>
-                  <div style={{fontSize:10,color:C.txt2,lineHeight:1.5}}>{ctx.oilOutlook}</div>
-                </div>}
               </div>
-            </div>
+            </div>}
+            {/* Next up */}
+            {ctx.nextUp&&ctx.nextUp.length>0&&<div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,padding:"12px"}}>
+              <div style={{fontSize:10,color:C.txt2,letterSpacing:".1em",fontWeight:600,marginBottom:7}}>NEXT UP</div>
+              {ctx.nextUp.map(function(n:any,i:number){
+                var ic=n.impact==="HIGH"?C.dn:C.amber;
+                return <div key={i} style={{display:"flex",gap:8,padding:"6px 0",borderBottom:i<ctx.nextUp.length-1?"1px solid "+C.border:"none",alignItems:"flex-start"}}>
+                  <span style={{fontSize:10,color:C.gold,flexShrink:0,minWidth:50,fontWeight:600}}>{n.time}</span>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:11,fontWeight:600,color:C.txt0,marginBottom:2}}>{n.event}</div>
+                    {n.note&&<div style={{fontSize:10,color:C.txt2,lineHeight:1.4}}>{n.note}</div>}
+                  </div>
+                  <span style={{fontSize:8,fontWeight:700,color:ic,flexShrink:0}}>{n.impact}</span>
+                </div>;
+              })}
+            </div>}
           </div>}
         </div>}
 
