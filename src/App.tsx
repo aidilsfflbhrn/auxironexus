@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine, AreaChart, Area } from "recharts";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine, AreaChart, Area, CartesianGrid } from "recharts";
 
 const C={
-  bg0:"#0c1118",bg1:"#111820",bg2:"#162030",bg3:"#1b2840",
-  border:"#1e2d40",border2:"#283d58",
-  txt0:"#edf2ff",txt1:"#8aa4c4",txt2:"#486080",txt3:"#243347",
-  gold:"#c8a840",goldL:"#e8c858",
-  up:"#28cc78",upD:"#164830",dn:"#f04040",dnD:"#6c1c1c",
-  blue:"#4890f8",amber:"#f09020",vix:"#b858f0",bond:"#40c8d0",
+  bg0:"#080e14",bg1:"#0d1520",bg2:"#121d2c",bg3:"#192538",
+  border:"#1e2e42",border2:"#28405a",
+  txt0:"#f0f5ff",txt1:"#c2d4e8",txt2:"#7a9ab8",txt3:"#3a5570",
+  gold:"#d4a843",goldL:"#f0cc5a",
+  up:"#22d46e",upD:"#0f2e1c",dn:"#f04545",dnD:"#3a1010",
+  blue:"#4a9eff",amber:"#f0a020",vix:"#b060f0",bond:"#20c8d8",
 };
 const ICFG={
   NOISE:{color:"#486080",bg:"rgba(72,96,128,0.08)",bar:"#243347"},
@@ -63,54 +63,55 @@ Search the web RIGHT NOW for: breaking market news last 2 hours, latest Gold and
 Respond ONLY with valid JSON:
 {"sessionBias":"<RISK-ON|RISK-OFF|NEUTRAL|MIXED>","regimeUpdate":"<1 sentence: what is driving the current market regime RIGHT NOW>","breaking":[{"time":"<SGT time>","type":"<ECONOMIC DATA|FED SPEAKER|CENTRAL BANK|GEOPOLITICAL|MARKET MOVE>","typeColor":"<use: ECONOMIC DATA=#22c55e, FED SPEAKER=#818cf8, CENTRAL BANK=#fb923c, GEOPOLITICAL=#ef4444, MARKET MOVE=#3b82f6>","headline":"<specific factual headline — what actually happened>","impact":"<BULLISH GOLD|BEARISH GOLD|BULLISH USD|BEARISH USD|RISK-ON|RISK-OFF|NEUTRAL>","detail":"<2-3 sentences: exactly what happened, the specific numbers or statements, and why it matters for traders>","goldReaction":"<how Gold actually moved or is moving in response — be specific with price levels>","tradingNote":"<1 sentence: the single most actionable thing a trader should know right now>"}],"marketMoves":[{"symbol":"<sym>","from":"<price>","to":"<price>","change":"<+/-amount>","direction":"<up|down>","note":"<1 sentence: what caused this move>"}],"nextUp":[{"time":"<SGT>","event":"<specific upcoming event or risk>","impact":"<HIGH|MEDIUM>","note":"<1 sentence why it matters>"}],"goldBias":"<BULLISH|BEARISH|NEUTRAL>","dxyBias":"<BULLISH|BEARISH|NEUTRAL>","sessionSummary":"<2 sentences: plain English summary of what has happened this session so far and what traders should be focused on right now>"}
 Provide 1-3 breaking items covering only GENUINELY NEW developments from the last 2 hours — not background context or old news. If nothing significant happened, say so honestly. Provide 3-5 market moves. Provide 2-3 next up items. No economic calendar — that lives in the Intel report only.`;
-const INTEL_SYS=`You are a senior macro strategist and market intelligence analyst at a top-tier investment bank. You have access to live market data and real-time news via web search. Generate a comprehensive pre-session intelligence briefing in the style of a JPMorgan morning research note.
+const INTEL_SYS=`You are a senior macro strategist and market intelligence analyst at a top-tier investment bank. You have access to live market data and real-time news via web search. Generate a comprehensive pre-session intelligence briefing in the style of a JPMorgan morning research note — detailed but tightly summarised, covering what happened this week, what is happening this session, and what to expect.
 
 Search the web thoroughly for ALL of the following:
-1. GOLD: Latest price drivers, institutional positioning, ETF flows, central bank buying activity, technical levels, bank forecasts for Gold this week
-2. DXY AND FED: Current DXY level and trend, latest Fed speaker statements, CME FedWatch cut probabilities, real yields (10Y TIPS), any Fed communication today
-3. JPY AND CARRY TRADE: USD/JPY level vs BOJ intervention history, any BOJ or Finance Ministry statements today, carry trade positioning signals, GBP/JPY and AUD/JPY as carry indicators
-4. CENTRAL BANKS: ECB rate outlook and any ECB speaker statements, BOE policy stance, BOJ rate hike expectations, any surprise central bank communications
-5. GEOPOLITICAL: Active geopolitical risks (Middle East, Russia-Ukraine, China-Taiwan, any others), any escalation or de-escalation in last 24 hours, commodity supply disruption risks
+1. GOLD: Latest price drivers, what moved Gold this week, central bank buying, ETF flows, real yield direction, DXY correlation, institutional positioning, bank forecasts and price targets for Gold this week and month
+2. DXY AND FED: Current DXY level and trend, where it closed this week vs key levels, latest Fed speaker statements, CME FedWatch cut probabilities, real yields (10Y TIPS), upcoming Fed events
+3. JPY AND CARRY TRADE: USD/JPY level vs BOJ intervention history, any BOJ or Finance Ministry statements, carry trade positioning, GBP/JPY as carry indicator, risk of unwind
+4. CENTRAL BANKS: ECB rate outlook, BOE policy stance, BOJ rate hike expectations, any surprise central bank communications this week
+5. GEOPOLITICAL: Active geopolitical risks (Middle East, Russia-Ukraine, China-Taiwan), any escalation or de-escalation this week, commodity supply risk
 6. ECONOMIC CALENDAR: Upcoming high-impact events for THIS SESSION ONLY (see session rules below)
-7. EQUITY MARKETS: SPX and NDX direction and key drivers, market breadth, any major earnings or sector moves affecting sentiment
-8. MARKET SENTIMENT: Overall risk-on or risk-off regime, institutional vs retail positioning divergence, any significant flow data
+7. WEEKLY CONTEXT: What were the key themes this week? What data printed? What surprised markets? How does that set up for next week?
+8. MARKET SENTIMENT: Overall risk-on or risk-off regime, what is driving it, what could change it this session
 
-Respond ONLY with valid JSON, absolutely no extra text outside the JSON:
-{"session":"<ASIA OPEN|LONDON OPEN|NY SESSION>","generatedAt":"<time SGT>","validFor":"<session window e.g. 9pm-1am SGT>","marketRegime":"<RISK-ON|RISK-OFF|NEUTRAL|MIXED>","regimeDrivers":"<1-2 sentences: specifically what is driving the current risk regime>","headline":"<the single most important market theme for this session — be specific>","executiveSummary":"<3-4 sentences written like a JPMorgan morning note: what the macro picture looks like right now, what the key risks are tonight, and what traders should be positioned for>","alerts":[{"priority":<1,2,or3>,"type":"<INTERVENTION RISK|BINARY EVENT|CENTRAL BANK|GEOPOLITICAL|EARNINGS|DATA RISK>","color":"<#ff1840 for critical|#f0a500 for high|#fb923c for medium>","headline":"<specific alert headline>","detail":"<3-4 sentences: full context, historical precedent if relevant, probability assessment, exact levels that matter>","monitor":"<1-2 sentences: exactly what to watch and what the trigger levels are>"}],"markets":[{"asset":"<full name e.g. Gold XAU/USD>","price":"<current price>","chg":"<+/-X.XX%>","bias":"<BULLISH|BEARISH|NEUTRAL|AVOID LONGS|WATCH>","note":"<2 sentences: what is driving this instrument and what matters for it tonight>"}],"macro":[{"heading":"<section heading e.g. Federal Reserve — Policy Path>","color":"<hex color for this section>","body":"<3-4 sentences: comprehensive analysis of this macro theme, specific data points, current probabilities, historical context where relevant>","keyData":"<key data points separated by ·>"}],"calendar":[{"time":"<SGT>","flag":"<country flag emoji>","event":"<event name>","stars":<2or3>,"forecast":"<value or —>","prev":"<value or —>","impact":"<CRITICAL|HIGH|MEDIUM>","goldBull":"<specific condition that would be bullish for Gold>","goldBear":"<specific condition that would be bearish for Gold>","analysis":"<2 sentences: why this event matters for markets, what the transmission mechanism is to Gold and DXY>"}],"instruments":[{"name":"<instrument name>","color":"<hex>","price":"<price>","bias":"<BULLISH|BEARISH|NEUTRAL|AVOID LONGS|WATCH>","conviction":"<HIGH|MEDIUM|LOW>","summary":"<3-4 sentences: comprehensive view — macro drivers, key levels context, what would change the thesis, risk/reward assessment>","levels":{"s2":<number>,"s1":<number>,"now":<number>,"r1":<number>,"r2":<number>},"setup":"<specific actionable approach: entry zone, stop, target, R/R ratio, or NO SETUP with reason>","avoid":["<condition1>","<condition2>"]}],"watchlist":[{"symbol":"<sym>","price":"<price>","bias":"<BULLISH|BEARISH|NEUTRAL|AVOID|WATCH>","priority":"<CRITICAL|HIGH|MEDIUM>","color":"<hex>","note":"<1-2 sentences: why this is on the watchlist tonight and what level matters>"}],"tradeFocus":"<4-5 sentences written like a senior analyst talking directly to a trader: what the primary trade opportunity is tonight, what the key event risks are, what to avoid and why, the single most important number or level to watch, and how to think about position sizing given tonight's volatility environment>"}
+Respond ONLY with valid JSON, no extra text:
+{"session":"<ASIA OPEN|LONDON OPEN|NY SESSION>","generatedAt":"<time SGT>","validFor":"<e.g. 9pm-1am SGT>","marketRegime":"<RISK-ON|RISK-OFF|NEUTRAL|MIXED>","regimeDrivers":"<2 sentences: what is specifically driving the current risk regime>","headline":"<the single most important market theme for this session>","executiveSummary":"<4-5 sentences in JPMorgan morning note style: what happened this week, current macro picture, key risks tonight, what traders should be positioned for>","weeklyContext":{"summary":"<3-4 sentences: key themes and data that defined this week>","biggestMove":"<which instrument moved most and why>","setupForNext":"<2 sentences: how this week's developments set up next week>"},"alerts":[{"priority":<1,2,or3>,"type":"<INTERVENTION RISK|BINARY EVENT|CENTRAL BANK|GEOPOLITICAL|DATA RISK>","color":"<#ff1840 for P1|#f0a500 for P2|#fb923c for P3>","headline":"<specific alert headline>","detail":"<3-4 sentences: full context, historical precedent, probability, exact levels>","monitor":"<1-2 sentences: what to watch and trigger levels>"}],"markets":[{"asset":"<full name>","price":"<price>","chg":"<+/-X.XX%>","weekChg":"<weekly change>","bias":"<BULLISH|BEARISH|NEUTRAL|AVOID LONGS|WATCH>","note":"<2 sentences: what drove this instrument this week and what matters tonight>"}],"macro":[{"heading":"<heading>","color":"<hex>","body":"<3-4 sentences: detailed analysis with specific data points, probabilities, historical context>","keyData":"<key data points separated by ·>"}],"calendar":[{"time":"<SGT>","flag":"<emoji>","event":"<name>","stars":<2or3>,"forecast":"<value>","prev":"<value>","impact":"<CRITICAL|HIGH|MEDIUM>","goldBull":"<bullish condition>","goldBear":"<bearish condition>","analysis":"<2 sentences>"}],"instruments":[{"name":"<name>","color":"<hex>","price":"<price>","bias":"<bias>","conviction":"<HIGH|MEDIUM|LOW>","summary":"<3-4 sentences: full macro view, key levels context, what changes the thesis>","levels":{"s2":<n>,"s1":<n>,"now":<n>,"r1":<n>,"r2":<n>},"setup":"<entry zone, stop, target, R/R or NO SETUP with reason>","avoid":["<condition1>","<condition2>"]}],"watchlist":[{"symbol":"<sym>","price":"<price>","bias":"<bias>","priority":"<CRITICAL|HIGH|MEDIUM>","color":"<hex>","note":"<1-2 sentences: why watching tonight and key level>"}],"tradeFocus":"<4-5 sentences talking directly to a trader: primary opportunity tonight, key event risks, what to avoid, most important level, position sizing given tonight volatility>"}
 
-CRITICAL SESSION CALENDAR RULES — only include events relevant to this session window:
-ASIA session (6am-3pm SGT): JPY data only (BOJ meetings, Tankan, CPI, Trade Balance, Unemployment), AUD (RBA decisions, Employment, CPI), CNY (PMI, Trade Balance), NZD
-LONDON session (4pm-1am SGT): EUR data only (ECB meetings/speeches, CPI, PMI Flash, GDP, IFO, ZEW), GBP (BOE meetings, CPI, Retail Sales, PMI), CHF
-NY session (9pm-6am SGT): USD data only (NFP, CPI, PCE, FOMC decisions/minutes, ISM, PPI, JOLTS, Jobless Claims, Retail Sales, GDP, Consumer Sentiment), CAD
-Include ONLY 2-star and 3-star impact events. Skip all 1-star events entirely.
-3-star events: NFP, CPI, PCE, FOMC rate decisions, FOMC minutes, GDP advance, central bank rate decisions, PMI Flash composite
-2-star events: ISM manufacturing/services, PPI, Retail Sales, Jobless Claims, JOLTS, IFO Business Climate, ZEW sentiment, Trade Balance, Unemployment Rate
+CALENDAR RULES:
+ASIA (6am-3pm SGT): JPY, AUD, NZD, CNY data only
+LONDON (4pm-1am SGT): EUR, GBP, CHF data only
+NY (9pm-6am SGT): USD, CAD data only
+Include ONLY 2-star and 3-star events. Skip 1-star entirely.
+3-star: NFP, CPI, PCE, FOMC, GDP, central bank rate decisions, PMI Flash
+2-star: ISM, PPI, Retail Sales, Jobless Claims, JOLTS, IFO, ZEW, Trade Balance
 
 INSTRUMENT RULES:
-Always include Gold (XAU/USD) as the first instrument.
-Always include DXY as second instrument.
-Include USD/JPY if intervention risk is present OR if BOJ is active.
-Include EUR/USD if ECB is relevant OR if DXY is breaking key levels.
-Include GBP/JPY if carry trade risk is elevated.
-Include WTI Oil if geopolitical risk is elevated OR if OPEC news today.
-Include 3-5 instruments total — only ones that are actually relevant tonight, not every instrument every time.
+Always include Gold (XAU/USD) first. Always include DXY second.
+Include USD/JPY if intervention risk present or BOJ active.
+Include EUR/USD if ECB relevant or DXY breaking key levels.
+Include GBP/JPY if carry trade risk elevated.
+Include WTI Oil if geopolitical risk elevated or OPEC news.
+3-5 instruments total — only relevant ones, not every instrument every time.
+DO NOT include sector rotation analysis or individual stock picks.
 
 ALERT RULES:
-Only include alerts for genuinely active risks — do not manufacture alerts on quiet sessions.
-Priority 1 (P1): Imminent binary risk in next 2 hours (intervention trigger, major data release, emergency Fed communication)
-Priority 2 (P2): Active elevated risk for the full session (geopolitical escalation, central bank meeting, earnings from major company)
-Priority 3 (P3): Background risk to monitor (developing situation, data releasing later this week)
-Maximum 3 alerts. Minimum 0 alerts on genuinely quiet sessions.
+Only include alerts for genuinely active risks — never manufacture alerts on quiet sessions.
+P1: Imminent binary risk in next 2 hours.
+P2: Active elevated risk for the full session.
+P3: Background risk to monitor this week.
+Maximum 3 alerts. Minimum 0 on quiet sessions.
 
-MACRO SECTIONS:
-Always include Federal Reserve section.
-Always include the most relevant central bank for this session (BOJ for Asia, ECB/BOE for London, Fed for NY).
-Include Geopolitical section only if there is an active risk worth monitoring.
-Include Carry Trade section only if JPY positioning or carry trade is a live market concern.
-3-4 macro sections maximum.
+MACRO SECTIONS (always include):
+1. Federal Reserve — Policy Path (always)
+2. Most relevant CB for this session: BOJ for Asia, ECB/BOE for London, Fed/macro for NY
+3. Geopolitical Risk Tracker — only if genuinely active risk worth monitoring
+4. Carry Trade / JPY — only if JPY positioning is a live concern
+Maximum 4 macro sections.
 
-Write in the style of a JPMorgan or Goldman Sachs morning research note: confident, specific, data-driven, with clear actionable conclusions. Avoid vague generalisations. Every claim should reference a specific price level, probability, or data point.`;
+WEEKLY CONTEXT: Always include. This is what makes the report feel like a real research note — the trader needs to know what happened this week to understand tonight.
 
+Write like a senior JPMorgan analyst: confident, specific, data-driven. Every claim references a specific price level, probability, or data point. No vague generalisations. No sector rotation. No individual stock analysis.`;
 
 const dp=function(b:number){return b>=1000?2:b>=10?3:4;};
 const fmt=function(v:any,b:number){
@@ -237,6 +238,13 @@ function getSessionLabel(){
   return{label:"💤 OFF-HOURS",color:"#243347"};
 }
 
+function getSessionKey(){
+  var h=new Date(Date.now()+8*60*60*1000).getUTCHours();
+  if(h>=6&&h<16)return"asia";
+  if(h>=16&&h<21)return"london";
+  return"ny";
+}
+
 export default function Auxiron(){
   var [tab,setTab]=useState("markets");
   var [mkt,setMkt]=useState(initMkt);
@@ -262,6 +270,9 @@ export default function Auxiron(){
   var [edgeImages,setEdgeImages]=useState<{name:string;base64:string;mediaType:string}[]>([]);
   var [sessionLbl,setSessionLbl]=useState(getSessionLabel());
   var cycleRef=useRef(0);
+  var [intelCache,setIntelCache]=useState<{[k:string]:any}>({});
+  var [ctxCount,setCtxCount]=useState(0);
+  var [ctxSessionKey,setCtxSessionKey]=useState("");
 
   useEffect(function(){
     var id=setInterval(function(){setNowStr(new Date().toUTCString().slice(0,25));},1000);
@@ -410,22 +421,27 @@ export default function Auxiron(){
   }
 
   function fetchCtx(){
-  setCtxLoading(true);setCtx(null);setCtxErr(null);
-  var msg="LIVE MARKET DATA:\n"+getSnap()+
-    "\n\nCurrent time SGT: "+new Date().toLocaleString("en-SG",{timeZone:"Asia/Singapore"})+
-    "\n\nGenerate a breaking news briefing for what has happened in the last 1-2 hours. Search for the latest news right now.";
-  callProxy(
-    {model:"claude-haiku-4-5",max_tokens:3000,system:CTX_SYS,
-     messages:[{role:"user",content:msg}],
-     useWebSearch:true},
-    function(res){setCtx(res);setLastRefresh(new Date());setCtxLoading(false);setCtxErr(null);},
-    function(e){setCtxErr("Failed: "+e);setCtxLoading(false);}
-  );
-}
+    var sk=getSessionKey();
+    var newCount=ctxSessionKey===sk?ctxCount+1:1;
+    if(newCount>6){setCtxErr("Session limit reached — max 6 briefings per session (3 per half-session).");return;}
+    setCtxCount(newCount);setCtxSessionKey(sk);
+    setCtxLoading(true);setCtx(null);setCtxErr(null);
+    var msg="LIVE MARKET DATA:\n"+getSnap()+
+      "\n\nCurrent time SGT: "+new Date().toLocaleString("en-SG",{timeZone:"Asia/Singapore"})+
+      "\n\nGenerate a breaking news briefing for what has happened in the last 1-2 hours. Search for the latest news right now.";
+    callProxy(
+      {model:"claude-haiku-4-5",max_tokens:3000,system:CTX_SYS,
+       messages:[{role:"user",content:msg}],
+       useWebSearch:true},
+      function(res:any){setCtx(res);setLastRefresh(new Date());setCtxLoading(false);setCtxErr(null);},
+      function(e:string){setCtxErr("Failed: "+e);setCtxLoading(false);}
+    );
+  }
     
   
 
-  function fetchIntel(session:string){
+  function fetchIntel(session:string,force?:boolean){
+    if(!force&&intelCache[session]){setIntel(intelCache[session]);return;}
     setIntelLoading(true);setIntel(null);setIntelErr(null);
     var SESSIONS_MAP:any={
       asia:"ASIA OPEN (SGT 6am-3pm) — Sydney/Tokyo sessions, overnight moves, what moved in US/EU, London setup",
@@ -436,12 +452,12 @@ export default function Auxiron(){
     var msg="LIVE MARKET DATA:\n"+getSnap()+
       "\n\nSESSION: "+label+
       "\n\nToday: "+new Date().toDateString()+
-      "\n\nSearch for: latest market news overnight geopolitical events Fed speakers US economic data today Gold Oil price drivers SPX NDX sector rotation mega-cap movers investor sentiment put call ratio market breadth institutional flows bank forecasts."+
+      "\n\nSearch for: latest market news this week and tonight, Gold price drivers and key levels, DXY movement and Fed outlook, JPY intervention risk and BOJ stance, geopolitical active risks, upcoming economic data this session, central bank statements, institutional positioning signals, bank forecasts for Gold."+
       "\n\nGenerate a comprehensive "+label+" intelligence report with: overnight digest, geopolitical events, dynamic market movers, Fed watch, economic events SGT times, GOLD DEEP DIVE (what moving now + buy/sell rumor detection + risk scenarios + price targets), OIL deep dive, SPX+NDX analysis, key levels, instrument bias, trade focus tonight.";
     callProxy(
       {model:"claude-sonnet-4-6",max_tokens:12000,system:INTEL_SYS,
        messages:[{role:"user",content:msg}],useWebSearch:true},
-      function(res:any){setIntel(res);setIntelLoading(false);setIntelErr(null);},
+      function(res:any){setIntel(res);setIntelCache(function(p:any){var n={...p};n[session]=res;return n;});setIntelLoading(false);setIntelErr(null);},
       function(e:string){setIntelErr("Failed: "+e);setIntelLoading(false);}
     );
   }
@@ -479,17 +495,53 @@ export default function Auxiron(){
     mkt.filter(function(m){return m.tier<=2;});
 
   const NAV=[
-    {key:"markets",icon:"◫",label:"Markets"},
-    {key:"charts", icon:"▦",label:"Charts"},
-    {key:"session",icon:"◉",label:"Session"},
-    {key:"intel",  icon:"⬟",label:"Intel"},
-    {key:"filter", icon:"◈",label:"Filter"},
+    {key:"markets",label:"Markets",accent:C.goldL,
+     icon:function(active:boolean){return(<svg width="20" height="20" viewBox="0 0 18 18" fill="none">
+       <rect x="2.5" y="6" width="3" height="8" rx="1" fill={active?"#f0cc5a":"#3a5570"}/>
+       <line x1="4" y1="3" x2="4" y2="6" stroke={active?"#f0cc5a":"#3a5570"} strokeWidth="1.5" strokeLinecap="round"/>
+       <line x1="4" y1="14" x2="4" y2="16" stroke={active?"#f0cc5a":"#3a5570"} strokeWidth="1.5" strokeLinecap="round"/>
+       <rect x="7" y="4" width="3" height="6" rx="1" fill={active?"#22d46e":"#1a3828"}/>
+       <line x1="8.5" y1="2" x2="8.5" y2="4" stroke={active?"#22d46e":"#1a3828"} strokeWidth="1.5" strokeLinecap="round"/>
+       <line x1="8.5" y1="10" x2="8.5" y2="12" stroke={active?"#22d46e":"#1a3828"} strokeWidth="1.5" strokeLinecap="round"/>
+       <rect x="11.5" y="7" width="3" height="7" rx="1" fill={active?"#f04545":"#3a1010"}/>
+       <line x1="13" y1="4.5" x2="13" y2="7" stroke={active?"#f04545":"#3a1010"} strokeWidth="1.5" strokeLinecap="round"/>
+       <line x1="13" y1="14" x2="13" y2="16" stroke={active?"#f04545":"#3a1010"} strokeWidth="1.5" strokeLinecap="round"/>
+     </svg>);}},
+    {key:"charts",label:"Charts",accent:C.blue,
+     icon:function(active:boolean){return(<svg width="20" height="20" viewBox="0 0 18 18" fill="none">
+       <polyline points="2,14 6,8 10,11 16,3" stroke={active?C.blue:"#3a5570"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+       <circle cx="6" cy="8" r="1.5" fill={active?C.blue:"#3a5570"}/>
+       <circle cx="10" cy="11" r="1.5" fill={active?C.blue:"#3a5570"}/>
+       <circle cx="16" cy="3" r="1.5" fill={active?C.blue:"#3a5570"}/>
+       <line x1="2" y1="15.5" x2="16" y2="15.5" stroke={active?"#28405a":"#1e2e42"} strokeWidth="1"/>
+     </svg>);}},
+    {key:"session",label:"Session",accent:C.bond,
+     icon:function(active:boolean){return(<svg width="20" height="20" viewBox="0 0 18 18" fill="none">
+       <circle cx="9" cy="9" r="6.5" stroke={active?C.bond:"#3a5570"} strokeWidth="1.5" fill="none"/>
+       <line x1="9" y1="4.5" x2="9" y2="9" stroke={active?C.bond:"#3a5570"} strokeWidth="1.8" strokeLinecap="round"/>
+       <line x1="9" y1="9" x2="12.2" y2="11.2" stroke={active?"#f0a020":"#3a5570"} strokeWidth="1.8" strokeLinecap="round"/>
+       <circle cx="9" cy="9" r="1.2" fill={active?C.bond:"#3a5570"}/>
+     </svg>);}},
+    {key:"intel",label:"Intel",accent:C.gold,
+     icon:function(active:boolean){return(<svg width="20" height="20" viewBox="0 0 18 18" fill="none">
+       <path d="M9 2L10.8 6.5H15.8L11.8 9.4L13.3 14.2L9 11.3L4.7 14.2L6.2 9.4L2.2 6.5H7.2L9 2Z"
+         stroke={active?C.gold:"#3a5570"} strokeWidth="1.4" strokeLinejoin="round"
+         fill={active?"rgba(212,168,67,0.15)":"none"}/>
+     </svg>);}},
+    {key:"filter",label:"Filter",accent:C.vix,
+     icon:function(active:boolean){return(<svg width="20" height="20" viewBox="0 0 18 18" fill="none">
+       <path d="M2.5 4H15.5L11 9.5V14.5L7 12.5V9.5L2.5 4Z"
+         stroke={active?C.vix:"#3a5570"} strokeWidth="1.4" strokeLinejoin="round"
+         fill={active?"rgba(176,96,240,0.15)":"none"}/>
+       <circle cx="13.5" cy="13.5" r="2.8" fill={active?C.vix:"none"} stroke={active?"none":"#3a5570"} strokeWidth="1.2"/>
+       {active&&<path d="M12.3 13.5L13.2 14.4L14.8 12.6" stroke="#080e14" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>}
+     </svg>);}},
   ];
 
   return(
-    <div style={{fontFamily:"'DM Mono','Courier New',monospace",color:C.txt0}} className="auxiron-root">
+    <div style={{fontFamily:"'IBM Plex Sans',sans-serif",color:C.txt0}} className="auxiron-root">
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Syne:wght@700;800&display=swap');
         *{box-sizing:border-box;margin:0;padding:0;}
         html,body,#root{width:100%;height:100%;overflow-x:hidden;}
         ::-webkit-scrollbar{width:4px;} ::-webkit-scrollbar-thumb{background:#1e2d40;border-radius:2px;}
@@ -500,7 +552,7 @@ export default function Auxiron(){
         @keyframes pd{0%,100%{opacity:1}50%{opacity:0.1}} .pd{animation:pd 1.5s ease infinite;}
         @keyframes sp{to{transform:rotate(360deg)}} .sp{animation:sp 0.8s linear infinite;}
         @keyframes tk{0%{transform:translateX(0)}100%{transform:translateX(-50%)}} .tk{animation:tk 65s linear infinite;display:inline-block;white-space:nowrap;} .tk:hover{animation-play-state:paused;}
-        .auxiron-root{display:flex;width:100%;min-height:100vh;min-height:100dvh;background:#0c1118;}
+        .auxiron-root{display:flex;width:100%;min-height:100vh;min-height:100dvh;background:#080e14;font-family:'IBM Plex Sans',sans-serif;}
         .auxiron-sidebar{display:none;}
         .auxiron-main{flex:1;display:flex;flex-direction:column;width:100%;min-width:0;}
         .auxiron-content{flex:1;overflow-y:auto;overflow-x:hidden;padding-bottom:calc(64px + env(safe-area-inset-bottom,0px));-webkit-overflow-scrolling:touch;}
@@ -557,15 +609,18 @@ export default function Auxiron(){
           </div>}
         </div>
         <div style={{padding:"8px 10px",flex:1,overflowY:"auto"}}>
-          {NAV.map(function(item){
+          {NAV.map(function(item:any){
+            var active=tab===item.key;
             return <button key={item.key} className="tap" onClick={function(){setTab(item.key);}}
               style={{display:"flex",alignItems:"center",gap:10,width:"100%",
-                background:tab===item.key?"rgba(200,168,64,0.10)":"transparent",
-                border:tab===item.key?"1px solid rgba(200,168,64,0.25)":"1px solid transparent",
-                color:tab===item.key?C.goldL:C.txt2,borderRadius:8,padding:"10px 12px",marginBottom:4,textAlign:"left",transition:"all 0.12s"}}>
-              <span style={{fontSize:16,lineHeight:1}}>{item.icon}</span>
-              <span style={{fontSize:12,fontWeight:tab===item.key?600:400,letterSpacing:".05em"}}>{item.label}</span>
-              {tab===item.key&&<div style={{marginLeft:"auto",width:3,height:16,background:C.gold,borderRadius:2}}></div>}
+                background:active?"rgba(212,168,67,0.08)":"transparent",
+                border:active?"1px solid rgba(212,168,67,0.22)":"1px solid transparent",
+                borderRadius:9,padding:"9px 12px",marginBottom:3,textAlign:"left",transition:"all 0.12s"}}>
+              <div style={{flexShrink:0,width:24,display:"flex",justifyContent:"center"}}>
+                {item.icon(active)}
+              </div>
+              <span style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:13,fontWeight:active?700:500,color:active?C.txt0:C.txt2,letterSpacing:".02em"}}>{item.label}</span>
+              {active&&<div style={{marginLeft:"auto",width:3,height:18,background:item.accent||C.gold,borderRadius:2}}></div>}
             </button>;
           })}
         </div>
@@ -601,7 +656,7 @@ export default function Auxiron(){
         <div style={{marginBottom:6}}>
           <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}>
             <span style={{fontSize:7,color:"#f04040"}}>RISK-OFF</span>
-            <span style={{fontSize:7,color:C.txt3}}>{roro.desc}</span>
+            <span style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:9,color:C.txt2}}>{roro.desc}</span>
             <span style={{fontSize:7,color:"#28cc78"}}>RISK-ON</span>
           </div>
           <div style={{height:4,background:C.bg2,borderRadius:2,overflow:"hidden",position:"relative"}}>
@@ -719,7 +774,7 @@ export default function Auxiron(){
                   borderRadius:10,padding:"10px 13px",display:"flex",alignItems:"center",gap:10}}>
                 <div style={{flex:1}}>
                   <div style={{display:"flex",alignItems:"center",gap:6}}>
-                    <span style={{fontSize:14,fontWeight:500,color:isGold?C.goldL:C.txt0}}>{m.l}</span>
+                    <span style={{fontSize:15,fontWeight:600,color:isGold?C.goldL:C.txt0}}>{m.l}</span>
                     <span style={{fontSize:7,fontWeight:700,color:roroColor,background:"rgba(0,0,0,0.3)",padding:"1px 5px",borderRadius:3}}>
                       {m.roro==="ON"?"R-ON":m.roro==="OFF"?"R-OFF":"FX"}
                     </span>
@@ -740,8 +795,8 @@ export default function Auxiron(){
                   </ResponsiveContainer>
                 </div>
                 <div style={{textAlign:"right",minWidth:80}}>
-                  <div style={{fontSize:14,fontWeight:500,color:isBond?C.bond:C.txt0,fontVariantNumeric:"tabular-nums"}}>{fmt(m.cur,m.b)}{isBond?"%":""}</div>
-                  <div style={{fontSize:11,fontWeight:500,marginTop:1,fontVariantNumeric:"tabular-nums",color:up?C.up:C.dn}}>{up?"+":""}{m.pct.toFixed(2)}% {up?"▲":"▼"}</div>
+                  <div style={{fontSize:15,fontWeight:600,color:isBond?C.bond:C.txt0,fontVariantNumeric:"tabular-nums"}}>{fmt(m.cur,m.b)}{isBond?"%":""}</div>
+                  <div style={{fontSize:12,fontWeight:600,marginTop:1,fontVariantNumeric:"tabular-nums",color:up?C.up:C.dn}}>{up?"+":""}{m.pct.toFixed(2)}% {up?"▲":"▼"}</div>
                 </div>
               </div>;
             })}
@@ -761,7 +816,7 @@ export default function Auxiron(){
                 color:editQ?C.blue:C.txt2,borderRadius:20,padding:"4px 12px",fontSize:9,marginLeft:"auto"}}>✎ EDIT</button>}
           </div>
           {cv==="quad"&&editQ&&<div style={{padding:"10px 12px",background:C.bg2,borderBottom:"1px solid "+C.border}}>
-            <div style={{fontSize:10,color:C.txt2,letterSpacing:".1em",marginBottom:7}}>PICK UP TO 4 — {quad.length}/4</div>
+            <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:C.txt2,letterSpacing:".1em",marginBottom:7}}>PICK UP TO 4 — {quad.length}/4</div>
             <div style={{display:"flex",flexWrap:"wrap",gap:4,maxHeight:160,overflowY:"auto"}}>
               {mkt.map(function(m){
                 var isSel=quad.indexOf(m.s)>=0;
@@ -783,7 +838,7 @@ export default function Auxiron(){
             <div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:12,padding:"14px"}}>
               <div style={{marginBottom:10}}>
                 <div style={{fontSize:9,color:C.txt2,letterSpacing:".1em",marginBottom:2}}>{selI.s} · {selI.cat} · {selI.live?"● LIVE":"SIM"}</div>
-                <div style={{fontFamily:"'Syne',sans-serif",fontSize:26,fontWeight:700,color:C.txt0,fontVariantNumeric:"tabular-nums"}}>{fmt(selI.cur,selI.b)}{selI.cat==="Bonds"?"%":""}</div>
+                <div style={{fontFamily:"'Syne',sans-serif",fontSize:26,fontWeight:700,color:C.txt0,fontFamily:"'IBM Plex Mono',monospace",fontVariantNumeric:"tabular-nums"}}>{fmt(selI.cur,selI.b)}{selI.cat==="Bonds"?"%":""}</div>
                 <div style={{display:"flex",gap:10,marginTop:3}}>
                   <span style={{fontSize:13,color:selI.pct>=0?C.up:C.dn}}>{selI.pct>=0?"+":""}{selI.pct.toFixed(2)}%</span>
                   <span style={{fontSize:10,color:C.txt2}}>Open {fmt(selI.open,selI.b)}</span>
@@ -797,6 +852,7 @@ export default function Auxiron(){
                       <stop offset="95%" stopColor={selI.pct>=0?C.up:C.dn} stopOpacity={0}/>
                     </linearGradient>
                   </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false}/>
                   <XAxis dataKey="t" tick={{fill:C.txt3,fontSize:8}} tickLine={false} axisLine={false} interval={8}/>
                   <YAxis domain={["auto","auto"]} padding={{top:8,bottom:8}} tick={{fill:C.txt3,fontSize:8}} tickLine={false} axisLine={false} width={56} tickFormatter={function(v){return fmt(v,selI.b);}}/>
                   <Tooltip content={<ChartTip/>}/>
@@ -833,8 +889,9 @@ export default function Auxiron(){
                 <ResponsiveContainer width="100%" height={72}>
                   <AreaChart data={m.ch} margin={{top:2,right:2,bottom:2,left:2}}>
                     <defs><linearGradient id={gid} x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={lc} stopOpacity={0.12}/><stop offset="95%" stopColor={lc} stopOpacity={0}/></linearGradient></defs>
+                    <CartesianGrid strokeDasharray="2 2" stroke={C.border} vertical={false}/>
                     <YAxis domain={["auto","auto"]} hide/>
-                    <ReferenceLine y={m.open} stroke={C.border} strokeDasharray="2 2"/>
+                    <ReferenceLine y={m.open} stroke={C.border2} strokeDasharray="2 2"/>
                     <Area type="linear" dataKey="p" stroke={lc} strokeWidth={1.8} fill={"url(#"+gid+")"} dot={false}/>
                   </AreaChart>
                 </ResponsiveContainer>
@@ -856,13 +913,16 @@ export default function Auxiron(){
               <div style={{fontFamily:"'Syne',sans-serif",fontSize:14,fontWeight:700,color:C.txt0,letterSpacing:".06em"}}>SESSION BRIEFING</div>
               <div style={{fontSize:9,color:C.txt2,marginTop:1}}>{nowStr}</div>
             </div>
-            <button className="tap" onClick={fetchCtx} disabled={ctxLoading}
-              style={{background:ctxLoading?C.bg2:C.gold,color:ctxLoading?C.txt2:"#0c1118",border:"none",borderRadius:8,padding:"7px 14px",fontSize:9,fontWeight:500,display:"flex",alignItems:"center",gap:5}}>
-              {ctxLoading?[<div key="sp" className="sp" style={{width:10,height:10,border:"2px solid "+C.border2,borderTopColor:C.txt1,borderRadius:"50%"}}></div>,"GENERATING…"]:"◉ GENERATE"}
-            </button>
+            <div style={{display:"flex",alignItems:"center",gap:6}}>
+              <span style={{fontSize:9,color:ctxCount>=6?C.dn:C.txt3}}>{ctxCount}/6</span>
+              <button className="tap" onClick={fetchCtx} disabled={ctxLoading||ctxCount>=6}
+                style={{background:ctxLoading||ctxCount>=6?C.bg2:C.gold,color:ctxLoading||ctxCount>=6?C.txt2:"#0c1118",border:"none",borderRadius:8,padding:"7px 14px",fontSize:9,fontWeight:500,display:"flex",alignItems:"center",gap:5}}>
+                {ctxLoading?[<div key="sp" className="sp" style={{width:10,height:10,border:"2px solid "+C.border2,borderTopColor:C.txt1,borderRadius:"50%"}}></div>,"GENERATING…"]:ctxCount>=6?"◉ LIMIT REACHED":"◉ GENERATE"}
+              </button>
+            </div>
           </div>
           <div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,padding:"12px",marginBottom:10}}>
-            <div style={{fontSize:10,color:C.txt2,letterSpacing:".1em",marginBottom:8}}>LIVE SNAPSHOT</div>
+            <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:C.txt2,letterSpacing:".1em",marginBottom:8}}>LIVE SNAPSHOT</div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
               {["XAU/USD","DX","US10Y","VIX","SPX","NDX","WTI/USD","GBP/USD"].map(function(sym){
                 var m=mkt.find(function(d){return d.s===sym;});if(!m)return null;
@@ -911,12 +971,12 @@ export default function Auxiron(){
                 </div>
                 {lastRefresh&&<span style={{fontSize:9,color:C.txt3}}>{lastRefresh.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</span>}
               </div>
-              {ctx.sessionSummary&&<div style={{fontSize:12,color:C.txt0,lineHeight:1.75}}>{ctx.sessionSummary}</div>}
-              {ctx.regimeUpdate&&!ctx.sessionSummary&&<div style={{fontSize:12,color:C.txt0,lineHeight:1.75}}>{ctx.regimeUpdate}</div>}
+              {ctx.sessionSummary&&<div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:13,color:C.txt0,lineHeight:1.8}}>{ctx.sessionSummary}</div>}
+              {ctx.regimeUpdate&&!ctx.sessionSummary&&<div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:13,color:C.txt0,lineHeight:1.8}}>{ctx.regimeUpdate}</div>}
             </div>
             {/* Breaking news */}
             {ctx.breaking&&ctx.breaking.length>0&&<div style={{marginBottom:8}}>
-              <div style={{fontSize:10,color:C.txt2,letterSpacing:".1em",fontWeight:600,marginBottom:7}}>⚡ BREAKING</div>
+              <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:C.txt2,letterSpacing:".1em",fontWeight:600,marginBottom:7}}>⚡ BREAKING</div>
               {ctx.breaking.map(function(item:any,i:number){
                 var ic=item.impact&&item.impact.includes("BULLISH")?C.up:item.impact&&item.impact.includes("BEARISH")?C.dn:item.impact==="RISK-OFF"?C.dn:item.impact==="RISK-ON"?C.up:C.amber;
                 var tc=item.typeColor||C.blue;
@@ -943,7 +1003,7 @@ export default function Auxiron(){
             </div>}
             {/* Market moves */}
             {ctx.marketMoves&&ctx.marketMoves.length>0&&<div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,padding:"12px",marginBottom:8}}>
-              <div style={{fontSize:10,color:C.txt2,letterSpacing:".1em",fontWeight:600,marginBottom:7}}>MARKET MOVES</div>
+              <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:C.txt2,letterSpacing:".1em",fontWeight:600,marginBottom:7}}>MARKET MOVES</div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>
                 {ctx.marketMoves.map(function(m:any,i:number){
                   var up=m.direction==="up";
@@ -960,7 +1020,7 @@ export default function Auxiron(){
             </div>}
             {/* Next up */}
             {ctx.nextUp&&ctx.nextUp.length>0&&<div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,padding:"12px"}}>
-              <div style={{fontSize:10,color:C.txt2,letterSpacing:".1em",fontWeight:600,marginBottom:7}}>NEXT UP</div>
+              <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:C.txt2,letterSpacing:".1em",fontWeight:600,marginBottom:7}}>NEXT UP</div>
               {ctx.nextUp.map(function(n:any,i:number){
                 var ic=n.impact==="HIGH"?C.dn:C.amber;
                 return <div key={i} style={{display:"flex",gap:8,padding:"6px 0",borderBottom:i<ctx.nextUp.length-1?"1px solid "+C.border:"none",alignItems:"flex-start"}}>
@@ -982,7 +1042,7 @@ export default function Auxiron(){
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
               <div>
                 <div style={{fontFamily:"'Syne',sans-serif",fontSize:14,fontWeight:700,color:C.txt0,letterSpacing:".06em"}}>MARKET INTELLIGENCE</div>
-                <div style={{fontSize:10,color:C.txt1,marginTop:1}}>Sonnet + web search · ~$0.06/report</div>
+                
               </div>
             </div>
             <div style={{display:"grid",gap:6,marginBottom:12}}>
@@ -993,6 +1053,7 @@ export default function Auxiron(){
               ].map(function(s){
                 var a=intelSession===s.key&&intel;
                 var ld=intelSession===s.key&&intelLoading;
+                var cached=!!intelCache[s.key];
                 return <button key={s.key} className="tap" onClick={function(){setIntelSession(s.key);fetchIntel(s.key);}}
                   style={{background:(a||ld)?s.grad:C.bg1,border:"1px solid "+((a||ld)?s.bdr:C.border),borderRadius:10,padding:"10px 14px",textAlign:"left",width:"100%"}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
@@ -1028,23 +1089,44 @@ export default function Auxiron(){
               </div>
             )}
             {intel&&!intelLoading&&(
+              <div style={{display:"flex",justifyContent:"flex-end",marginBottom:6}}>
+                <button className="tap" onClick={function(){if(window.confirm("Regenerate Intel report for this session?"))fetchIntel(intelSession,true);}}
+                  style={{background:C.bg2,border:"1px solid "+C.border,borderRadius:7,padding:"4px 11px",color:C.txt2,fontSize:9}}>↻ Regenerate</button>
+              </div>)}
+            {intel&&!intelLoading&&(
               <div className="fu">
                 <div style={{background:"linear-gradient(135deg,rgba(200,168,64,0.12),rgba(200,168,64,0.04))",border:"1px solid rgba(200,168,64,0.3)",borderRadius:10,padding:"12px",marginBottom:8}}>
                   <div style={{fontSize:10,color:C.goldL,fontWeight:600,marginBottom:4}}>{intel.session} · {intel.generatedAt}</div>
                   <div style={{fontSize:13,fontWeight:600,color:C.txt0,lineHeight:1.55}}>{intel.headline}</div>
                   {intel.marketRegime&&<div style={{marginTop:6,display:"inline-block",fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:4,background:"rgba(0,0,0,0.3)",color:intel.marketRegime==="RISK-OFF"?C.dn:intel.marketRegime==="RISK-ON"?C.up:C.amber,border:"1px solid "+(intel.marketRegime==="RISK-OFF"?C.dn:intel.marketRegime==="RISK-ON"?C.up:C.amber)+"44"}}>{intel.marketRegime}</div>}
+                  {intel.regimeDrivers&&<div style={{fontSize:12,color:C.txt1,lineHeight:1.7,marginTop:6}}>{intel.regimeDrivers}</div>}
+                  {intel.executiveSummary&&<div style={{fontSize:12,color:C.txt0,lineHeight:1.8,marginTop:8,paddingTop:8,borderTop:"1px solid rgba(200,168,64,0.15)"}}>{intel.executiveSummary}</div>}
                 </div>
+                {intel.weeklyContext&&(
+                  <div style={{background:"rgba(72,144,248,0.07)",border:"1px solid rgba(72,144,248,0.22)",borderRadius:10,padding:"12px",marginBottom:8}}>
+                    <div style={{fontSize:10,color:C.blue,letterSpacing:".1em",fontWeight:600,marginBottom:7}}>📅 THIS WEEK IN MARKETS</div>
+                    <div style={{fontSize:12,color:C.txt0,lineHeight:1.8,marginBottom:intel.weeklyContext.biggestMove||intel.weeklyContext.setupForNext?8:0}}>{intel.weeklyContext.summary}</div>
+                    {intel.weeklyContext.biggestMove&&<div style={{background:"rgba(0,0,0,0.2)",borderRadius:6,padding:"6px 9px",marginBottom:6}}>
+                      <span style={{fontSize:9,color:C.gold,fontWeight:600}}>BIGGEST MOVE: </span>
+                      <span style={{fontSize:11,color:C.txt0}}>{intel.weeklyContext.biggestMove}</span>
+                    </div>}
+                    {intel.weeklyContext.setupForNext&&<div style={{background:"rgba(0,0,0,0.2)",borderRadius:6,padding:"6px 9px"}}>
+                      <span style={{fontSize:9,color:C.blue,fontWeight:600}}>NEXT WEEK SETUP: </span>
+                      <span style={{fontSize:11,color:C.txt0}}>{intel.weeklyContext.setupForNext}</span>
+                    </div>}
+                  </div>
+                )}
                 {intel.overnightDigest&&(
                   <div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,padding:"12px",marginBottom:8}}>
-                    <div style={{fontSize:10,color:C.txt2,letterSpacing:".1em",fontWeight:600,marginBottom:6}}>🌙 OVERNIGHT DIGEST</div>
-                    <div style={{fontSize:12,color:C.txt0,lineHeight:1.75,marginBottom:8}}>{intel.overnightDigest}</div>
+                    <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:C.txt2,letterSpacing:".1em",fontWeight:600,marginBottom:6}}>🌙 OVERNIGHT DIGEST</div>
+                    <div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:13,color:C.txt0,lineHeight:1.8,marginBottom:8}}>{intel.overnightDigest}</div>
                     {intel.geopolitical&&intel.geopolitical.length>0&&(
                       <div>
                         <div style={{fontSize:9,color:C.amber,letterSpacing:".08em",fontWeight:600,marginBottom:5}}>⚡ GEOPOLITICAL</div>
                         {intel.geopolitical.map(function(g:string,i:number){
                           return <div key={i} style={{display:"flex",gap:7,padding:"5px 0",borderBottom:i<intel.geopolitical.length-1?"1px solid "+C.border:"none"}}>
                             <span style={{color:C.dn,flexShrink:0}}>→</span>
-                            <span style={{fontSize:11,color:C.txt1,lineHeight:1.5}}>{g}</span>
+                            <span style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:12,color:C.txt1,lineHeight:1.65}}>{g}</span>
                           </div>;
                         })}
                       </div>
@@ -1065,7 +1147,7 @@ export default function Auxiron(){
                               <div style={{fontSize:10,color:cl,fontWeight:600}}>{m.change}</div>
                             </div>
                           </div>
-                          <div style={{fontSize:11,color:C.txt0,lineHeight:1.55}}>{m.why}</div>
+                          <div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:12,color:C.txt0,lineHeight:1.65}}>{m.why}</div>
                         </div>;
                       })}
                     </div>
@@ -1119,7 +1201,7 @@ export default function Auxiron(){
                     {intel.gold.note&&(
                       <div style={{marginTop:8,background:"rgba(40,204,120,0.07)",border:"1px solid rgba(40,204,120,0.2)",borderRadius:6,padding:"8px 10px"}}>
                         <div style={{fontSize:9,color:C.up,marginBottom:2}}>◈ TRADER NOTE</div>
-                        <div style={{fontSize:11,color:C.txt0,lineHeight:1.55}}>{intel.gold.note}</div>
+                        <div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:12,color:C.txt0,lineHeight:1.65}}>{intel.gold.note}</div>
                       </div>
                     )}
                   </div>
@@ -1149,7 +1231,7 @@ export default function Auxiron(){
                     {intel.oil.note&&(
                       <div style={{marginTop:8,background:"rgba(40,204,120,0.07)",border:"1px solid rgba(40,204,120,0.2)",borderRadius:6,padding:"8px 10px"}}>
                         <div style={{fontSize:9,color:C.up,marginBottom:2}}>◈ TRADER NOTE</div>
-                        <div style={{fontSize:11,color:C.txt0,lineHeight:1.55}}>{intel.oil.note}</div>
+                        <div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:12,color:C.txt0,lineHeight:1.65}}>{intel.oil.note}</div>
                       </div>
                     )}
                   </div>
@@ -1195,7 +1277,7 @@ export default function Auxiron(){
                     {intel.spx.note&&(
                       <div style={{background:"rgba(40,204,120,0.07)",border:"1px solid rgba(40,204,120,0.2)",borderRadius:6,padding:"8px 10px"}}>
                         <div style={{fontSize:9,color:C.up,marginBottom:2}}>◈ TRADER NOTE</div>
-                        <div style={{fontSize:11,color:C.txt0,lineHeight:1.55}}>{intel.spx.note}</div>
+                        <div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:12,color:C.txt0,lineHeight:1.65}}>{intel.spx.note}</div>
                       </div>
                     )}
                   </div>
@@ -1228,7 +1310,7 @@ export default function Auxiron(){
                     {intel.ndx.note&&(
                       <div style={{background:"rgba(40,204,120,0.07)",border:"1px solid rgba(40,204,120,0.2)",borderRadius:6,padding:"8px 10px"}}>
                         <div style={{fontSize:9,color:C.up,marginBottom:2}}>◈ TRADER NOTE</div>
-                        <div style={{fontSize:11,color:C.txt0,lineHeight:1.55}}>{intel.ndx.note}</div>
+                        <div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:12,color:C.txt0,lineHeight:1.65}}>{intel.ndx.note}</div>
                       </div>
                     )}
                   </div>
@@ -1248,7 +1330,7 @@ export default function Auxiron(){
 )}
 {intel.indices&&(
   <div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,padding:"12px",marginBottom:8}}>
-    <div style={{fontSize:10,color:C.txt2,letterSpacing:".1em",fontWeight:600,marginBottom:8}}>INDICES SNAPSHOT</div>
+    <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:C.txt2,letterSpacing:".1em",fontWeight:600,marginBottom:8}}>INDICES SNAPSHOT</div>
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:8}}>
       {intel.indices.spx&&<div style={{background:C.bg2,border:"1px solid "+C.border,borderRadius:7,padding:"8px 10px"}}>
         <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
@@ -1270,7 +1352,7 @@ export default function Auxiron(){
 )}
 {intel.watchlist&&intel.watchlist.length>0&&(
   <div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,padding:"12px",marginBottom:8}}>
-    <div style={{fontSize:10,color:C.txt2,letterSpacing:".1em",fontWeight:600,marginBottom:8}}>WATCHLIST TONIGHT</div>
+    <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:C.txt2,letterSpacing:".1em",fontWeight:600,marginBottom:8}}>WATCHLIST TONIGHT</div>
     <div style={{display:"grid",gap:5}}>
       {intel.watchlist.map(function(w,i){
         var bc=w.bias==="BULLISH"?C.up:w.bias==="BEARISH"?C.dn:C.amber;
@@ -1303,8 +1385,28 @@ export default function Auxiron(){
 
         {/* ── AI FILTER ── */}
         {tab==="filter"&&<div style={{padding:"12px"}}>
+          {/* Agentic prompt buttons */}
+          <div style={{marginBottom:8}}>
+            <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:C.txt2,letterSpacing:".1em",fontWeight:600,marginBottom:6}}>QUICK ANALYSIS</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>
+              {[
+                {label:"🌍 Geopolitical Risk",prompt:"Analyze current geopolitical risks affecting Gold, Oil and JPY. Include Middle East tensions, Russia-Ukraine, and any active flashpoints."},
+                {label:"🏛 Fed Policy Impact",prompt:"Analyze the current Federal Reserve policy stance and how rate cut expectations are affecting Gold, DXY and US equities right now."},
+                {label:"🇯🇵 JPY Carry Trade",prompt:"Analyze JPY carry trade risk right now. Is USD/JPY near intervention zone? What is the carry unwind risk and how does it affect Gold?"},
+                {label:"📊 Gold Drivers",prompt:"What are the key drivers moving Gold right now? Analyze DXY correlation, real yields, central bank demand, and institutional positioning."},
+                {label:"⚡ Risk-On/Off Regime",prompt:"What is the current market risk regime? Is it risk-on or risk-off? What instruments are confirming it and what should traders focus on?"},
+                {label:"💵 DXY Analysis",prompt:"Analyze DXY current trend, key levels, and what it means for Gold, EUR/USD and commodity prices. Is the dollar bullish or bearish?"},
+              ].map(function(p,i){
+                return <button key={i} className="tap" onClick={function(){setHl(p.prompt);analyze(p.prompt);}}
+                  style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:8,padding:"9px 10px",
+                    textAlign:"left",color:C.txt1,fontSize:11,lineHeight:1.4,fontFamily:"inherit"}}>
+                  {p.label}
+                </button>;
+              })}
+            </div>
+          </div>
           <div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:12,padding:"13px",marginBottom:10}}>
-            <div style={{fontSize:10,color:C.txt2,letterSpacing:".12em",marginBottom:4}}>PASTE HEADLINE OR GEOPOLITICAL EVENT</div>
+            <div style={{fontSize:10,color:C.txt2,letterSpacing:".12em",marginBottom:4}}>OR TYPE / PASTE A HEADLINE</div>
             <div style={{fontSize:10,color:C.txt3,marginBottom:8,opacity:0.7}}>AI analyzes market transmission chain + money flow + scenarios</div>
             <textarea value={hl} onChange={function(e){setHl(e.target.value);}}
               placeholder="e.g. Iran closes Strait of Hormuz following US airstrike…"
@@ -1339,7 +1441,7 @@ export default function Auxiron(){
             </button>
           </div>
           <div style={{marginBottom:12}}>
-            <div style={{fontSize:10,color:C.txt2,letterSpacing:".1em",marginBottom:5}}>QUICK SAMPLES</div>
+            <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:C.txt2,letterSpacing:".1em",marginBottom:5}}>QUICK SAMPLES</div>
             {SAMPLES.map(function(s,i){
               return <button key={i} className="tap" onClick={function(){setHl(s);analyze(s);}}
                 style={{display:"block",width:"100%",background:C.bg1,border:"1px solid "+C.border,color:C.txt1,borderRadius:8,padding:"9px 12px",fontSize:11,textAlign:"left",marginBottom:4}}>{s}</button>;
@@ -1370,19 +1472,19 @@ export default function Auxiron(){
             </div>
             {result.immediateImpact&&<div style={{background:"rgba(72,144,248,0.07)",border:"1px solid rgba(72,144,248,0.2)",borderRadius:8,padding:"10px 12px",marginBottom:8}}>
               <div style={{fontSize:9,color:C.blue,letterSpacing:".1em",marginBottom:4}}>⚡ IMMEDIATE IMPACT</div>
-              <div style={{fontSize:12,color:C.txt0,lineHeight:1.75}}>{result.immediateImpact}</div>
+              <div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:13,color:C.txt0,lineHeight:1.8}}>{result.immediateImpact}</div>
             </div>}
             {result.moneyFlow&&<div style={{background:"rgba(200,168,64,0.07)",border:"1px solid rgba(200,168,64,0.2)",borderRadius:8,padding:"10px 12px",marginBottom:8}}>
               <div style={{fontSize:9,color:C.gold,letterSpacing:".1em",marginBottom:4}}>💰 MONEY FLOW</div>
-              <div style={{fontSize:12,color:C.txt0,lineHeight:1.75}}>{result.moneyFlow}</div>
+              <div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:13,color:C.txt0,lineHeight:1.8}}>{result.moneyFlow}</div>
             </div>}
             {result.geopoliticalCascade&&<div style={{background:"rgba(184,88,240,0.07)",border:"1px solid rgba(184,88,240,0.2)",borderRadius:8,padding:"10px 12px",marginBottom:8}}>
               <div style={{fontSize:9,color:C.vix,letterSpacing:".1em",marginBottom:4}}>🌐 TRANSMISSION CHAIN</div>
-              <div style={{fontSize:12,color:C.txt0,lineHeight:1.75}}>{result.geopoliticalCascade}</div>
+              <div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:13,color:C.txt0,lineHeight:1.8}}>{result.geopoliticalCascade}</div>
             </div>}
             {result.edgeFinderOverride&&result.edgeFinderOverride.triggered&&<div style={{background:"rgba(240,64,64,0.08)",border:"1px solid rgba(240,64,64,0.3)",borderRadius:8,padding:"10px 12px",marginBottom:8}}>
               <div style={{fontSize:9,color:C.dn,letterSpacing:".1em",marginBottom:4}}>⚠ EDGEFINDER OVERRIDE ALERT</div>
-              <div style={{fontSize:12,color:C.txt0,lineHeight:1.75}}>{result.edgeFinderOverride.reason}</div>
+              <div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:13,color:C.txt0,lineHeight:1.8}}>{result.edgeFinderOverride.reason}</div>
             </div>}
             {result.edgeFinderCrossCheck&&result.edgeFinderCrossCheck.hasData&&<div style={{background:"rgba(200,168,64,0.08)",border:"2px solid rgba(200,168,64,0.35)",borderRadius:10,padding:"12px",marginBottom:8}}>
               <div style={{fontSize:10,color:C.goldL,letterSpacing:".1em",fontWeight:700,marginBottom:8}}>◈ EDGEFINDER CROSS-ANALYSIS</div>
@@ -1504,12 +1606,25 @@ export default function Auxiron(){
 
       {/* BOTTOM NAV — mobile only */}
       <div className="auxiron-bottom-nav" style={{background:C.bg1,borderTop:"1px solid "+C.border}}>
-        {NAV.map(function(item){
+        {NAV.map(function(item:any){
+          var active=tab===item.key;
+          var ac=item.accent||C.gold;
           return <button key={item.key} className="tap" onClick={function(){setTab(item.key);}}
-            style={{flex:1,background:"transparent",border:"none",padding:"10px 0 6px",display:"flex",flexDirection:"column",alignItems:"center",gap:3,color:tab===item.key?C.goldL:C.txt2,transition:"color 0.12s",minHeight:56}}>
-            <span style={{fontSize:13,lineHeight:1}}>{item.icon}</span>
-            <span style={{fontSize:7,letterSpacing:".06em",fontWeight:tab===item.key?500:400}}>{item.label}</span>
-            {tab===item.key&&<div style={{width:14,height:2,background:C.gold,borderRadius:1,marginTop:1}}></div>}
+            style={{flex:1,background:"transparent",border:"none",padding:"8px 0 6px",
+              display:"flex",flexDirection:"column",alignItems:"center",gap:3,
+              position:"relative",transition:"opacity 0.12s",minHeight:54}}>
+            {active&&<div style={{position:"absolute",top:0,left:"22%",right:"22%",
+              height:2,background:ac,borderRadius:"0 0 2px 2px"}}/>}
+            <div style={{width:34,height:30,display:"flex",alignItems:"center",
+              justifyContent:"center",background:active?ac+"1a":"transparent",
+              borderRadius:8,transition:"background 0.12s"}}>
+              {item.icon(active)}
+            </div>
+            <span style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:9,
+              fontWeight:active?700:400,letterSpacing:".04em",
+              color:active?ac:C.txt3,transition:"color 0.12s"}}>
+              {item.label}
+            </span>
           </button>;
         })}
       </div>
