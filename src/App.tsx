@@ -240,6 +240,23 @@ function getSessionKey(){
   if(h>=16&&h<21)return"london";
   return"ny";
 }
+function getSessionUnlockSGT(key:string):string{
+  if(key==="asia")return"6:00 AM SGT";
+  if(key==="london")return"4:00 PM SGT";
+  return"9:00 PM SGT";
+}
+function isSessionActive(key:string):boolean{
+  var h=new Date(Date.now()+8*60*60*1000).getUTCHours();
+  if(key==="asia")return h>=6&&h<16;
+  if(key==="london")return h>=16&&h<21;
+  if(key==="ny")return h>=21||h<6;
+  return false;
+}
+function getSessionLabel2(key:string):string{
+  if(key==="asia")return"Asia Open";
+  if(key==="london")return"London Open";
+  return"NY Session";
+}
 
 export default function Auxiron(){
   // Inject favicon dynamically
@@ -283,10 +300,20 @@ export default function Auxiron(){
       var saved=localStorage.getItem("auxiron_intel_cache");
       if(saved){
         var parsed=JSON.parse(saved);
-        var sk=getSessionKey();
-        // Only restore reports for the CURRENT session window
+        // Restore all valid sessions — expire after 14 hours
         var valid:{[k:string]:any}={};
-        if(parsed[sk])valid[sk]=parsed[sk];
+        var now=Date.now();
+        var SESSION_WINDOWS:any={
+          asia:{start:6,end:16},
+          london:{start:16,end:21},
+          ny:{start:21,end:30} // 30 = next day 6am
+        };
+        Object.keys(parsed).forEach(function(session){
+          var entry=parsed[session];
+          if(!entry.generatedAt)return;
+          var age=(now-new Date(entry.generatedAt).getTime())/1000/3600;
+          if(age<14){valid[session]=entry;}  // keep if under 14 hours old
+        });
         return valid;
       }
     }catch(e){}
@@ -484,20 +511,19 @@ export default function Auxiron(){
   function closeInstDetail(){setInstDetail(null);}
 
   function fetchIntel(session:string,force?:boolean){
-    // Block cross-session generation — only allow current session
     var currentSession=getSessionKey();
-    if(!force&&session!==currentSession&&!intelCache[session]){
-      // Allow viewing other sessions from cache only
-    }
+    // Always serve from cache if available — zero API cost
     if(!force&&intelCache[session]){
       setIntelP1(intelCache[session].p1);
       setIntelP2(intelCache[session].p2);
       setIntelPhase("complete");
       return;
     }
-    // Only allow generating for current active session
-    if(session!==currentSession&&!force){
-      setIntelErr("This session is not active yet. You can only generate the current session's report.");
+    // Block generation if session is not yet active
+    if(!isSessionActive(session)&&!force){
+      var unlockTime=getSessionUnlockSGT(session);
+      setIntelErr("🔒 "+getSessionLabel2(session)+" has not started yet. This report will unlock at "+unlockTime+". Your previous report is shown above if available.");
+      setIntelPhase("idle");
       return;
     }
     setIntelPhase("p1loading");
@@ -537,7 +563,14 @@ export default function Auxiron(){
             releaseWakeLock();
             setIntelCache(function(prev:any){
               var n={...prev};n[session]={p1,p2};
-              try{localStorage.setItem("auxiron_intel_cache",JSON.stringify(n));}catch(e){}
+              try{
+                // Save with session metadata so we know when each was generated
+                var toSave:any={};
+                Object.keys(n).forEach(function(k){
+                  toSave[k]={p1:n[k].p1,p2:n[k].p2,generatedAt:new Date().toISOString()};
+                });
+                localStorage.setItem("auxiron_intel_cache",JSON.stringify(toSave));
+              }catch(e){}
               return n;
             });
           },
@@ -1147,34 +1180,48 @@ export default function Auxiron(){
                   {key:"london",icon:"🌍",label:"LONDON OPEN",time:"4pm–1am SGT",color:C.blue},
                   {key:"ny",icon:"🗽",label:"NY SESSION",time:"9pm–6am SGT",color:C.goldL},
                 ].map(function(s){
-                  var currentSess=getSessionKey();
                   var active=intelSession===s.key;
                   var cached=!!intelCache[s.key];
-                  var isCurrentSession=s.key===currentSess;
+                  var sessionActive=isSessionActive(s.key);
                   var isLoading=active&&(intelPhase==="p1loading"||intelPhase==="p2loading");
                   var isDone=active&&intelPhase==="complete";
-                  var isLocked=!isCurrentSession&&!cached;
+                  // Locked = session not active AND no cached report
+                  var isLocked=!sessionActive&&!cached;
+                  // Can generate = session is active and no cache yet (or force)
+                  var canGenerate=sessionActive&&!cached;
                   return <button key={s.key} className="tap"
-                    onClick={function(){setIntelSession(s.key);fetchIntel(s.key);}}
-                    style={{background:active?"rgba(0,0,0,0.2)":isLocked?"rgba(0,0,0,0.1)":C.bg1,
-                      border:"1px solid "+(active?s.color+"55":isLocked?C.txt3+"22":C.border),
+                    onClick={function(){
+                      setIntelSession(s.key);
+                      if(cached){
+                        // Load from cache instantly — no API call
+                        setIntelP1(intelCache[s.key].p1);
+                        setIntelP2(intelCache[s.key].p2);
+                        setIntelPhase("complete");
+                      } else if(!isLocked){
+                        fetchIntel(s.key);
+                      }
+                      // if locked and no cache: do nothing
+                      // if locked and no cache: do nothing
+                    }}
+                    style={{background:active?"rgba(0,0,0,0.2)":cached?"rgba(34,212,110,0.04)":isLocked?"rgba(0,0,0,0.08)":C.bg1,
+                      border:"1px solid "+(active?s.color+"55":cached?"rgba(34,212,110,0.2)":isLocked?C.txt3+"22":C.border),
                       borderRadius:10,padding:"10px 14px",textAlign:"left",width:"100%",
-                      opacity:isLocked?0.45:1}}>
+                      opacity:isLocked?0.4:1,cursor:isLocked?"default":"pointer"}}>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                       <div style={{display:"flex",alignItems:"center",gap:9}}>
                         <span style={{fontSize:17}}>{s.icon}</span>
                         <div>
                           <div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:13,fontWeight:700,color:active?s.color:C.txt0}}>{s.label}</div>
-                          <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:active?s.color:isLocked?C.txt3:C.txt2}}>
-                            {isLocked?"Not active yet":cached?"Report ready · "+s.time:isCurrentSession?"Active now · "+s.time:s.time}
+                          <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:active?s.color:isLocked?C.txt3:sessionActive?C.up:C.txt2}}>
+                            {isLocked?"Unlocks at "+getSessionUnlockSGT(s.key)+" SGT":cached?"✓ Report saved · "+s.time:sessionActive?"● LIVE NOW · "+s.time:s.time}
                           </div>
                         </div>
                       </div>
                       <div style={{display:"flex",alignItems:"center",gap:6}}>
-                        {cached&&!active&&<span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.up}}>✓</span>}
+                        {isLocked&&<span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.txt3,background:"rgba(0,0,0,0.25)",padding:"2px 6px",borderRadius:3}}>🔒</span>}
+                        {cached&&!isLoading&&<span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.up,background:"rgba(34,212,110,0.12)",padding:"2px 6px",borderRadius:3}}>✓ Saved</span>}
+                        {sessionActive&&!cached&&!isLoading&&<span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:s.color,background:s.color+"12",padding:"2px 6px",borderRadius:3}}>Generate</span>}
                         {isLoading&&<div className="sp" style={{width:10,height:10,border:"2px solid "+C.border2,borderTopColor:s.color,borderRadius:"50%"}}/>}
-                        {isDone&&<span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:C.up}}>✓ Done</span>}
-                        {!isLoading&&!isDone&&<span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:C.txt3}}>→</span>}
                       </div>
                     </div>
                   </button>;
@@ -1183,7 +1230,15 @@ export default function Auxiron(){
             </div>
 
             {/* Error state */}
-            {intelErr&&<div style={{background:"rgba(240,69,69,0.07)",border:"1px solid rgba(240,69,69,0.2)",borderRadius:8,padding:"10px 12px",color:C.dn,fontSize:12,marginBottom:10,fontFamily:"'IBM Plex Sans',sans-serif"}}>⚠ {intelErr}</div>}
+            {intelErr&&<div style={{
+              background:intelErr.startsWith("🔒")?"rgba(58,85,112,0.15)":"rgba(240,69,69,0.07)",
+              border:"1px solid "+(intelErr.startsWith("🔒")?C.border:"rgba(240,69,69,0.2)"),
+              borderRadius:10,padding:"12px 14px",marginBottom:10,
+              fontFamily:"'IBM Plex Sans',sans-serif"}}>
+              <div style={{fontSize:13,fontWeight:600,color:intelErr.startsWith("🔒")?C.txt1:C.dn,lineHeight:1.6}}>
+                {intelErr}
+              </div>
+            </div>}
 
             {/* Idle state */}
             {intelPhase==="idle"&&!intelErr&&(
@@ -1221,6 +1276,7 @@ export default function Auxiron(){
                   <div style={{display:"flex",gap:6,marginBottom:5,flexWrap:"wrap",alignItems:"center"}}>
                     {intelP1.marketRegime&&<span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:4,color:intelP1.marketRegime==="RISK-OFF"?C.dn:intelP1.marketRegime==="RISK-ON"?C.up:C.amber,background:(intelP1.marketRegime==="RISK-OFF"?C.dn:intelP1.marketRegime==="RISK-ON"?C.up:C.amber)+"18",border:"1px solid "+(intelP1.marketRegime==="RISK-OFF"?C.dn:intelP1.marketRegime==="RISK-ON"?C.up:C.amber)+"44"}}>{intelP1.marketRegime}</span>}
                     <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:C.txt3}}>{intelP1.generatedAt} · {intelP1.validFor}</span>
+                    {intelCache[intelSession]?.generatedAt&&<span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.up}}>✓ Saved locally</span>}
                   </div>
                   {intelP1.headline&&<div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:14,fontWeight:700,color:C.txt0,lineHeight:1.45,marginBottom:6}}>{intelP1.headline}</div>}
                   {intelP1.executiveSummary&&<div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:12,color:C.txt1,lineHeight:1.75}}>{intelP1.executiveSummary}</div>}
