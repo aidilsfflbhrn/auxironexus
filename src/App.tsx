@@ -56,6 +56,13 @@ const AI_SYS=`You are an elite macro financial analyst and geopolitical strategi
 {"impactScore":<0-100>,"impactLevel":"<NOISE|LOW|MODERATE|HIGH|CRITICAL>","marketSentiment":"<RISK-ON|RISK-OFF|NEUTRAL|MIXED>","sentimentShift":"<BULLISH|BEARISH|NEUTRAL>","immediateImpact":"<2-3 sentences>","moneyFlow":"<2 sentences on institutional money movement>","geopoliticalCascade":"<2-3 sentences: full transmission chain>","affectedInstruments":[{"symbol":"<sym>","direction":"<BULLISH|BEARISH|NEUTRAL>","confidence":<0-100>,"currentPrice":<number>,"targetLevel":<number>,"reason":"<one sentence>"}],"keyDrivers":["<d1>","<d2>","<d3>"],"edgeFinderOverride":{"triggered":<true|false>,"reason":"<why geopolitical conditions override scoring model>"},"edgeFinderCrossCheck":{"hasData":<true|false>,"cotAlignment":"<CONFIRMS|CONTRADICTS|MIXED|N/A>","cotNote":"<1-2 sentences: what COT data shows vs the event, or N/A>","setupAlignment":"<CONFIRMS|CONTRADICTS|MIXED|N/A>","setupNote":"<1-2 sentences: what top setups show vs event direction, or N/A>","keyContradiction":"<the single most important conflict between EdgeFinder data and the news event, or null>","resolution":"<2 sentences: how to reconcile conflicting signals, which to prioritize and why>","tradeVerdict":"<EDGEFINDER WINS|NEWS WINS|WAIT FOR CONFIRMATION|SPLIT — explain briefly>"},"scenarios":[{"type":"BEARISH_EXTREME","title":"<n>","probability":<0-100>,"timeline":"<e.g. 2-5 days>","description":"<2 sentences>","watchFor":"<trigger>","instruments":[{"symbol":"<sym>","move":"<e.g.+8%>"}]},{"type":"BASE_CASE","title":"<n>","probability":<0-100>,"timeline":"<e.g. 1-3 days>","description":"<2 sentences>","watchFor":"<trigger>","instruments":[{"symbol":"<sym>","move":"<e.g.+3%>"}]},{"type":"BULLISH_REVERSAL","title":"<n>","probability":<0-100>,"timeline":"<e.g. 1 week>","description":"<2 sentences>","watchFor":"<trigger>","instruments":[{"symbol":"<sym>","move":"<e.g.-2%>"}]}],"keyLevelsToWatch":[{"symbol":"<sym>","level":<number>,"significance":"<why critical now>"}],"traderNote":"<3-4 sentences actionable>","timeHorizon":"<INTRADAY|SHORT-TERM|MEDIUM-TERM|LONG-TERM>","nextCatalysts":["<event1>","<event2>"]}
 Probabilities sum to 100. List 3-5 affected instruments. List 3 key levels. Always explain full transmission chain. If EdgeFinder screenshots are attached, read the COT data, top setups, and any positioning data shown, then fill edgeFinderCrossCheck.hasData=true and provide a full cross-analysis highlighting contradictions. If no images provided, set hasData=false and all alignment fields to "N/A".`;
 
+const INST_NEWS_SYS=`You are a concise market analyst. Search the web for the latest news and analysis for the given instrument. Be brief and factual.
+
+Respond ONLY with valid JSON:
+{"news":[{"time":"<e.g. 2:45pm May 4>","src":"<source>","headline":"<headline>","sentiment":"<BULLISH|BEARISH|NEUTRAL>","sentimentColor":"<#22d46e|#f04545|#f0a020>","body":"<2-3 sentences: what happened and why it matters>","tags":["<tag1>","<tag2>"]}],"brief":"<3-4 sentences: current macro drivers, key levels, what to watch tonight. Bold key terms with **double asterisks**.>","keyLevels":{"support":<number>,"resistance":<number>,"note":"<1 sentence>"}}
+
+Provide 3-5 news items, most recent first. Keep each body to 2-3 sentences max.`;
+
 const CTX_SYS=`You are a senior market analyst with access to live news via web search. Generate a concise breaking news briefing covering what has happened in the LAST 1-2 HOURS during this trading session.
 
 Search the web RIGHT NOW for: breaking market news last 2 hours, latest Gold and DXY price movement and catalyst, any Fed speaker statements today, JPY or BOJ activity, geopolitical breaking developments, any surprise economic data that just printed.
@@ -63,55 +70,28 @@ Search the web RIGHT NOW for: breaking market news last 2 hours, latest Gold and
 Respond ONLY with valid JSON:
 {"sessionBias":"<RISK-ON|RISK-OFF|NEUTRAL|MIXED>","regimeUpdate":"<1 sentence: what is driving the current market regime RIGHT NOW>","breaking":[{"time":"<SGT time>","type":"<ECONOMIC DATA|FED SPEAKER|CENTRAL BANK|GEOPOLITICAL|MARKET MOVE>","typeColor":"<use: ECONOMIC DATA=#22c55e, FED SPEAKER=#818cf8, CENTRAL BANK=#fb923c, GEOPOLITICAL=#ef4444, MARKET MOVE=#3b82f6>","headline":"<specific factual headline — what actually happened>","impact":"<BULLISH GOLD|BEARISH GOLD|BULLISH USD|BEARISH USD|RISK-ON|RISK-OFF|NEUTRAL>","detail":"<2-3 sentences: exactly what happened, the specific numbers or statements, and why it matters for traders>","goldReaction":"<how Gold actually moved or is moving in response — be specific with price levels>","tradingNote":"<1 sentence: the single most actionable thing a trader should know right now>"}],"marketMoves":[{"symbol":"<sym>","from":"<price>","to":"<price>","change":"<+/-amount>","direction":"<up|down>","note":"<1 sentence: what caused this move>"}],"nextUp":[{"time":"<SGT>","event":"<specific upcoming event or risk>","impact":"<HIGH|MEDIUM>","note":"<1 sentence why it matters>"}],"goldBias":"<BULLISH|BEARISH|NEUTRAL>","dxyBias":"<BULLISH|BEARISH|NEUTRAL>","sessionSummary":"<2 sentences: plain English summary of what has happened this session so far and what traders should be focused on right now>"}
 Provide 1-3 breaking items covering only GENUINELY NEW developments from the last 2 hours — not background context or old news. If nothing significant happened, say so honestly. Provide 3-5 market moves. Provide 2-3 next up items. No economic calendar — that lives in the Intel report only.`;
-const INTEL_SYS=`You are a senior macro strategist and market intelligence analyst at a top-tier investment bank. You have access to live market data and real-time news via web search. Generate a comprehensive pre-session intelligence briefing in the style of a JPMorgan morning research note — detailed but tightly summarised, covering what happened this week, what is happening this session, and what to expect.
+const INTEL_P1_SYS=`You are a senior macro strategist at a top investment bank. Generate PHASE 1 of a pre-session intelligence briefing — situational awareness only. Be CONCISE. Max 2 sentences per text field. Max 3 items per array. Short, punchy, factual.
 
-Search the web thoroughly for ALL of the following:
-1. GOLD: Latest price drivers, what moved Gold this week, central bank buying, ETF flows, real yield direction, DXY correlation, institutional positioning, bank forecasts and price targets for Gold this week and month
-2. DXY AND FED: Current DXY level and trend, where it closed this week vs key levels, latest Fed speaker statements, CME FedWatch cut probabilities, real yields (10Y TIPS), upcoming Fed events
-3. JPY AND CARRY TRADE: USD/JPY level vs BOJ intervention history, any BOJ or Finance Ministry statements, carry trade positioning, GBP/JPY as carry indicator, risk of unwind
-4. CENTRAL BANKS: ECB rate outlook, BOE policy stance, BOJ rate hike expectations, any surprise central bank communications this week
-5. GEOPOLITICAL: Active geopolitical risks (Middle East, Russia-Ukraine, China-Taiwan), any escalation or de-escalation this week, commodity supply risk
-6. ECONOMIC CALENDAR: Upcoming high-impact events for THIS SESSION ONLY (see session rules below)
-7. WEEKLY CONTEXT: What were the key themes this week? What data printed? What surprised markets? How does that set up for next week?
-8. MARKET SENTIMENT: Overall risk-on or risk-off regime, what is driving it, what could change it this session
+Search the web RIGHT NOW for: breaking geopolitical headlines, overnight Asia and Europe market performance, VIX current level, latest economic calendar events this session, active alerts or risks.
 
-Respond ONLY with valid JSON, no extra text:
-{"session":"<ASIA OPEN|LONDON OPEN|NY SESSION>","generatedAt":"<time SGT>","validFor":"<e.g. 9pm-1am SGT>","marketRegime":"<RISK-ON|RISK-OFF|NEUTRAL|MIXED>","regimeDrivers":"<2 sentences: what is specifically driving the current risk regime>","headline":"<the single most important market theme for this session>","executiveSummary":"<4-5 sentences in JPMorgan morning note style: what happened this week, current macro picture, key risks tonight, what traders should be positioned for>","weeklyContext":{"summary":"<3-4 sentences: key themes and data that defined this week>","biggestMove":"<which instrument moved most and why>","setupForNext":"<2 sentences: how this week's developments set up next week>"},"alerts":[{"priority":<1,2,or3>,"type":"<INTERVENTION RISK|BINARY EVENT|CENTRAL BANK|GEOPOLITICAL|DATA RISK>","color":"<#ff1840 for P1|#f0a500 for P2|#fb923c for P3>","headline":"<specific alert headline>","detail":"<3-4 sentences: full context, historical precedent, probability, exact levels>","monitor":"<1-2 sentences: what to watch and trigger levels>"}],"markets":[{"asset":"<full name>","price":"<price>","chg":"<+/-X.XX%>","weekChg":"<weekly change>","bias":"<BULLISH|BEARISH|NEUTRAL|AVOID LONGS|WATCH>","note":"<2 sentences: what drove this instrument this week and what matters tonight>"}],"macro":[{"heading":"<heading>","color":"<hex>","body":"<3-4 sentences: detailed analysis with specific data points, probabilities, historical context>","keyData":"<key data points separated by ·>"}],"calendar":[{"time":"<SGT>","flag":"<emoji>","event":"<name>","stars":<2or3>,"forecast":"<value>","prev":"<value>","impact":"<CRITICAL|HIGH|MEDIUM>","goldBull":"<bullish condition>","goldBear":"<bearish condition>","analysis":"<2 sentences>"}],"instruments":[{"name":"<name>","color":"<hex>","price":"<price>","bias":"<bias>","conviction":"<HIGH|MEDIUM|LOW>","summary":"<3-4 sentences: full macro view, key levels context, what changes the thesis>","levels":{"s2":<n>,"s1":<n>,"now":<n>,"r1":<n>,"r2":<n>},"setup":"<entry zone, stop, target, R/R or NO SETUP with reason>","avoid":["<condition1>","<condition2>"]}],"watchlist":[{"symbol":"<sym>","price":"<price>","bias":"<bias>","priority":"<CRITICAL|HIGH|MEDIUM>","color":"<hex>","note":"<1-2 sentences: why watching tonight and key level>"}],"tradeFocus":"<4-5 sentences talking directly to a trader: primary opportunity tonight, key event risks, what to avoid, most important level, position sizing given tonight volatility>"}
+Respond ONLY with valid JSON:
+{"session":"<ASIA OPEN|LONDON OPEN|NY SESSION>","generatedAt":"<time SGT>","validFor":"<window>","marketRegime":"<RISK-ON|RISK-OFF|NEUTRAL|MIXED>","regimeDrivers":"<1-2 sentences: what is driving the regime RIGHT NOW>","headline":"<single most important theme tonight>","executiveSummary":"<2-3 sentences: what happened overnight, current picture, biggest risk tonight>","alerts":[{"priority":<1,2,or3>,"type":"<INTERVENTION RISK|BINARY EVENT|GEOPOLITICAL|DATA RISK|CENTRAL BANK>","color":"<#ff1840 for P1|#f0a500 for P2|#fb923c for P3>","headline":"<specific alert>","detail":"<2 sentences: context and probability>","monitor":"<1 sentence: exact trigger level or event to watch>"}],"overnightRecap":{"asia":{"summary":"<1-2 sentences: key Asia session moves>","keyMove":"<e.g. Nikkei -0.8%, Gold flat>"},"europe":{"summary":"<1-2 sentences: key Europe session moves>","keyMove":"<e.g. FTSE +0.4%, EUR/USD -0.2%>"},"usFutures":{"direction":"<HIGHER|LOWER|MIXED>","spx":"<e.g. +0.1%>","ndx":"<e.g. -0.2%>","note":"<1 sentence>"},"sessionHL":{"gold":{"high":<number>,"low":<number>},"dxy":{"high":<number>,"low":<number>},"usdJpy":{"high":<number>,"low":<number>}}},"vixSnapshot":{"level":<number>,"change":"<+/-X.X>","chgPct":"<+/-X.X%>","label":"<CALM|NORMAL|ELEVATED|HIGH FEAR>","labelColor":"<hex>","interpretation":"<1-2 sentences: what VIX level means for tonight>","impactOnGold":"<1 sentence: how VIX affects Gold trading tonight>"},"calendar":[{"time":"<SGT>","flag":"<emoji>","event":"<name>","stars":<2or3>,"forecast":"<value or —>","prev":"<value or —>","impact":"<CRITICAL|HIGH|MEDIUM>","goldBull":"<bullish condition>","goldBear":"<bearish condition>","analysis":"<1 sentence>"}]}
 
-CALENDAR RULES:
-ASIA (6am-3pm SGT): JPY, AUD, NZD, CNY data only
-LONDON (4pm-1am SGT): EUR, GBP, CHF data only
-NY (9pm-6am SGT): USD, CAD data only
-Include ONLY 2-star and 3-star events. Skip 1-star entirely.
-3-star: NFP, CPI, PCE, FOMC, GDP, central bank rate decisions, PMI Flash
-2-star: ISM, PPI, Retail Sales, Jobless Claims, JOLTS, IFO, ZEW, Trade Balance
+ALERT RULES: Only include genuinely active risks. 0-3 alerts max. P1=imminent, P2=session-long, P3=background.
+CALENDAR RULES: ASIA=JPY/AUD/NZD/CNY only. LONDON=EUR/GBP/CHF only. NY=USD/CAD only. 2-star and 3-star only. Max 3 events.
+SESSION H/L: Use approximate values based on live data provided. If unavailable use 0.`;
 
-INSTRUMENT RULES:
-Always include Gold (XAU/USD) first. Always include DXY second.
-Include USD/JPY if intervention risk present or BOJ active.
-Include EUR/USD if ECB relevant or DXY breaking key levels.
-Include GBP/JPY if carry trade risk elevated.
-Include WTI Oil if geopolitical risk elevated or OPEC news.
-3-5 instruments total — only relevant ones, not every instrument every time.
-DO NOT include sector rotation analysis or individual stock picks.
+const INTEL_P2_SYS=`You are a senior macro strategist at a top investment bank. Generate PHASE 2 of a pre-session intelligence briefing — deep analysis. You have Phase 1 context already provided. Be CONCISE. Max 2 sentences per text field unless analysis requires more. Short, punchy, actionable.
 
-ALERT RULES:
-Only include alerts for genuinely active risks — never manufacture alerts on quiet sessions.
-P1: Imminent binary risk in next 2 hours.
-P2: Active elevated risk for the full session.
-P3: Background risk to monitor this week.
-Maximum 3 alerts. Minimum 0 on quiet sessions.
+Search the web for: Fed rate cut probabilities CME FedWatch, real yield 10Y TIPS, BOJ intervention risk, ECB rate path, inflation CPI PCE latest, geopolitical risk assessment, Gold institutional positioning, liquidity conditions tonight.
 
-MACRO SECTIONS (always include):
-1. Federal Reserve — Policy Path (always)
-2. Most relevant CB for this session: BOJ for Asia, ECB/BOE for London, Fed/macro for NY
-3. Geopolitical Risk Tracker — only if genuinely active risk worth monitoring
-4. Carry Trade / JPY — only if JPY positioning is a live concern
-Maximum 4 macro sections.
+Respond ONLY with valid JSON:
+{"inflationRisk":{"level":"<HIGH|ELEVATED|MODERATE|LOW>","color":"<#f04545 for HIGH|#f0a020 for ELEVATED|#f0a020 for MODERATE|#22d46e for LOW>","realYield":"<e.g. 1.82%>","realYieldChg":"<e.g. +0.08%>","drivers":["<driver1>","<driver2>","<driver3>"],"goldImplication":"<2 sentences: how inflation risk affects Gold specifically tonight>","fedCutProb":"<e.g. July: 38% · Sep: 62% · Dec: 89%>"},"centralBanks":{"fed":{"rate":"<rate>","nextMeeting":"<date>","cutProb":"<e.g. July 38%>","recentSignal":"<1 sentence: latest signal>","goldImpact":"<1 sentence>"},"boj":{"rate":"<rate>","nextMeeting":"<date>","hikeProb":"<e.g. June 35%>","recentSignal":"<1 sentence>","goldImpact":"<1 sentence>"},"ecb":{"rate":"<rate>","nextMeeting":"<date>","cutProb":"<e.g. June 78%>","recentSignal":"<1 sentence>","goldImpact":"<1 sentence>"},"whichMattersTonight":"<1 sentence: which CB is the focus and why>"},"macro":[{"heading":"<heading>","color":"<hex>","body":"<2-3 sentences: analysis with specific data points>","keyData":"<data points separated by ·>"}],"liquidityAssessment":{"sessionLiquidity":"<e.g. NORMAL → THIN after midnight>","thinPeriods":"<when spreads widen>","goldSpread":"<normal and news spread>","note":"<1-2 sentences: how liquidity affects trading tonight>"},"positionManagement":{"maxRiskPerTrade":"<e.g. 1.5% maximum>","stopDistance":"<e.g. Gold: minimum $25-30>","avoidHours":"<SGT times>","newsRule":"<1 sentence>","note":"<1 sentence: key sizing guidance>"},"instruments":[{"name":"<name>","color":"<hex>","price":"<price>","bias":"<BULLISH|BEARISH|NEUTRAL|AVOID LONGS|WATCH>","conviction":"<HIGH|MEDIUM|LOW>","summary":"<2-3 sentences: macro drivers, what changes thesis>","levels":{"s2":<n>,"s1":<n>,"now":<n>,"r1":<n>,"r2":<n>},"setup":"<entry, stop, target, R/R or NO SETUP with reason>","avoid":["<condition1>","<condition2>"]}],"watchlist":[{"symbol":"<sym>","price":"<price>","bias":"<bias>","priority":"<CRITICAL|HIGH|MEDIUM>","color":"<hex>","note":"<1-2 sentences>"}],"tradeFocus":"<3-4 sentences direct to trader: primary opportunity, key risks, what to avoid, most important level tonight>"}
 
-WEEKLY CONTEXT: Always include. This is what makes the report feel like a real research note — the trader needs to know what happened this week to understand tonight.
+INSTRUMENT RULES: Always Gold first, DXY second. Include USD/JPY if intervention risk. Include GBP/JPY if carry trade risk. 3-5 instruments max — only relevant ones.
+MACRO: Fed always. BOJ if Asia/intervention risk. ECB/BOE if London. Geopolitical if active. Max 4 sections.
+POSITION MANAGEMENT: Be specific. Reference tonight's VIX level and volatility regime from Phase 1 context.`;
 
-Write like a senior JPMorgan analyst: confident, specific, data-driven. Every claim references a specific price level, probability, or data point. No vague generalisations. No sector rotation. No individual stock analysis.`;
 
 const dp=function(b:number){return b>=1000?2:b>=10?3:4;};
 const fmt=function(v:any,b:number){
@@ -226,6 +206,19 @@ function calcGoldBias(mkt:any[]){
   if(score>=2)return"BULLISH";if(score<=-2)return"BEARISH";return"NEUTRAL";
 }
 
+function calcInflationRisk(mkt:any[]){
+  var y10=mkt.find(function(m){return m.s==="US10Y";});
+  var gold=mkt.find(function(m){return m.s==="XAU/USD";});
+  var dxy=mkt.find(function(m){return m.s==="DX";});
+  var score=50;
+  if(y10){score+=y10.pct<-0.1?12:y10.pct>0.1?-12:0;}
+  if(gold){score+=gold.pct>0.5?15:gold.pct>0.2?8:gold.pct<-0.5?-15:gold.pct<-0.2?-8:0;}
+  if(dxy){score+=dxy.pct<-0.3?10:dxy.pct>0.3?-10:0;}
+  score=Math.max(0,Math.min(100,score));
+  if(score>=65)return{label:"HIGH INFLATION RISK",color:"#f04545",desc:"Gold bid · Real yields falling · Fed cut likely",score};
+  if(score<=35)return{label:"LOW INFLATION RISK",color:"#22d46e",desc:"Real yields rising · Dollar strong · Gold headwind",score};
+  return{label:"MODERATE INFLATION",color:"#f0a020",desc:"Mixed signals · Watch Fed & CPI closely",score};
+}
 function getSessionLabel(){
   var now=new Date();
   var sgt=new Date(now.getTime()+8*60*60*1000);
@@ -262,17 +255,24 @@ export default function Auxiron(){
   var [ctxLoading,setCtxLoading]=useState(false);
   var [ctxErr,setCtxErr]=useState<string|null>(null);
   var [lastRefresh,setLastRefresh]=useState<Date|null>(null);
-  var [intel,setIntel]=useState<any>(null);
-  var [intelLoading,setIntelLoading]=useState(false);
+  var [intelP1,setIntelP1]=useState<any>(null);
+  var [intelP2,setIntelP2]=useState<any>(null);
+  var [intelPhase,setIntelPhase]=useState<string>("idle");
   var [intelElapsed,setIntelElapsed]=useState(0);
   var [intelErr,setIntelErr]=useState<string|null>(null);
   var [intelSession,setIntelSession]=useState("asia");
   var [edgeImages,setEdgeImages]=useState<{name:string;base64:string;mediaType:string}[]>([]);
   var [sessionLbl,setSessionLbl]=useState(getSessionLabel());
   var cycleRef=useRef(0);
+  var intelElapsedRef=useRef<any>(null);
   var [intelCache,setIntelCache]=useState<{[k:string]:any}>({});
   var [ctxCount,setCtxCount]=useState(0);
   var [ctxSessionKey,setCtxSessionKey]=useState("");
+  var [instDetail,setInstDetail]=useState<any>(null);
+  var [instDetailTab,setInstDetailTab]=useState("news");
+  var [instNews,setInstNews]=useState<{[k:string]:any}>({});
+  var [instNewsLoading,setInstNewsLoading]=useState(false);
+  var [instTf,setInstTf]=useState(1);
 
   useEffect(function(){
     var id=setInterval(function(){setNowStr(new Date().toUTCString().slice(0,25));},1000);
@@ -285,12 +285,7 @@ export default function Auxiron(){
     return function(){clearInterval(id);};
   },[]);
 
-  useEffect(function(){
-    if(!intelLoading){setIntelElapsed(0);return;}
-    setIntelElapsed(0);
-    var id=setInterval(function(){setIntelElapsed(function(n){return n+1;});},1000);
-    return function(){clearInterval(id);};
-  },[intelLoading]);
+
 
   function applyPrices(combined:any){
     if(!combined||Object.keys(combined).length===0)return;
@@ -421,10 +416,10 @@ export default function Auxiron(){
   }
 
   function fetchCtx(){
-    var sk=getSessionKey();
-    var newCount=ctxSessionKey===sk?ctxCount+1:1;
-    if(newCount>6){setCtxErr("Session limit reached — max 6 briefings per session (3 per half-session).");return;}
-    setCtxCount(newCount);setCtxSessionKey(sk);
+    var today=new Date().toDateString();
+    var newCount=ctxSessionKey===today?ctxCount+1:1;
+    if(newCount>10){setCtxErr("Daily limit reached — max 10 briefings per day.");return;}
+    setCtxCount(newCount);setCtxSessionKey(today);
     setCtxLoading(true);setCtx(null);setCtxErr(null);
     var msg="LIVE MARKET DATA:\n"+getSnap()+
       "\n\nCurrent time SGT: "+new Date().toLocaleString("en-SG",{timeZone:"Asia/Singapore"})+
@@ -440,25 +435,69 @@ export default function Auxiron(){
     
   
 
+  function fetchInstNews(sym:string,force?:boolean){
+    if(!force&&instNews[sym])return;
+    setInstNewsLoading(true);
+    var inst=mkt.find(function(m){return m.s===sym;});
+    var msg="Fetch latest news and brief analysis for: "+sym+(inst?" ("+inst.l+") Current price: "+inst.cur.toFixed(2)+" ("+( inst.pct>=0?"+":"")+inst.pct.toFixed(2)+"%)":"")+"\n\nSearch for the 3-5 most recent and relevant news headlines for this specific instrument.";
+    callProxy(
+      {model:"claude-haiku-4-5",max_tokens:1500,system:INST_NEWS_SYS,
+       messages:[{role:"user",content:msg}],useWebSearch:true},
+      function(res:any){setInstNews(function(p:any){var n={...p};n[sym]=res;return n;});setInstNewsLoading(false);},
+      function(){setInstNewsLoading(false);}
+    );
+  }
+
+  function openInstDetail(m:any){
+    setInstDetail(m);
+    setInstDetailTab("news");
+    setInstTf(1);
+    if(!instNews[m.s])fetchInstNews(m.s);
+  }
+
+  function closeInstDetail(){setInstDetail(null);}
+
   function fetchIntel(session:string,force?:boolean){
-    if(!force&&intelCache[session]){setIntel(intelCache[session]);return;}
-    setIntelLoading(true);setIntel(null);setIntelErr(null);
+    if(!force&&intelCache[session]){
+      setIntelP1(intelCache[session].p1);
+      setIntelP2(intelCache[session].p2);
+      setIntelPhase("complete");
+      return;
+    }
+    setIntelPhase("p1loading");
+    setIntelP1(null);setIntelP2(null);setIntelErr(null);
+    setIntelElapsed(0);
+    clearInterval(intelElapsedRef.current);
+    intelElapsedRef.current=setInterval(function(){setIntelElapsed(function(n:number){return n+1;});},1000);
     var SESSIONS_MAP:any={
-      asia:"ASIA OPEN (SGT 6am-3pm) — Sydney/Tokyo sessions, overnight moves, what moved in US/EU, London setup",
-      london:"LONDON OPEN (SGT 4pm-1am) — European session, FX focus, London/NY overlap from 9pm SGT",
-      ny:"NY SESSION (SGT 9pm-6am) — London/NY overlap 9pm-1am, Fed speakers, US data, Gold trade setups"
+      asia:"ASIA OPEN (SGT 6am-3pm) — Sydney/Tokyo sessions",
+      london:"LONDON OPEN (SGT 4pm-1am) — European session, FX focus",
+      ny:"NY SESSION (SGT 9pm-6am) — London/NY overlap, Fed speakers, US data"
     };
     var label=SESSIONS_MAP[session]||"NY SESSION";
-    var msg="LIVE MARKET DATA:\n"+getSnap()+
-      "\n\nSESSION: "+label+
-      "\n\nToday: "+new Date().toDateString()+
-      "\n\nSearch for: latest market news this week and tonight, Gold price drivers and key levels, DXY movement and Fed outlook, JPY intervention risk and BOJ stance, geopolitical active risks, upcoming economic data this session, central bank statements, institutional positioning signals, bank forecasts for Gold."+
-      "\n\nGenerate a comprehensive "+label+" intelligence report with: overnight digest, geopolitical events, dynamic market movers, Fed watch, economic events SGT times, GOLD DEEP DIVE (what moving now + buy/sell rumor detection + risk scenarios + price targets), OIL deep dive, SPX+NDX analysis, key levels, instrument bias, trade focus tonight.";
+    var snap=getSnap();
+    var now=new Date().toLocaleString("en-SG",{timeZone:"Asia/Singapore"});
+    var p1msg="LIVE MARKET DATA:\n"+snap+"\n\nSESSION: "+label+"\n\nCurrent SGT time: "+now+"\n\nGenerate Phase 1 situational awareness briefing. Search for latest headlines, overnight moves, VIX, economic calendar for tonight.";
     callProxy(
-      {model:"claude-sonnet-4-6",max_tokens:12000,system:INTEL_SYS,
-       messages:[{role:"user",content:msg}],useWebSearch:true},
-      function(res:any){setIntel(res);setIntelCache(function(p:any){var n={...p};n[session]=res;return n;});setIntelLoading(false);setIntelErr(null);},
-      function(e:string){setIntelErr("Failed: "+e);setIntelLoading(false);}
+      {model:"claude-sonnet-4-6",max_tokens:3000,system:INTEL_P1_SYS,
+       messages:[{role:"user",content:p1msg}],useWebSearch:true},
+      function(p1:any){
+        setIntelP1(p1);
+        setIntelPhase("p2loading");
+        var p2msg="LIVE MARKET DATA:\n"+snap+"\n\nSESSION: "+label+"\n\nPhase 1 context (already delivered to user):\n"+JSON.stringify(p1)+"\n\nNow generate Phase 2 deep analysis: inflation risk, central banks, macro framework, liquidity, position management, instruments, watchlist, trade focus. Search for: Fed cut probabilities, real yields, BOJ risk, ECB path, Gold positioning, liquidity conditions.";
+        callProxy(
+          {model:"claude-sonnet-4-6",max_tokens:4000,system:INTEL_P2_SYS,
+           messages:[{role:"user",content:p2msg}],useWebSearch:true},
+          function(p2:any){
+            setIntelP2(p2);
+            setIntelPhase("complete");
+            clearInterval(intelElapsedRef.current);
+            setIntelCache(function(prev:any){var n={...prev};n[session]={p1,p2};return n;});
+          },
+          function(e:string){setIntelErr("Phase 2 failed: "+e);setIntelPhase("p1done");clearInterval(intelElapsedRef.current);}
+        );
+      },
+      function(e:string){setIntelErr("Failed: "+e);setIntelPhase("idle");clearInterval(intelElapsedRef.current);}
     );
   }
 
@@ -486,6 +525,7 @@ export default function Auxiron(){
   var roro=getROROLabel(roro_score);
   var goldBias=calcGoldBias(mkt);
   var goldBiasColor=goldBias==="BULLISH"?C.up:goldBias==="BEARISH"?C.dn:C.amber;
+  var inflationRisk=calcInflationRisk(mkt);
 
   var displayed=catF==="All"?mkt.filter(function(m){return m.tier<=2;}):
     catF==="Risk-On"?mkt.filter(function(m){return m.roro==="ON";}):
@@ -548,9 +588,9 @@ export default function Auxiron(){
         textarea:focus{outline:none;}
         button{-webkit-tap-highlight-color:transparent;cursor:pointer;font-family:inherit;}
         .tap:active{opacity:0.7;}
-        @keyframes fu{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}} .fu{animation:fu 0.28s ease forwards;}
+        @keyframes fu{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}} .fu{animation:fu 0.28s ease forwards;} @keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}
         @keyframes pd{0%,100%{opacity:1}50%{opacity:0.1}} .pd{animation:pd 1.5s ease infinite;}
-        @keyframes sp{to{transform:rotate(360deg)}} .sp{animation:sp 0.8s linear infinite;}
+        @keyframes sp{to{transform:rotate(360deg)}} .sp{animation:sp 0.8s linear infinite;} @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
         @keyframes tk{0%{transform:translateX(0)}100%{transform:translateX(-50%)}} .tk{animation:tk 65s linear infinite;display:inline-block;white-space:nowrap;} .tk:hover{animation-play-state:paused;}
         .auxiron-root{display:flex;width:100%;min-height:100vh;min-height:100dvh;background:#080e14;font-family:'IBM Plex Sans',sans-serif;}
         .auxiron-sidebar{display:none;}
@@ -769,9 +809,9 @@ export default function Auxiron(){
               var isGold=m.s==="XAU/USD";
               var lc=isBond?C.bond:up?C.up:C.dn;
               var roroColor=m.roro==="ON"?C.up:m.roro==="OFF"?C.dn:C.txt3;
-              return <div key={m.s}
+              return <div key={m.s} onClick={function(){openInstDetail(m);}} className="tap"
                 style={{background:C.bg1,border:"1px solid "+(isGold?"rgba(200,168,64,0.25)":C.border),
-                  borderRadius:10,padding:"10px 13px",display:"flex",alignItems:"center",gap:10}}>
+                  borderRadius:10,padding:"10px 13px",display:"flex",alignItems:"center",gap:10,cursor:"pointer"}}>
                 <div style={{flex:1}}>
                   <div style={{display:"flex",alignItems:"center",gap:6}}>
                     <span style={{fontSize:15,fontWeight:600,color:isGold?C.goldL:C.txt0}}>{m.l}</span>
@@ -914,10 +954,10 @@ export default function Auxiron(){
               <div style={{fontSize:9,color:C.txt2,marginTop:1}}>{nowStr}</div>
             </div>
             <div style={{display:"flex",alignItems:"center",gap:6}}>
-              <span style={{fontSize:9,color:ctxCount>=6?C.dn:C.txt3}}>{ctxCount}/6</span>
-              <button className="tap" onClick={fetchCtx} disabled={ctxLoading||ctxCount>=6}
-                style={{background:ctxLoading||ctxCount>=6?C.bg2:C.gold,color:ctxLoading||ctxCount>=6?C.txt2:"#0c1118",border:"none",borderRadius:8,padding:"7px 14px",fontSize:9,fontWeight:500,display:"flex",alignItems:"center",gap:5}}>
-                {ctxLoading?[<div key="sp" className="sp" style={{width:10,height:10,border:"2px solid "+C.border2,borderTopColor:C.txt1,borderRadius:"50%"}}></div>,"GENERATING…"]:ctxCount>=6?"◉ LIMIT REACHED":"◉ GENERATE"}
+              <span style={{fontSize:9,color:ctxCount>=10?C.dn:C.txt3}}>{ctxCount}/10</span>
+              <button className="tap" onClick={fetchCtx} disabled={ctxLoading||ctxCount>=10}
+                style={{background:ctxLoading||ctxCount>=10?C.bg2:C.gold,color:ctxLoading||ctxCount>=10?C.txt2:"#0c1118",border:"none",borderRadius:8,padding:"7px 14px",fontSize:9,fontWeight:500,display:"flex",alignItems:"center",gap:5}}>
+                {ctxLoading?[<div key="sp" className="sp" style={{width:10,height:10,border:"2px solid "+C.border2,borderTopColor:C.txt1,borderRadius:"50%"}}></div>,"GENERATING…"]:ctxCount>=10?"◉ LIMIT REACHED":"◉ GENERATE"}
               </button>
             </div>
           </div>
@@ -1039,352 +1079,397 @@ export default function Auxiron(){
         {/* ── INTELLIGENCE ── */}
         {tab==="intel"&&(
           <div style={{padding:"12px"}} className="fu">
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
-              <div>
-                <div style={{fontFamily:"'Syne',sans-serif",fontSize:14,fontWeight:700,color:C.txt0,letterSpacing:".06em"}}>MARKET INTELLIGENCE</div>
-                
-              </div>
-            </div>
-            <div style={{display:"grid",gap:6,marginBottom:12}}>
-              {[
-                {key:"asia",icon:"🌏",label:"ASIA OPEN",time:"6am–3pm SGT",color:C.bond,grad:"linear-gradient(135deg,rgba(64,200,208,0.12),rgba(64,200,208,0.04))",bdr:"rgba(64,200,208,0.3)"},
-                {key:"london",icon:"🌍",label:"LONDON OPEN",time:"4pm–1am SGT",color:C.blue,grad:"linear-gradient(135deg,rgba(72,144,248,0.12),rgba(72,144,248,0.04))",bdr:"rgba(72,144,248,0.3)"},
-                {key:"ny",icon:"🗽",label:"NY SESSION",time:"9pm–6am SGT",color:C.goldL,grad:"linear-gradient(135deg,rgba(200,168,64,0.15),rgba(200,168,64,0.04))",bdr:"rgba(200,168,64,0.35)"}
-              ].map(function(s){
-                var a=intelSession===s.key&&intel;
-                var ld=intelSession===s.key&&intelLoading;
-                var cached=!!intelCache[s.key];
-                return <button key={s.key} className="tap" onClick={function(){setIntelSession(s.key);fetchIntel(s.key);}}
-                  style={{background:(a||ld)?s.grad:C.bg1,border:"1px solid "+((a||ld)?s.bdr:C.border),borderRadius:10,padding:"10px 14px",textAlign:"left",width:"100%"}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                    <div style={{display:"flex",alignItems:"center",gap:9}}>
-                      <span style={{fontSize:17}}>{s.icon}</span>
-                      <div>
-                        <div style={{fontSize:12,fontWeight:700,color:(a||ld)?s.color:C.txt0}}>{s.label}</div>
-                        <div style={{fontSize:9,color:(a||ld)?s.color:C.txt2}}>{s.time}</div>
+            {/* Session selector */}
+            <div style={{marginBottom:12}}>
+              <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:C.txt2,letterSpacing:".12em",fontWeight:600,marginBottom:8}}>⬟ INTEL REPORT</div>
+              <div style={{display:"grid",gap:5}}>
+                {[
+                  {key:"asia",icon:"🌏",label:"ASIA OPEN",time:"6am–3pm SGT",color:C.bond},
+                  {key:"london",icon:"🌍",label:"LONDON OPEN",time:"4pm–1am SGT",color:C.blue},
+                  {key:"ny",icon:"🗽",label:"NY SESSION",time:"9pm–6am SGT",color:C.goldL},
+                ].map(function(s){
+                  var active=intelSession===s.key;
+                  var cached=!!intelCache[s.key];
+                  var isLoading=active&&(intelPhase==="p1loading"||intelPhase==="p2loading");
+                  var isDone=active&&intelPhase==="complete";
+                  return <button key={s.key} className="tap"
+                    onClick={function(){setIntelSession(s.key);fetchIntel(s.key);}}
+                    style={{background:active?"rgba(0,0,0,0.2)":C.bg1,
+                      border:"1px solid "+(active?s.color+"55":C.border),
+                      borderRadius:10,padding:"10px 14px",textAlign:"left",width:"100%"}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                      <div style={{display:"flex",alignItems:"center",gap:9}}>
+                        <span style={{fontSize:17}}>{s.icon}</span>
+                        <div>
+                          <div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:13,fontWeight:700,color:active?s.color:C.txt0}}>{s.label}</div>
+                          <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:active?s.color:C.txt2}}>{s.time}</div>
+                        </div>
+                      </div>
+                      <div style={{display:"flex",alignItems:"center",gap:6}}>
+                        {cached&&!active&&<span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.up}}>✓</span>}
+                        {isLoading&&<div className="sp" style={{width:10,height:10,border:"2px solid "+C.border2,borderTopColor:s.color,borderRadius:"50%"}}/>}
+                        {isDone&&<span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:C.up}}>✓ Done</span>}
+                        {!isLoading&&!isDone&&<span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:C.txt3}}>→</span>}
                       </div>
                     </div>
-                    <span style={{fontSize:10,color:C.txt3}}>{ld?"...":a?"✓":"→"}</span>
-                  </div>
-                </button>;
-              })}
+                  </button>;
+                })}
+              </div>
             </div>
-            {intelLoading&&(
-              <div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:12,padding:"26px 20px",textAlign:"center",marginBottom:10}}>
-                <div className="sp" style={{width:22,height:22,border:"3px solid "+C.border2,borderTopColor:C.gold,borderRadius:"50%",margin:"0 auto 10px"}}></div>
-                <div style={{fontSize:11,color:C.goldL,letterSpacing:".08em",marginBottom:3}}>SEARCHING WEB + GENERATING</div>
-                <div style={{fontSize:9,color:C.txt2,marginBottom:6}}>Live news · Sector flows · Rumor detection</div>
-                <div style={{fontSize:10,color:C.txt3,fontVariantNumeric:"tabular-nums"}}>
-                  {intelElapsed<5?"Starting up…":intelElapsed<15?"Searching the web…":intelElapsed<30?"Reading market data…":"Generating report…"}
-                  <span style={{color:C.gold,marginLeft:6,fontWeight:600}}>{intelElapsed}s</span>
-                </div>
-              </div>
-            )}
-            {intelErr&&<div style={{background:"rgba(240,64,64,0.07)",border:"1px solid rgba(240,64,64,0.2)",borderRadius:8,padding:"10px 12px",color:C.dn,fontSize:12,marginBottom:10}}>⚠ {intelErr}</div>}
-            {!intel&&!intelLoading&&!intelErr&&(
+
+            {/* Error state */}
+            {intelErr&&<div style={{background:"rgba(240,69,69,0.07)",border:"1px solid rgba(240,69,69,0.2)",borderRadius:8,padding:"10px 12px",color:C.dn,fontSize:12,marginBottom:10,fontFamily:"'IBM Plex Sans',sans-serif"}}>⚠ {intelErr}</div>}
+
+            {/* Idle state */}
+            {intelPhase==="idle"&&!intelErr&&(
               <div style={{textAlign:"center",padding:"36px 20px",background:C.bg1,border:"1px solid "+C.border,borderRadius:12}}>
-                <div style={{fontFamily:"'Syne',sans-serif",fontSize:30,marginBottom:10,opacity:0.2}}>⬟</div>
-                <div style={{fontSize:12,color:C.txt2,letterSpacing:".08em",marginBottom:4}}>SELECT A SESSION ABOVE</div>
-                <div style={{fontSize:10,color:C.txt3}}>Gold · Commodities · Indices · Rumor Detection</div>
+                <div style={{fontFamily:"'Syne',sans-serif",fontSize:28,marginBottom:8,opacity:0.15}}>⬟</div>
+                <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:11,color:C.txt3,letterSpacing:".1em",marginBottom:4}}>SELECT SESSION ABOVE</div>
+                <div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:12,color:C.txt3}}>Tap a session to generate your pre-market intelligence report</div>
               </div>
             )}
-            {intel&&!intelLoading&&(
-              <div style={{display:"flex",justifyContent:"flex-end",marginBottom:6}}>
-                <button className="tap" onClick={function(){if(window.confirm("Regenerate Intel report for this session?"))fetchIntel(intelSession,true);}}
-                  style={{background:C.bg2,border:"1px solid "+C.border,borderRadius:7,padding:"4px 11px",color:C.txt2,fontSize:9}}>↻ Regenerate</button>
-              </div>)}
-            {intel&&!intelLoading&&(
-              <div className="fu">
-                <div style={{background:"linear-gradient(135deg,rgba(200,168,64,0.12),rgba(200,168,64,0.04))",border:"1px solid rgba(200,168,64,0.3)",borderRadius:10,padding:"12px",marginBottom:8}}>
-                  <div style={{fontSize:10,color:C.goldL,fontWeight:600,marginBottom:4}}>{intel.session} · {intel.generatedAt}</div>
-                  <div style={{fontSize:13,fontWeight:600,color:C.txt0,lineHeight:1.55}}>{intel.headline}</div>
-                  {intel.marketRegime&&<div style={{marginTop:6,display:"inline-block",fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:4,background:"rgba(0,0,0,0.3)",color:intel.marketRegime==="RISK-OFF"?C.dn:intel.marketRegime==="RISK-ON"?C.up:C.amber,border:"1px solid "+(intel.marketRegime==="RISK-OFF"?C.dn:intel.marketRegime==="RISK-ON"?C.up:C.amber)+"44"}}>{intel.marketRegime}</div>}
-                  {intel.regimeDrivers&&<div style={{fontSize:12,color:C.txt1,lineHeight:1.7,marginTop:6}}>{intel.regimeDrivers}</div>}
-                  {intel.executiveSummary&&<div style={{fontSize:12,color:C.txt0,lineHeight:1.8,marginTop:8,paddingTop:8,borderTop:"1px solid rgba(200,168,64,0.15)"}}>{intel.executiveSummary}</div>}
+
+            {/* Phase 1 loading skeleton */}
+            {intelPhase==="p1loading"&&(
+              <div>
+                <div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:12,padding:"20px",textAlign:"center",marginBottom:8}}>
+                  <div className="sp" style={{width:22,height:22,border:"3px solid "+C.border2,borderTopColor:C.up,borderRadius:"50%",margin:"0 auto 10px"}}/>
+                  <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:11,color:C.up,letterSpacing:".08em",marginBottom:3}}>PHASE 1 · SEARCHING WEB...</div>
+                  <div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:11,color:C.txt3,marginBottom:6}}>Alerts · Overnight recap · Economic calendar</div>
+                  <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:C.gold}}>{intelElapsed}s</div>
                 </div>
-                {intel.weeklyContext&&(
-                  <div style={{background:"rgba(72,144,248,0.07)",border:"1px solid rgba(72,144,248,0.22)",borderRadius:10,padding:"12px",marginBottom:8}}>
-                    <div style={{fontSize:10,color:C.blue,letterSpacing:".1em",fontWeight:600,marginBottom:7}}>📅 THIS WEEK IN MARKETS</div>
-                    <div style={{fontSize:12,color:C.txt0,lineHeight:1.8,marginBottom:intel.weeklyContext.biggestMove||intel.weeklyContext.setupForNext?8:0}}>{intel.weeklyContext.summary}</div>
-                    {intel.weeklyContext.biggestMove&&<div style={{background:"rgba(0,0,0,0.2)",borderRadius:6,padding:"6px 9px",marginBottom:6}}>
-                      <span style={{fontSize:9,color:C.gold,fontWeight:600}}>BIGGEST MOVE: </span>
-                      <span style={{fontSize:11,color:C.txt0}}>{intel.weeklyContext.biggestMove}</span>
-                    </div>}
-                    {intel.weeklyContext.setupForNext&&<div style={{background:"rgba(0,0,0,0.2)",borderRadius:6,padding:"6px 9px"}}>
-                      <span style={{fontSize:9,color:C.blue,fontWeight:600}}>NEXT WEEK SETUP: </span>
-                      <span style={{fontSize:11,color:C.txt0}}>{intel.weeklyContext.setupForNext}</span>
-                    </div>}
+                {[80,110,90].map(function(h,i){return <div key={i} style={{height:h,background:"linear-gradient(90deg,#121d2c 25%,#1a2840 50%,#121d2c 75%)",backgroundSize:"200% 100%",borderRadius:9,marginBottom:7,animation:"shimmer 1.4s infinite"}}/>;})}
+              </div>
+            )}
+
+            {/* Phase 1 content */}
+            {(intelPhase==="p1done"||intelPhase==="p2loading"||intelPhase==="complete")&&intelP1&&(
+              <div>
+                <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}>
+                  <div style={{flex:1,height:1,background:C.border}}/>
+                  <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.up,background:"rgba(34,212,110,0.08)",border:"1px solid rgba(34,212,110,0.2)",borderRadius:4,padding:"2px 8px"}}>✓ PHASE 1 · ALERTS + CALENDAR</span>
+                  <div style={{flex:1,height:1,background:C.border}}/>
+                </div>
+
+                {/* Header */}
+                <div style={{background:"linear-gradient(135deg,rgba(212,168,67,0.1),rgba(212,168,67,0.03))",border:"1px solid rgba(212,168,67,0.28)",borderRadius:10,padding:"13px",marginBottom:8}}>
+                  <div style={{display:"flex",gap:6,marginBottom:5,flexWrap:"wrap",alignItems:"center"}}>
+                    {intelP1.marketRegime&&<span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:4,color:intelP1.marketRegime==="RISK-OFF"?C.dn:intelP1.marketRegime==="RISK-ON"?C.up:C.amber,background:(intelP1.marketRegime==="RISK-OFF"?C.dn:intelP1.marketRegime==="RISK-ON"?C.up:C.amber)+"18",border:"1px solid "+(intelP1.marketRegime==="RISK-OFF"?C.dn:intelP1.marketRegime==="RISK-ON"?C.up:C.amber)+"44"}}>{intelP1.marketRegime}</span>}
+                    <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:C.txt3}}>{intelP1.generatedAt} · {intelP1.validFor}</span>
                   </div>
-                )}
-                {intel.overnightDigest&&(
-                  <div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,padding:"12px",marginBottom:8}}>
-                    <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:C.txt2,letterSpacing:".1em",fontWeight:600,marginBottom:6}}>🌙 OVERNIGHT DIGEST</div>
-                    <div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:13,color:C.txt0,lineHeight:1.8,marginBottom:8}}>{intel.overnightDigest}</div>
-                    {intel.geopolitical&&intel.geopolitical.length>0&&(
-                      <div>
-                        <div style={{fontSize:9,color:C.amber,letterSpacing:".08em",fontWeight:600,marginBottom:5}}>⚡ GEOPOLITICAL</div>
-                        {intel.geopolitical.map(function(g:string,i:number){
-                          return <div key={i} style={{display:"flex",gap:7,padding:"5px 0",borderBottom:i<intel.geopolitical.length-1?"1px solid "+C.border:"none"}}>
-                            <span style={{color:C.dn,flexShrink:0}}>→</span>
-                            <span style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:12,color:C.txt1,lineHeight:1.65}}>{g}</span>
-                          </div>;
-                        })}
+                  {intelP1.headline&&<div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:14,fontWeight:700,color:C.txt0,lineHeight:1.45,marginBottom:6}}>{intelP1.headline}</div>}
+                  {intelP1.executiveSummary&&<div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:12,color:C.txt1,lineHeight:1.75}}>{intelP1.executiveSummary}</div>}
+                  {intelP1.regimeDrivers&&<div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:11,color:C.txt2,lineHeight:1.65,marginTop:5}}>{intelP1.regimeDrivers}</div>}
+                </div>
+
+                {/* Priority Alerts */}
+                {intelP1.alerts&&intelP1.alerts.length>0&&<div style={{marginBottom:8}}>
+                  <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:C.txt2,letterSpacing:".1em",fontWeight:600,marginBottom:7}}>⚡ PRIORITY ALERTS</div>
+                  {intelP1.alerts.map(function(a:any,i:number){
+                    return <div key={i} style={{background:a.color+"0e",border:"1px solid "+a.color+"33",borderLeft:"3px solid "+a.color,borderRadius:9,padding:"11px 12px",marginBottom:6}}>
+                      <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,fontWeight:700,color:a.color,letterSpacing:".08em",marginBottom:4}}>P{a.priority} · {a.type}</div>
+                      <div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:13,fontWeight:700,color:C.txt0,lineHeight:1.4,marginBottom:5}}>{a.headline}</div>
+                      <div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:12,color:C.txt1,lineHeight:1.7,marginBottom:6}}>{a.detail}</div>
+                      {a.monitor&&<div style={{background:"rgba(0,0,0,0.2)",borderRadius:5,padding:"5px 8px",borderLeft:"2px solid "+a.color}}>
+                        <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:a.color,fontWeight:600}}>MONITOR: </span>
+                        <span style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:11,color:C.txt0}}>{a.monitor}</span>
+                      </div>}
+                    </div>;
+                  })}
+                </div>}
+
+                {/* Overnight Recap */}
+                {intelP1.overnightRecap&&<div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,padding:"12px",marginBottom:8}}>
+                  <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:C.txt2,letterSpacing:".1em",fontWeight:600,marginBottom:8}}>🌍 OVERNIGHT RECAP</div>
+                  {[["Asia",intelP1.overnightRecap.asia,C.bond],["Europe",intelP1.overnightRecap.europe,C.blue]].map(function(row:any){
+                    var name=row[0];var data=row[1];var color=row[2];
+                    if(!data)return null;
+                    return <div key={name} style={{background:C.bg2,border:"1px solid "+color+"22",borderRadius:8,padding:"9px 11px",marginBottom:5}}>
+                      <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
+                        <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:color,fontWeight:600}}>{name.toUpperCase()} SESSION</span>
+                        {data.keyMove&&<span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:C.gold}}>{data.keyMove}</span>}
                       </div>
-                    )}
-                  </div>
-                )}
-                {intel.dynamicMovers&&intel.dynamicMovers.length>0&&(
-                  <div style={{marginBottom:8}}>
-                    <div style={{fontSize:10,color:C.goldL,letterSpacing:".1em",fontWeight:600,marginBottom:6}}>📊 TODAY'S MARKET MOVERS</div>
-                    <div style={{display:"grid",gap:5}}>
-                      {intel.dynamicMovers.map(function(m:any,i:number){
-                        var isUp=m.dir==="BULLISH";var cl=isUp?C.up:C.dn;
-                        return <div key={i} style={{background:C.bg1,border:"1px solid "+(isUp?"rgba(40,204,120,0.18)":"rgba(240,64,64,0.18)"),borderRadius:9,padding:"10px 12px"}}>
-                          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
-                            <span style={{fontFamily:"'Syne',sans-serif",fontSize:14,fontWeight:700,color:C.txt0}}>{m.symbol}</span>
-                            <div style={{textAlign:"right"}}>
-                              <div style={{fontSize:12,fontWeight:600,color:C.txt0}}>{m.price}</div>
-                              <div style={{fontSize:10,color:cl,fontWeight:600}}>{m.change}</div>
-                            </div>
-                          </div>
-                          <div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:12,color:C.txt0,lineHeight:1.65}}>{m.why}</div>
+                      <div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:12,color:C.txt1,lineHeight:1.65}}>{data.summary}</div>
+                    </div>;
+                  })}
+                  {intelP1.overnightRecap.usFutures&&<div style={{background:C.bg2,border:"1px solid "+C.border,borderRadius:8,padding:"9px 11px",marginBottom:5}}>
+                    <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
+                      <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:C.amber,fontWeight:600}}>US FUTURES</span>
+                      <div style={{display:"flex",gap:8}}>
+                        {intelP1.overnightRecap.usFutures.spx&&<span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:C.txt2}}>SPX <span style={{color:intelP1.overnightRecap.usFutures.spx.startsWith("+")?C.up:C.dn}}>{intelP1.overnightRecap.usFutures.spx}</span></span>}
+                        {intelP1.overnightRecap.usFutures.ndx&&<span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:C.txt2}}>NDX <span style={{color:intelP1.overnightRecap.usFutures.ndx.startsWith("+")?C.up:C.dn}}>{intelP1.overnightRecap.usFutures.ndx}</span></span>}
+                      </div>
+                    </div>
+                    {intelP1.overnightRecap.usFutures.note&&<div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:12,color:C.txt1}}>{intelP1.overnightRecap.usFutures.note}</div>}
+                  </div>}
+                  {intelP1.overnightRecap.sessionHL&&<div style={{background:C.bg2,border:"1px solid "+C.border,borderRadius:8,padding:"9px 11px"}}>
+                    <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:C.txt2,marginBottom:6}}>SESSION HIGHS & LOWS</div>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:5}}>
+                      {[["GOLD",intelP1.overnightRecap.sessionHL.gold,C.gold],["DXY",intelP1.overnightRecap.sessionHL.dxy,C.blue],["USD/JPY",intelP1.overnightRecap.sessionHL.usdJpy,C.jpy]].map(function(row:any){
+                        var name=row[0];var hl=row[1];var color=row[2];
+                        if(!hl||!hl.high)return null;
+                        return <div key={name} style={{textAlign:"center"}}>
+                          <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:color,marginBottom:2}}>{name}</div>
+                          <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:C.up}}>H: {hl.high}</div>
+                          <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:C.dn}}>L: {hl.low}</div>
                         </div>;
                       })}
                     </div>
-                  </div>
-                )}
-                {intel.fedWatch&&(
-                  <div style={{background:C.bg1,border:"1px solid rgba(72,144,248,0.2)",borderRadius:10,padding:"12px",marginBottom:8}}>
-                    <div style={{fontSize:10,color:C.blue,letterSpacing:".1em",fontWeight:600,marginBottom:6}}>🏛 FED WATCH{intel.fedWatch.speaker&&intel.fedWatch.speaker!=="NONE"?" · "+intel.fedWatch.speaker:""}</div>
-                    <div style={{background:C.bg2,borderRadius:7,padding:"8px 10px",marginBottom:6}}>
-                      <div style={{fontSize:12,fontWeight:500,color:C.txt0,lineHeight:1.55,marginBottom:3}}>"{intel.fedWatch.statement}"</div>
-                      <div style={{fontSize:11,color:C.blue}}>{intel.fedWatch.marketRead}</div>
+                  </div>}
+                </div>}
+
+                {/* VIX Snapshot */}
+                {intelP1.vixSnapshot&&<div style={{background:"rgba(176,96,240,0.07)",border:"1px solid rgba(176,96,240,0.22)",borderRadius:10,padding:"12px",marginBottom:8}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                    <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:C.vix,fontWeight:600,letterSpacing:".1em"}}>📊 VIX ANALYSIS</div>
+                    <div style={{textAlign:"right"}}>
+                      <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:20,fontWeight:600,color:intelP1.vixSnapshot.labelColor||C.amber,lineHeight:1}}>{intelP1.vixSnapshot.level}</div>
+                      <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:C.dn}}>{intelP1.vixSnapshot.chgPct}</div>
                     </div>
                   </div>
-                )}
-                {intel.gold&&(
-                  <div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,padding:"12px",marginBottom:8}}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-                      <div style={{fontFamily:"'Syne',sans-serif",fontSize:14,fontWeight:700,color:C.gold}}>📦 GOLD DEEP DIVE</div>
-                      <div style={{textAlign:"right"}}>
-                        <div style={{fontSize:13,fontWeight:600,color:C.txt0}}>{intel.gold.price}</div>
-                        <div style={{fontSize:10,color:C.up,fontWeight:600}}>{intel.gold.chg}</div>
+                  <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:4,color:intelP1.vixSnapshot.labelColor||C.amber,background:(intelP1.vixSnapshot.labelColor||C.amber)+"18",border:"1px solid "+(intelP1.vixSnapshot.labelColor||C.amber)+"44"}}>{intelP1.vixSnapshot.label}</span>
+                  <div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:12,color:C.txt0,lineHeight:1.75,margin:"7px 0 6px"}}>{intelP1.vixSnapshot.interpretation}</div>
+                  {intelP1.vixSnapshot.impactOnGold&&<div style={{background:"rgba(176,96,240,0.08)",borderRadius:6,padding:"6px 9px",borderLeft:"2px solid "+C.vix}}>
+                    <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:C.vix,fontWeight:600}}>GOLD: </span>
+                    <span style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:11,color:C.txt0}}>{intelP1.vixSnapshot.impactOnGold}</span>
+                  </div>}
+                </div>}
+
+                {/* Calendar */}
+                {intelP1.calendar&&intelP1.calendar.length>0&&<div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,padding:"12px",marginBottom:8}}>
+                  <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:C.txt2,letterSpacing:".1em",fontWeight:600,marginBottom:8}}>📅 ECONOMIC CALENDAR</div>
+                  {intelP1.calendar.map(function(ev:any,i:number){
+                    var ic=ev.impact==="CRITICAL"?"#ff1840":ev.impact==="HIGH"?C.dn:C.amber;
+                    return <div key={i} style={{background:C.bg2,border:"1px solid "+(ev.stars===3?"rgba(255,24,64,0.2)":"rgba(240,165,0,0.15)"),borderRadius:8,padding:"10px 12px",marginBottom:i<intelP1.calendar.length-1?5:0}}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:4}}>
+                        <div>
+                          <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:2}}>
+                            <span style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:13,fontWeight:700,color:C.txt0}}>{ev.flag} {ev.event}</span>
+                            <span>{[1,2,3].map(function(s:number){return <span key={s} style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:s<=ev.stars?C.amber:C.txt3}}>★</span>;})}</span>
+                          </div>
+                          <div style={{display:"flex",gap:8}}>
+                            <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,fontWeight:600,color:C.gold}}>{ev.time}</span>
+                            {ev.forecast&&ev.forecast!=="—"&&<span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:C.txt2}}>Exp: <strong style={{color:C.txt0}}>{ev.forecast}</strong></span>}
+                            {ev.prev&&ev.prev!=="—"&&<span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:C.txt2}}>Prev: <strong style={{color:C.txt0}}>{ev.prev}</strong></span>}
+                          </div>
+                        </div>
+                        <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:3,color:ic,background:ic+"18",border:"1px solid "+ic+"33",flexShrink:0,marginLeft:6}}>{ev.impact}</span>
                       </div>
+                      {(ev.goldBull||ev.goldBear)&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4,marginBottom:ev.analysis?4:0}}>
+                        {ev.goldBull&&<div style={{background:"rgba(34,212,110,0.07)",border:"1px solid rgba(34,212,110,0.2)",borderRadius:5,padding:"4px 7px"}}>
+                          <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.up,marginBottom:1}}>GOLD BULLISH IF</div>
+                          <div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:11,fontWeight:600,color:C.txt0}}>{ev.goldBull}</div>
+                        </div>}
+                        {ev.goldBear&&<div style={{background:"rgba(240,69,69,0.07)",border:"1px solid rgba(240,69,69,0.2)",borderRadius:5,padding:"4px 7px"}}>
+                          <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.dn,marginBottom:1}}>GOLD BEARISH IF</div>
+                          <div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:11,fontWeight:600,color:C.txt0}}>{ev.goldBear}</div>
+                        </div>}
+                      </div>}
+                      {ev.analysis&&<div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:11,color:C.txt1,lineHeight:1.6}}>{ev.analysis}</div>}
+                    </div>;
+                  })}
+                </div>}
+
+                {/* Phase 2 loading */}
+                {intelPhase==="p2loading"&&<div>
+                  <div style={{display:"flex",alignItems:"center",gap:6,margin:"4px 0 8px"}}>
+                    <div style={{flex:1,height:1,background:C.border}}/>
+                    <div style={{display:"flex",alignItems:"center",gap:5,fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.amber,background:"rgba(240,160,32,0.08)",border:"1px solid rgba(240,160,32,0.2)",borderRadius:4,padding:"2px 8px"}}>
+                      <div className="sp" style={{width:7,height:7,border:"1.5px solid rgba(240,160,32,0.3)",borderTopColor:C.amber,borderRadius:"50%"}}/>
+                      PHASE 2 · MACRO + INSTRUMENTS
                     </div>
-                    {intel.gold.rumor&&(
-                      <div style={{background:"rgba(184,88,240,0.07)",border:"1px solid rgba(184,88,240,0.25)",borderRadius:7,padding:"9px 11px",marginBottom:7}}>
-                        <div style={{fontSize:10,color:C.vix,fontWeight:600,marginBottom:4}}>📡 {intel.gold.rumor.signal}</div>
-                        <div style={{fontSize:11,color:C.txt0,lineHeight:1.55,marginBottom:4}}>{intel.gold.rumor.analysis}</div>
-                        <div style={{fontSize:10,color:C.blue,lineHeight:1.5}}>📚 {intel.gold.rumor.analog}</div>
+                    <div style={{flex:1,height:1,background:C.border}}/>
+                  </div>
+                  {[100,120,90].map(function(h,i){return <div key={i} style={{height:h,background:"linear-gradient(90deg,#121d2c 25%,#1a2840 50%,#121d2c 75%)",backgroundSize:"200% 100%",borderRadius:9,marginBottom:7,animation:"shimmer 1.4s infinite"}}/>;})}
+                </div>}
+              </div>
+            )}
+
+            {/* Phase 2 content */}
+            {intelPhase==="complete"&&intelP2&&(
+              <div>
+                <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}>
+                  <div style={{flex:1,height:1,background:C.border}}/>
+                  <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.gold,background:"rgba(212,168,67,0.08)",border:"1px solid rgba(212,168,67,0.2)",borderRadius:4,padding:"2px 8px"}}>✓ PHASE 2 · DEEP ANALYSIS</span>
+                  <div style={{flex:1,height:1,background:C.border}}/>
+                </div>
+
+                {/* Inflation Risk */}
+                {intelP2.inflationRisk&&<div style={{background:"rgba(240,160,32,0.07)",border:"1px solid rgba(240,160,32,0.22)",borderRadius:10,padding:"12px",marginBottom:8}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                    <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:C.amber,fontWeight:600,letterSpacing:".1em"}}>📈 INFLATION RISK</div>
+                    <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                      <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:4,color:intelP2.inflationRisk.color||C.amber,background:(intelP2.inflationRisk.color||C.amber)+"18",border:"1px solid "+(intelP2.inflationRisk.color||C.amber)+"44"}}>{intelP2.inflationRisk.level}</span>
+                      {intelP2.inflationRisk.realYield&&<span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:C.txt2}}>Real yield: <span style={{color:C.dn}}>{intelP2.inflationRisk.realYield}</span></span>}
+                    </div>
+                  </div>
+                  {intelP2.inflationRisk.drivers&&intelP2.inflationRisk.drivers.map(function(d:string,i:number){
+                    return <div key={i} style={{display:"flex",gap:6,padding:"3px 0"}}>
+                      <span style={{color:C.amber,fontSize:10,flexShrink:0}}>→</span>
+                      <span style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:12,color:C.txt0}}>{d}</span>
+                    </div>;
+                  })}
+                  {intelP2.inflationRisk.goldImplication&&<div style={{background:"rgba(212,168,67,0.08)",border:"1px solid rgba(212,168,67,0.2)",borderRadius:7,padding:"8px 10px",margin:"7px 0 5px"}}>
+                    <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:C.gold,fontWeight:600}}>GOLD: </span>
+                    <span style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:12,color:C.txt0,lineHeight:1.7}}>{intelP2.inflationRisk.goldImplication}</span>
+                  </div>}
+                  {intelP2.inflationRisk.fedCutProb&&<div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:C.fed}}>Fed cut prob: <span style={{color:C.txt0}}>{intelP2.inflationRisk.fedCutProb}</span></div>}
+                </div>}
+
+                {/* Central Banks */}
+                {intelP2.centralBanks&&<div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,padding:"12px",marginBottom:8}}>
+                  <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:C.fed,fontWeight:600,letterSpacing:".1em",marginBottom:7}}>🏛 CENTRAL BANKS</div>
+                  {intelP2.centralBanks.whichMattersTonight&&<div style={{background:"rgba(136,128,248,0.06)",border:"1px solid rgba(136,128,248,0.2)",borderRadius:6,padding:"6px 9px",marginBottom:7}}>
+                    <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:C.fed,fontWeight:600}}>TONIGHT: </span>
+                    <span style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:11,color:C.txt0}}>{intelP2.centralBanks.whichMattersTonight}</span>
+                  </div>}
+                  {[["FED",intelP2.centralBanks.fed,"#8880f8"],["BOJ",intelP2.centralBanks.boj,C.jpy],["ECB",intelP2.centralBanks.ecb,"#34d399"]].map(function(row:any){
+                    var name=row[0];var cb=row[1];var color=row[2];
+                    if(!cb)return null;
+                    return <div key={name} style={{background:C.bg2,border:"1px solid "+color+"22",borderLeft:"2px solid "+color,borderRadius:7,padding:"8px 10px",marginBottom:5}}>
+                      <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
+                        <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:color,fontWeight:600}}>{name}</span>
+                        {cb.rate&&<span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:C.txt2}}>Rate: <span style={{color:C.txt0}}>{cb.rate}</span></span>}
                       </div>
-                    )}
-                    {intel.gold.drivers&&intel.gold.drivers.map(function(d:string,i:number){
-                      return <div key={i} style={{display:"flex",gap:7,padding:"5px 0",borderBottom:i<intel.gold.drivers.length-1?"1px solid "+C.border:"none"}}>
-                        <span style={{color:C.gold}}>{i+1}</span>
-                        <span style={{fontSize:11,color:C.txt0,lineHeight:1.5}}>{d}</span>
-                      </div>;
-                    })}
-                    {intel.gold.scenarios&&(
-                      <div style={{marginTop:8}}>
-                        <div style={{fontSize:9,color:C.amber,fontWeight:600,marginBottom:5}}>RISK SCENARIOS</div>
-                        {intel.gold.scenarios.map(function(sc:any,i:number){
-                          return <div key={i} style={{background:C.bg2,borderRadius:6,padding:"6px 9px",marginBottom:3}}>
-                            <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}>
-                              <span style={{fontSize:11,fontWeight:600,color:C.txt0}}>{sc.s}</span>
-                              <span style={{fontSize:10,color:C.gold,fontWeight:600}}>{sc.p}% · {sc.target}</span>
-                            </div>
-                            <div style={{fontSize:10,color:C.txt2}}>Trigger: {sc.trigger}</div>
+                      <div style={{display:"flex",gap:8,marginBottom:4,flexWrap:"wrap"}}>
+                        {cb.nextMeeting&&<span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:C.txt2}}>Next: <span style={{color:C.gold}}>{cb.nextMeeting}</span></span>}
+                        {(cb.cutProb||cb.hikeProb)&&<span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:C.txt2}}>Prob: <span style={{color:C.up}}>{cb.cutProb||cb.hikeProb}</span></span>}
+                      </div>
+                      {cb.recentSignal&&<div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:12,color:C.txt1,lineHeight:1.6,marginBottom:3}}>{cb.recentSignal}</div>}
+                      {cb.goldImpact&&<div style={{borderLeft:"2px solid "+color+"44",paddingLeft:7}}>
+                        <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:color}}>GOLD: </span>
+                        <span style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:11,color:C.txt0}}>{cb.goldImpact}</span>
+                      </div>}
+                    </div>;
+                  })}
+                </div>}
+
+                {/* Macro */}
+                {intelP2.macro&&intelP2.macro.length>0&&<div style={{marginBottom:8}}>
+                  <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:C.txt2,letterSpacing:".1em",fontWeight:600,marginBottom:7}}>🌐 MACRO FRAMEWORK</div>
+                  {intelP2.macro.map(function(m:any,i:number){
+                    return <div key={i} style={{background:C.bg1,border:"1px solid "+C.border,borderLeft:"3px solid "+(m.color||C.blue),borderRadius:9,padding:"11px 12px",marginBottom:6}}>
+                      <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,fontWeight:700,color:m.color||C.blue,letterSpacing:".06em",marginBottom:6,textTransform:"uppercase"}}>{m.heading}</div>
+                      <div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:12,color:C.txt0,lineHeight:1.8,marginBottom:m.keyData?7:0}}>{m.body}</div>
+                      {m.keyData&&<div style={{background:C.bg2,borderRadius:5,padding:"5px 8px",display:"flex",gap:6,flexWrap:"wrap"}}>
+                        {m.keyData.split(" · ").map(function(d:string,j:number){return <span key={j} style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:C.txt2}}>• {d}</span>;})}
+                      </div>}
+                    </div>;
+                  })}
+                </div>}
+
+                {/* Liquidity */}
+                {intelP2.liquidityAssessment&&<div style={{background:"rgba(32,200,216,0.07)",border:"1px solid rgba(32,200,216,0.2)",borderRadius:10,padding:"12px",marginBottom:8}}>
+                  <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:C.bond,fontWeight:600,letterSpacing:".1em",marginBottom:7}}>💧 LIQUIDITY ASSESSMENT</div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5,marginBottom:7}}>
+                    <div style={{background:C.bg2,borderRadius:7,padding:"7px 9px",border:"1px solid "+C.border}}>
+                      <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.txt3,marginBottom:1}}>SESSION LIQUIDITY</div>
+                      <div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:11,fontWeight:600,color:C.bond}}>{intelP2.liquidityAssessment.sessionLiquidity}</div>
+                    </div>
+                    {intelP2.liquidityAssessment.goldSpread&&<div style={{background:C.bg2,borderRadius:7,padding:"7px 9px",border:"1px solid "+C.border}}>
+                      <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.txt3,marginBottom:1}}>GOLD SPREAD</div>
+                      <div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:11,fontWeight:600,color:C.txt0}}>{intelP2.liquidityAssessment.goldSpread}</div>
+                    </div>}
+                  </div>
+                  {intelP2.liquidityAssessment.note&&<div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:12,color:C.txt0,lineHeight:1.7,marginBottom:5}}>{intelP2.liquidityAssessment.note}</div>}
+                  {intelP2.liquidityAssessment.thinPeriods&&<div style={{background:"rgba(0,0,0,0.2)",borderRadius:5,padding:"5px 8px",borderLeft:"2px solid "+C.bond}}>
+                    <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:C.bond,fontWeight:600}}>THIN: </span>
+                    <span style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:11,color:C.txt0}}>{intelP2.liquidityAssessment.thinPeriods}</span>
+                  </div>}
+                </div>}
+
+                {/* Position Management */}
+                {intelP2.positionManagement&&<div style={{background:"rgba(34,212,110,0.06)",border:"1px solid rgba(34,212,110,0.2)",borderRadius:10,padding:"12px",marginBottom:8}}>
+                  <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:C.up,fontWeight:600,letterSpacing:".1em",marginBottom:7}}>⚖️ POSITION MANAGEMENT</div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5,marginBottom:7}}>
+                    {intelP2.positionManagement.maxRiskPerTrade&&<div style={{background:C.bg2,borderRadius:7,padding:"7px 9px",border:"1px solid "+C.border}}>
+                      <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.txt3,marginBottom:1}}>MAX RISK/TRADE</div>
+                      <div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:11,fontWeight:700,color:C.up}}>{intelP2.positionManagement.maxRiskPerTrade.split(" ")[0]}</div>
+                    </div>}
+                    {intelP2.positionManagement.stopDistance&&<div style={{background:C.bg2,borderRadius:7,padding:"7px 9px",border:"1px solid "+C.border}}>
+                      <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.txt3,marginBottom:1}}>MIN STOP</div>
+                      <div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:11,fontWeight:700,color:C.amber}}>{intelP2.positionManagement.stopDistance}</div>
+                    </div>}
+                  </div>
+                  {[intelP2.positionManagement.newsRule,intelP2.positionManagement.note].filter(Boolean).map(function(t:string,i:number){
+                    return <div key={i} style={{display:"flex",gap:6,marginBottom:4}}>
+                      <span style={{color:C.up,fontSize:11,flexShrink:0}}>→</span>
+                      <span style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:12,color:C.txt0,lineHeight:1.65}}>{t}</span>
+                    </div>;
+                  })}
+                </div>}
+
+                {/* Instruments */}
+                {intelP2.instruments&&intelP2.instruments.length>0&&<div style={{marginBottom:8}}>
+                  <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:C.txt2,letterSpacing:".1em",fontWeight:600,marginBottom:7}}>📊 INSTRUMENT FOCUS</div>
+                  {intelP2.instruments.map(function(inst:any,i:number){
+                    return <div key={i} style={{background:C.bg1,border:"1px solid "+(inst.color||C.border)+"33",borderRadius:10,padding:"12px",marginBottom:7}}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                        <div>
+                          <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:2}}>
+                            <span style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:14,fontWeight:700,color:C.txt0}}>{inst.name}</span>
+                            <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:4,color:inst.color||C.txt2,background:(inst.color||C.txt2)+"18",border:"1px solid "+(inst.color||C.txt2)+"33"}}>{inst.bias}</span>
+                          </div>
+                          <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:C.txt3}}>Conviction: <span style={{color:inst.color||C.txt2}}>{inst.conviction}</span></span>
+                        </div>
+                        <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:15,fontWeight:600,color:C.txt0}}>{inst.price}</span>
+                      </div>
+                      <div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:12,color:C.txt1,lineHeight:1.75,marginBottom:8}}>{inst.summary}</div>
+                      {inst.levels&&<div style={{display:"flex",gap:4,marginBottom:8}}>
+                        {[["S2",inst.levels.s2,C.up,true],["S1",inst.levels.s1,C.up,false],["NOW",inst.levels.now,inst.color||C.txt0,false],["R1",inst.levels.r1,C.dn,false],["R2",inst.levels.r2,C.dn,true]].map(function(row:any){
+                          var l=row[0];var v=row[1];var c=row[2];var b=row[3];
+                          if(!v)return null;
+                          return <div key={l} style={{flex:1,background:C.bg2,border:"1px solid "+(b?c:c+"44"),borderRadius:5,padding:"4px 2px",textAlign:"center"}}>
+                            <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:7,color:C.txt3,marginBottom:1}}>{l}</div>
+                            <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,fontWeight:b?700:400,color:c}}>{v}</div>
                           </div>;
                         })}
+                      </div>}
+                      {inst.setup&&<div style={{background:(inst.color||C.blue)+"0d",border:"1px solid "+(inst.color||C.blue)+"22",borderRadius:6,padding:"7px 10px"}}>
+                        <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:inst.color||C.blue,fontWeight:600}}>SETUP: </span>
+                        <span style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:11,color:C.txt0}}>{inst.setup}</span>
+                      </div>}
+                    </div>;
+                  })}
+                </div>}
+
+                {/* Watchlist */}
+                {intelP2.watchlist&&intelP2.watchlist.length>0&&<div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,padding:"12px",marginBottom:8}}>
+                  <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:C.txt2,letterSpacing:".1em",fontWeight:600,marginBottom:8}}>👁 WATCHLIST TONIGHT</div>
+                  {intelP2.watchlist.map(function(w:any,i:number){
+                    var pc=w.priority==="CRITICAL"?"#ff1840":w.priority==="HIGH"?C.dn:C.amber;
+                    return <div key={i} style={{background:C.bg2,border:"1px solid "+C.border,borderRadius:8,padding:"9px 11px",marginBottom:i<intelP2.watchlist.length-1?5:0}}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
+                        <div style={{display:"flex",alignItems:"center",gap:7}}>
+                          <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:13,fontWeight:700,color:C.txt0}}>{w.symbol}</span>
+                          <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:4,color:w.color||C.txt2,background:(w.color||C.txt2)+"18",border:"1px solid "+(w.color||C.txt2)+"33"}}>{w.bias}</span>
+                          <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,fontWeight:700,padding:"1px 5px",borderRadius:3,color:pc,background:pc+"18"}}>{w.priority}</span>
+                        </div>
+                        {w.price&&<span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:12,fontWeight:600,color:C.txt0}}>{w.price}</span>}
                       </div>
-                    )}
-                    {intel.gold.note&&(
-                      <div style={{marginTop:8,background:"rgba(40,204,120,0.07)",border:"1px solid rgba(40,204,120,0.2)",borderRadius:6,padding:"8px 10px"}}>
-                        <div style={{fontSize:9,color:C.up,marginBottom:2}}>◈ TRADER NOTE</div>
-                        <div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:12,color:C.txt0,lineHeight:1.65}}>{intel.gold.note}</div>
-                      </div>
-                    )}
-                  </div>
-                )}
-                {intel.oil&&(
-                  <div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,padding:"12px",marginBottom:8}}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-                      <div style={{fontFamily:"'Syne',sans-serif",fontSize:14,fontWeight:700,color:C.amber}}>🛢 OIL DEEP DIVE</div>
-                      <div style={{textAlign:"right"}}>
-                        <div style={{fontSize:13,fontWeight:600,color:C.txt0}}>{intel.oil.price}</div>
-                        <div style={{fontSize:10,color:C.up,fontWeight:600}}>{intel.oil.chg}</div>
-                      </div>
-                    </div>
-                    {intel.oil.rumor&&(
-                      <div style={{background:"rgba(184,88,240,0.07)",border:"1px solid rgba(184,88,240,0.25)",borderRadius:7,padding:"9px 11px",marginBottom:7}}>
-                        <div style={{fontSize:10,color:C.vix,fontWeight:600,marginBottom:4}}>📡 {intel.oil.rumor.signal}</div>
-                        <div style={{fontSize:11,color:C.txt0,lineHeight:1.55,marginBottom:4}}>{intel.oil.rumor.analysis}</div>
-                        <div style={{fontSize:10,color:C.blue,lineHeight:1.5}}>📚 {intel.oil.rumor.analog}</div>
-                      </div>
-                    )}
-                    {intel.oil.drivers&&intel.oil.drivers.map(function(d:string,i:number){
-                      return <div key={i} style={{display:"flex",gap:7,padding:"5px 0",borderBottom:i<intel.oil.drivers.length-1?"1px solid "+C.border:"none"}}>
-                        <span style={{color:C.amber}}>{i+1}</span>
-                        <span style={{fontSize:11,color:C.txt0,lineHeight:1.5}}>{d}</span>
-                      </div>;
-                    })}
-                    {intel.oil.note&&(
-                      <div style={{marginTop:8,background:"rgba(40,204,120,0.07)",border:"1px solid rgba(40,204,120,0.2)",borderRadius:6,padding:"8px 10px"}}>
-                        <div style={{fontSize:9,color:C.up,marginBottom:2}}>◈ TRADER NOTE</div>
-                        <div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:12,color:C.txt0,lineHeight:1.65}}>{intel.oil.note}</div>
-                      </div>
-                    )}
-                  </div>
-                )}
-                {intel.spx&&(
-                  <div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,padding:"12px",marginBottom:8}}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-                      <div style={{fontFamily:"'Syne',sans-serif",fontSize:14,fontWeight:700,color:C.up}}>📈 SPX ANALYSIS</div>
-                      <div style={{textAlign:"right"}}>
-                        <div style={{fontSize:13,fontWeight:600,color:C.txt0}}>{intel.spx.price}</div>
-                        <div style={{fontSize:10,color:intel.spx.chg&&intel.spx.chg.startsWith("+")?C.up:C.dn,fontWeight:600}}>{intel.spx.chg}</div>
-                      </div>
-                    </div>
-                    {intel.spx.what&&<div style={{fontSize:11,color:C.txt0,lineHeight:1.65,marginBottom:7}}>{intel.spx.what}</div>}
-                    {intel.spx.megacaps&&(
-                      <div style={{marginBottom:7}}>
-                        <div style={{fontSize:9,color:C.blue,fontWeight:600,marginBottom:5}}>TOP MEGA-CAPS</div>
-                        {intel.spx.megacaps.map(function(m:any,i:number){
-                          return <div key={i} style={{background:C.bg2,borderRadius:6,padding:"6px 9px",marginBottom:3}}>
-                            <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}>
-                              <span style={{fontSize:11,fontWeight:700,color:C.txt0}}>{m.t}</span>
-                              <span style={{fontSize:10,fontWeight:600,color:m.m&&m.m.startsWith("+")?C.up:C.dn}}>{m.m}</span>
-                            </div>
-                            <div style={{fontSize:10,color:C.txt1}}>{m.why}</div>
-                          </div>;
-                        })}
-                      </div>
-                    )}
-                    {intel.spx.sectors&&(
-                      <div style={{marginBottom:7}}>
-                        <div style={{fontSize:9,color:C.amber,fontWeight:600,marginBottom:5}}>SECTOR ROTATION</div>
-                        {intel.spx.sectors.map(function(s:any,i:number){
-                          return <div key={i} style={{background:C.bg2,borderRadius:6,padding:"6px 9px",marginBottom:3}}>
-                            <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}>
-                              <span style={{fontSize:11,fontWeight:600,color:C.txt0}}>{s.f==="IN"?"▲ ":"▼ "}{s.s}</span>
-                              <span style={{fontSize:10,fontWeight:600,color:s.c&&s.c.startsWith("+")?C.up:C.dn}}>{s.c}</span>
-                            </div>
-                            <div style={{fontSize:10,color:C.txt2}}>{s.r}</div>
-                          </div>;
-                        })}
-                      </div>
-                    )}
-                    {intel.spx.note&&(
-                      <div style={{background:"rgba(40,204,120,0.07)",border:"1px solid rgba(40,204,120,0.2)",borderRadius:6,padding:"8px 10px"}}>
-                        <div style={{fontSize:9,color:C.up,marginBottom:2}}>◈ TRADER NOTE</div>
-                        <div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:12,color:C.txt0,lineHeight:1.65}}>{intel.spx.note}</div>
-                      </div>
-                    )}
-                  </div>
-                )}
-                {intel.ndx&&(
-                  <div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,padding:"12px",marginBottom:8}}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-                      <div style={{fontFamily:"'Syne',sans-serif",fontSize:14,fontWeight:700,color:C.blue}}>📈 NDX ANALYSIS</div>
-                      <div style={{textAlign:"right"}}>
-                        <div style={{fontSize:13,fontWeight:600,color:C.txt0}}>{intel.ndx.price}</div>
-                        <div style={{fontSize:10,color:intel.ndx.chg&&intel.ndx.chg.startsWith("+")?C.up:C.dn,fontWeight:600}}>{intel.ndx.chg}</div>
-                      </div>
-                    </div>
-                    {intel.ndx.what&&<div style={{fontSize:11,color:C.txt0,lineHeight:1.65,marginBottom:7}}>{intel.ndx.what}</div>}
-                    {intel.ndx.tech&&(
-                      <div style={{marginBottom:7}}>
-                        <div style={{fontSize:9,color:C.blue,fontWeight:600,marginBottom:5}}>TECH BREAKDOWN</div>
-                        {intel.ndx.tech.map(function(t:any,i:number){
-                          return <div key={i} style={{background:C.bg2,borderRadius:6,padding:"6px 9px",marginBottom:3}}>
-                            <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}>
-                              <span style={{fontSize:11,fontWeight:600,color:C.txt0}}>{t.sub}</span>
-                              <span style={{fontSize:10,fontWeight:600,color:t.perf&&t.perf.startsWith("+")?C.up:C.dn}}>{t.perf}</span>
-                            </div>
-                            <div style={{fontSize:9,color:C.blue,marginBottom:2}}>{t.leaders}</div>
-                            <div style={{fontSize:10,color:C.txt1}}>{t.note}</div>
-                          </div>;
-                        })}
-                      </div>
-                    )}
-                    {intel.ndx.note&&(
-                      <div style={{background:"rgba(40,204,120,0.07)",border:"1px solid rgba(40,204,120,0.2)",borderRadius:6,padding:"8px 10px"}}>
-                        <div style={{fontSize:9,color:C.up,marginBottom:2}}>◈ TRADER NOTE</div>
-                        <div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:12,color:C.txt0,lineHeight:1.65}}>{intel.ndx.note}</div>
-                      </div>
-                    )}
-                  </div>
-                )}
-                {intel.dxy&&(
-  <div style={{background:C.bg1,border:"1px solid rgba(72,144,248,0.2)",borderRadius:10,padding:"12px",marginBottom:8}}>
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-      <div style={{fontFamily:"'Syne',sans-serif",fontSize:14,fontWeight:700,color:C.blue}}>DXY — GOLD DRIVER</div>
-      <div style={{textAlign:"right"}}>
-        <div style={{fontSize:13,fontWeight:600,color:C.txt0}}>{intel.dxy.price}</div>
-        <div style={{fontSize:10,color:intel.dxy.chg&&intel.dxy.chg.startsWith("-")?C.up:C.dn,fontWeight:600}}>{intel.dxy.chg}</div>
-      </div>
-    </div>
-    <div style={{fontSize:11,color:C.txt0,lineHeight:1.65,marginBottom:6}}>{intel.dxy.analysis}</div>
-    {intel.dxy.note&&<div style={{background:"rgba(72,144,248,0.07)",borderRadius:6,padding:"7px 10px",fontSize:11,color:C.blue}}>{intel.dxy.note}</div>}
-  </div>
-)}
-{intel.indices&&(
-  <div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,padding:"12px",marginBottom:8}}>
-    <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:C.txt2,letterSpacing:".1em",fontWeight:600,marginBottom:8}}>INDICES SNAPSHOT</div>
-    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:8}}>
-      {intel.indices.spx&&<div style={{background:C.bg2,border:"1px solid "+C.border,borderRadius:7,padding:"8px 10px"}}>
-        <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
-          <span style={{fontSize:11,fontWeight:600,color:C.txt0}}>SPX</span>
-          <span style={{fontSize:10,color:intel.indices.spx.chg&&intel.indices.spx.chg.startsWith("+")?C.up:C.dn,fontWeight:600}}>{intel.indices.spx.chg}</span>
-        </div>
-        <div style={{fontSize:10,color:C.txt1}}>{intel.indices.spx.note}</div>
-      </div>}
-      {intel.indices.ndx&&<div style={{background:C.bg2,border:"1px solid "+C.border,borderRadius:7,padding:"8px 10px"}}>
-        <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
-          <span style={{fontSize:11,fontWeight:600,color:C.txt0}}>NDX</span>
-          <span style={{fontSize:10,color:intel.indices.ndx.chg&&intel.indices.ndx.chg.startsWith("+")?C.up:C.dn,fontWeight:600}}>{intel.indices.ndx.chg}</span>
-        </div>
-        <div style={{fontSize:10,color:C.txt1}}>{intel.indices.ndx.note}</div>
-      </div>}
-    </div>
-    {intel.indices.regime&&<div style={{fontSize:11,color:C.txt0,lineHeight:1.6}}>{intel.indices.regime}</div>}
-  </div>
-)}
-{intel.watchlist&&intel.watchlist.length>0&&(
-  <div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,padding:"12px",marginBottom:8}}>
-    <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:C.txt2,letterSpacing:".1em",fontWeight:600,marginBottom:8}}>WATCHLIST TONIGHT</div>
-    <div style={{display:"grid",gap:5}}>
-      {intel.watchlist.map(function(w,i){
-        var bc=w.bias==="BULLISH"?C.up:w.bias==="BEARISH"?C.dn:C.amber;
-        var inst=mkt.find(function(d){return d.s===w.symbol||d.l===w.symbol;});
-        return <div key={i} style={{background:C.bg2,border:"1px solid "+C.border,borderRadius:8,padding:"9px 12px"}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
-            <div style={{display:"flex",alignItems:"center",gap:7}}>
-              <span style={{fontSize:13,fontWeight:600,color:C.txt0}}>{w.symbol}</span>
-              <span style={{fontSize:9,fontWeight:700,color:bc,background:"rgba(0,0,0,0.3)",padding:"1px 6px",borderRadius:3}}>{w.bias}</span>
-            </div>
-            {inst&&<span style={{fontSize:11,color:inst.pct>=0?C.up:C.dn}}>{fmt(inst.cur,inst.b)}</span>}
-          </div>
-          <div style={{fontSize:11,color:C.txt1,lineHeight:1.5,marginBottom:w.keyLevel?3:0}}>{w.note}</div>
-          {w.keyLevel&&<div style={{fontSize:10,color:C.gold}}>Key level: {w.keyLevel}</div>}
-        </div>;
-      })}
-    </div>
-  </div>
-)}
-                {intel.tradeFocus&&(
-                  <div style={{background:"linear-gradient(135deg,rgba(40,204,120,0.08),rgba(40,204,120,0.03))",border:"1px solid rgba(40,204,120,0.25)",borderRadius:10,padding:"13px"}}>
-                    <div style={{fontSize:10,color:C.up,letterSpacing:".1em",fontWeight:600,marginBottom:6}}>🎯 TRADE FOCUS</div>
-                    <div style={{fontSize:13,color:C.txt0,lineHeight:1.8}}>{intel.tradeFocus}</div>
-                  </div>
-                )}
+                      <div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:12,color:C.txt1,lineHeight:1.5}}>{w.note}</div>
+                    </div>;
+                  })}
+                </div>}
+
+                {/* Trade Focus */}
+                {intelP2.tradeFocus&&<div style={{background:"linear-gradient(135deg,rgba(34,212,110,0.07),rgba(34,212,110,0.02))",border:"1px solid rgba(34,212,110,0.22)",borderRadius:10,padding:"13px",marginBottom:8}}>
+                  <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:C.up,letterSpacing:".1em",fontWeight:600,marginBottom:7}}>🎯 TRADE FOCUS — TONIGHT</div>
+                  <div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:13,color:C.txt0,lineHeight:1.85}}>{intelP2.tradeFocus}</div>
+                </div>}
+
+                {/* Regen button */}
+                <div style={{display:"flex",justifyContent:"center",paddingTop:4}}>
+                  <button className="tap" onClick={function(){if(window.confirm("Regenerate Intel report for this session?"))fetchIntel(intelSession,true);}}
+                    style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:7,padding:"6px 14px",fontFamily:"'IBM Plex Mono',monospace",color:C.txt2,fontSize:9}}>
+                    ↻ Regenerate
+                  </button>
+                </div>
               </div>
             )}
           </div>
         )}
-
-        {/* ── AI FILTER ── */}
-        {tab==="filter"&&<div style={{padding:"12px"}}>
+                {tab==="filter"&&<div style={{padding:"12px"}}>
           {/* Agentic prompt buttons */}
           <div style={{marginBottom:8}}>
             <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:C.txt2,letterSpacing:".1em",fontWeight:600,marginBottom:6}}>QUICK ANALYSIS</div>
@@ -1604,6 +1689,236 @@ export default function Auxiron(){
         </div>
       </div>
 
+      {/* INSTRUMENT DETAIL MODAL */}
+      {instDetail&&(function(){
+        var m=instDetail;
+        var up=m.pct>=0;
+        var isBond=m.cat==="Bonds";
+        var isGold=m.s==="XAU/USD";
+        var lc=isBond?C.bond:up?C.up:C.dn;
+        var tfs=["1D","1W","1M","3M"];
+        var pts=[48,7*24,30*8,90*4];
+        var chartData=instTf===0?m.ch:genFB(m.b,m.v,pts[instTf]);
+        var minP=Math.min.apply(null,chartData.map(function(d:any){return d.p;}))*0.9995;
+        var maxP=Math.max.apply(null,chartData.map(function(d:any){return d.p;}))*1.0005;
+        var news=instNews[m.s];
+        var roroColor=m.roro==="ON"?C.up:m.roro==="OFF"?C.dn:C.txt3;
+        return <div style={{position:"fixed",top:0,left:"50%",transform:"translateX(-50%)",
+          width:"100%",maxWidth:480,height:"100%",background:C.bg0,
+          zIndex:600,display:"flex",flexDirection:"column",overflowY:"auto",
+          animation:"slideUp 0.24s cubic-bezier(0.32,0.72,0,1) forwards"}}>
+          {/* Header */}
+          <div style={{background:"linear-gradient(180deg,#0d1824,#080e14)",
+            borderBottom:"1px solid "+C.border,padding:"14px 16px",flexShrink:0}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+              <button className="tap" onClick={closeInstDetail}
+                style={{background:"rgba(255,255,255,0.06)",border:"1px solid "+C.border,
+                  borderRadius:8,padding:"6px 11px",fontFamily:"'IBM Plex Sans',sans-serif",
+                  color:C.txt1,fontSize:12,fontWeight:500}}>
+                ← Back
+              </button>
+              <div style={{display:"flex",alignItems:"center",gap:6}}>
+                <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,fontWeight:700,
+                  padding:"2px 7px",borderRadius:3,color:roroColor,
+                  background:roroColor+"18",border:"1px solid "+roroColor+"33"}}>
+                  {m.roro==="ON"?"R-ON":m.roro==="OFF"?"R-OFF":"FX"}
+                </span>
+                {isGold&&<span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,fontWeight:700,
+                  padding:"2px 7px",borderRadius:3,color:goldBiasColor,
+                  background:goldBiasColor+"18",border:"1px solid "+goldBiasColor+"33"}}>{goldBias}</span>}
+              </div>
+            </div>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
+              <div>
+                <div style={{fontFamily:"'Syne',sans-serif",fontSize:19,fontWeight:800,
+                  color:isGold?C.goldL:C.txt0,marginBottom:2}}>{m.l}</div>
+                <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:C.txt3}}>{m.s}</div>
+              </div>
+              <div style={{textAlign:"right"}}>
+                <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:19,fontWeight:600,
+                  color:C.txt0,fontVariantNumeric:"tabular-nums"}}>{fmt(m.cur,m.b)}{isBond?"%":""}</div>
+                <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:12,fontWeight:600,
+                  color:up?C.up:C.dn,marginTop:2}}>{up?"+":""}{m.pct.toFixed(2)}% {up?"▲":"▼"}</div>
+              </div>
+            </div>
+            {/* Timeframe selector */}
+            <div style={{display:"flex",gap:4}}>
+              {tfs.map(function(tf,i){
+                return <button key={tf} className="tap" onClick={function(){setInstTf(i);}}
+                  style={{flex:1,background:instTf===i?lc+"18":"transparent",
+                    border:instTf===i?"1px solid "+lc+"55":"1px solid transparent",
+                    borderRadius:6,padding:"4px 0",fontFamily:"'IBM Plex Mono',monospace",
+                    fontSize:10,fontWeight:instTf===i?700:400,
+                    color:instTf===i?lc:C.txt3,transition:"all 0.12s"}}>
+                  {tf}
+                </button>;
+              })}
+            </div>
+          </div>
+          {/* Chart */}
+          <div style={{flexShrink:0,background:C.bg0,padding:"8px 0 0"}}>
+            <div style={{height:160}}>
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData} margin={{top:4,right:8,bottom:0,left:0}}>
+                  <defs>
+                    <linearGradient id="ig" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={lc} stopOpacity={0.18}/>
+                      <stop offset="95%" stopColor={lc} stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false} opacity={0.6}/>
+                  <XAxis dataKey="t" tick={{fill:C.txt3,fontSize:8,fontFamily:"IBM Plex Mono"}}
+                    tickLine={false} axisLine={false} interval={Math.floor(chartData.length/4)}/>
+                  <YAxis domain={[minP,maxP]} hide/>
+                  <ReferenceLine y={chartData[0]?.p} stroke={C.border2} strokeDasharray="3 3"/>
+                  <Tooltip content={function(props:any){
+                    if(!props.active||!props.payload?.length)return null;
+                    return <div style={{background:C.bg2,border:"1px solid "+C.border,borderRadius:6,padding:"5px 9px",fontFamily:"'IBM Plex Mono',monospace"}}>
+                      <div style={{fontSize:8,color:C.txt3,marginBottom:1}}>{props.label}</div>
+                      <div style={{fontSize:12,fontWeight:600,color:C.txt0}}>{props.payload[0].value}</div>
+                    </div>;
+                  }}/>
+                  <Area type="monotone" dataKey="p" stroke={lc} strokeWidth={2}
+                    fill="url(#ig)" dot={false} activeDot={{r:3,fill:lc}}/>
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+            {/* OHLC strip */}
+            <div style={{display:"flex",gap:4,padding:"6px 14px 8px"}}>
+              {[["Open",chartData[0]?.p?.toLocaleString()],
+                ["High",Math.max.apply(null,chartData.map(function(d:any){return d.p;})).toLocaleString()],
+                ["Low",Math.min.apply(null,chartData.map(function(d:any){return d.p;})).toLocaleString()],
+                ["Now",fmt(m.cur,m.b)]].map(function(row:any){
+                return <div key={row[0]} style={{flex:1,background:C.bg1,border:"1px solid "+C.border,
+                  borderRadius:6,padding:"4px 6px",textAlign:"center"}}>
+                  <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.txt3,marginBottom:1}}>{row[0]}</div>
+                  <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,fontWeight:600,color:C.txt0}}>{row[1]}</div>
+                </div>;
+              })}
+            </div>
+          </div>
+          {/* Tab bar */}
+          <div style={{display:"flex",borderBottom:"1px solid "+C.border,
+            background:C.bg1,flexShrink:0,padding:"0 14px"}}>
+            {[["news","📰 News"],["brief","⚡ AI Brief"]].map(function(t:any){
+              return <button key={t[0]} className="tap" onClick={function(){setInstDetailTab(t[0]);}}
+                style={{background:"transparent",border:"none",
+                  borderBottom:instDetailTab===t[0]?"2px solid "+(isGold?C.gold:lc):"2px solid transparent",
+                  color:instDetailTab===t[0]?C.txt0:C.txt2,padding:"10px 14px",
+                  fontFamily:"'IBM Plex Sans',sans-serif",
+                  fontSize:12,fontWeight:instDetailTab===t[0]?700:400,transition:"color 0.12s"}}>
+                {t[1]}
+              </button>;
+            })}
+            <div style={{marginLeft:"auto",display:"flex",alignItems:"center",padding:"0 4px"}}>
+              <button className="tap" onClick={function(){fetchInstNews(m.s,true);}}
+                disabled={instNewsLoading}
+                style={{background:"transparent",border:"none",
+                  fontFamily:"'IBM Plex Mono',monospace",fontSize:9,
+                  color:instNewsLoading?C.txt3:C.gold,display:"flex",alignItems:"center",gap:4}}>
+                {instNewsLoading
+                  ?<div className="sp" style={{width:9,height:9,border:"1.5px solid "+C.border2,borderTopColor:C.gold,borderRadius:"50%"}}/>
+                  :"↻"}
+                {instNewsLoading?"Updating...":"Refresh"}
+              </button>
+            </div>
+          </div>
+          {/* News tab */}
+          {instDetailTab==="news"&&<div style={{padding:"12px 14px",flex:1}}>
+            {instNewsLoading&&!news&&<div>
+              {[90,110,80].map(function(h,i){return <div key={i} style={{height:h,background:"linear-gradient(90deg,#121d2c 25%,#1a2840 50%,#121d2c 75%)",backgroundSize:"200% 100%",borderRadius:9,marginBottom:7,animation:"shimmer 1.4s infinite"}}/>;})}
+            </div>}
+            {news&&news.news&&news.news.map(function(item:any,i:number){
+              return <div key={i} style={{background:C.bg1,
+                border:"1px solid "+C.border,
+                borderLeft:"3px solid "+(item.sentimentColor||C.txt3),
+                borderRadius:9,padding:"11px 13px",marginBottom:7,
+                animation:"slideUp 0.2s ease forwards",animationDelay:(i*0.04)+"s",opacity:0}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:5}}>
+                  <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
+                    <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,fontWeight:700,
+                      padding:"2px 7px",borderRadius:3,color:item.sentimentColor||C.txt2,
+                      background:(item.sentimentColor||C.txt2)+"18",
+                      border:"1px solid "+(item.sentimentColor||C.txt2)+"44"}}>{item.sentiment}</span>
+                    <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,fontWeight:600,color:C.txt2}}>{item.src}</span>
+                    <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:C.txt3}}>{item.time}</span>
+                  </div>
+                </div>
+                <div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:13,fontWeight:700,
+                  color:C.txt0,lineHeight:1.4,marginBottom:6}}>{item.headline}</div>
+                <div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:12,color:C.txt1,
+                  lineHeight:1.7,marginBottom:item.tags?.length?6:0}}>{item.body}</div>
+                {item.tags&&item.tags.length>0&&<div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+                  {item.tags.map(function(t:string,j:number){
+                    return <span key={j} style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,
+                      color:C.txt3,background:C.bg2,border:"1px solid "+C.border,
+                      borderRadius:3,padding:"1px 5px"}}>{t}</span>;
+                  })}
+                </div>}
+              </div>;
+            })}
+            {!news&&!instNewsLoading&&<div style={{textAlign:"center",padding:"28px",
+              background:C.bg1,border:"1px solid "+C.border,borderRadius:10}}>
+              <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:C.txt3,
+                letterSpacing:".1em",marginBottom:4}}>FETCHING NEWS...</div>
+              <div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:12,color:C.txt3}}>
+                Searching for {m.l} headlines
+              </div>
+            </div>}
+            <div style={{textAlign:"center",padding:"8px 0",fontFamily:"'IBM Plex Mono',monospace",
+              fontSize:9,color:C.txt3,letterSpacing:".06em"}}>
+              News from open sources · Tap ↻ to refresh
+            </div>
+          </div>}
+          {/* AI Brief tab */}
+          {instDetailTab==="brief"&&<div style={{padding:"12px 14px",flex:1}}>
+            {news&&news.brief&&<div style={{background:(isGold?"rgba(212,168,67,0.07)":"rgba(74,158,255,0.07)"),
+              border:"1px solid "+(isGold?"rgba(212,168,67,0.25)":"rgba(74,158,255,0.22)"),
+              borderLeft:"4px solid "+(isGold?C.gold:lc),
+              borderRadius:10,padding:"13px",marginBottom:8}}>
+              <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,fontWeight:600,
+                color:isGold?C.gold:lc,letterSpacing:".1em",marginBottom:7}}>AI BRIEF · {m.l.toUpperCase()}</div>
+              <div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:13,color:C.txt0,lineHeight:1.85}}>
+                {news.brief.split(/(\*\*[^*]+\*\*)/).map(function(p:string,i:number){
+                  return p.startsWith("**")&&p.endsWith("**")
+                    ?<strong key={i} style={{color:C.txt0,fontWeight:700}}>{p.slice(2,-2)}</strong>
+                    :<span key={i} style={{color:C.txt1}}>{p}</span>;
+                })}
+              </div>
+            </div>}
+            {news&&news.keyLevels&&<div style={{background:C.bg1,border:"1px solid "+C.border,
+              borderRadius:10,padding:"12px",marginBottom:8}}>
+              <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:C.txt2,
+                letterSpacing:".1em",marginBottom:7}}>KEY LEVELS</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5,marginBottom:6}}>
+                <div style={{background:C.bg2,border:"1px solid rgba(34,212,110,0.3)",
+                  borderRadius:7,padding:"8px 10px",textAlign:"center"}}>
+                  <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.txt3,marginBottom:2}}>SUPPORT</div>
+                  <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:13,fontWeight:700,color:C.up}}>{news.keyLevels.support}</div>
+                </div>
+                <div style={{background:C.bg2,border:"1px solid rgba(240,69,69,0.3)",
+                  borderRadius:7,padding:"8px 10px",textAlign:"center"}}>
+                  <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.txt3,marginBottom:2}}>RESISTANCE</div>
+                  <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:13,fontWeight:700,color:C.dn}}>{news.keyLevels.resistance}</div>
+                </div>
+              </div>
+              {news.keyLevels.note&&<div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:11,color:C.txt2,lineHeight:1.6}}>{news.keyLevels.note}</div>}
+            </div>}
+            {(!news||!news.brief)&&instNewsLoading&&<div>
+              {[120,90].map(function(h,i){return <div key={i} style={{height:h,background:"linear-gradient(90deg,#121d2c 25%,#1a2840 50%,#121d2c 75%)",backgroundSize:"200% 100%",borderRadius:9,marginBottom:7,animation:"shimmer 1.4s infinite"}}/>;})}
+            </div>}
+            {(!news||!news.brief)&&!instNewsLoading&&<div style={{textAlign:"center",padding:"28px",
+              background:C.bg1,border:"1px solid "+C.border,borderRadius:10}}>
+              <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:C.txt3,letterSpacing:".1em",marginBottom:4}}>
+                NO BRIEF YET
+              </div>
+              <div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:12,color:C.txt3}}>
+                Tap ↻ Refresh to generate AI analysis
+              </div>
+            </div>}
+          </div>}
+        </div>;
+      }())}
       {/* BOTTOM NAV — mobile only */}
       <div className="auxiron-bottom-nav" style={{background:C.bg1,borderTop:"1px solid "+C.border}}>
         {NAV.map(function(item:any){
