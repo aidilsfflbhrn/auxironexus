@@ -278,7 +278,20 @@ export default function Auxiron(){
   var [sessionLbl,setSessionLbl]=useState(getSessionLabel());
   var cycleRef=useRef(0);
   var intelElapsedRef=useRef<any>(null);
-  var [intelCache,setIntelCache]=useState<{[k:string]:any}>({});
+  var [intelCache,setIntelCache]=useState<{[k:string]:any}>(function(){
+    try{
+      var saved=localStorage.getItem("auxiron_intel_cache");
+      if(saved){
+        var parsed=JSON.parse(saved);
+        var sk=getSessionKey();
+        // Only restore reports for the CURRENT session window
+        var valid:{[k:string]:any}={};
+        if(parsed[sk])valid[sk]=parsed[sk];
+        return valid;
+      }
+    }catch(e){}
+    return {};
+  });
   var [ctxCount,setCtxCount]=useState(0);
   var [ctxSessionKey,setCtxSessionKey]=useState("");
   var [instDetail,setInstDetail]=useState<any>(null);
@@ -471,10 +484,20 @@ export default function Auxiron(){
   function closeInstDetail(){setInstDetail(null);}
 
   function fetchIntel(session:string,force?:boolean){
+    // Block cross-session generation — only allow current session
+    var currentSession=getSessionKey();
+    if(!force&&session!==currentSession&&!intelCache[session]){
+      // Allow viewing other sessions from cache only
+    }
     if(!force&&intelCache[session]){
       setIntelP1(intelCache[session].p1);
       setIntelP2(intelCache[session].p2);
       setIntelPhase("complete");
+      return;
+    }
+    // Only allow generating for current active session
+    if(session!==currentSession&&!force){
+      setIntelErr("This session is not active yet. You can only generate the current session's report.");
       return;
     }
     setIntelPhase("p1loading");
@@ -482,6 +505,12 @@ export default function Auxiron(){
     setIntelElapsed(0);
     clearInterval(intelElapsedRef.current);
     intelElapsedRef.current=setInterval(function(){setIntelElapsed(function(n:number){return n+1;});},1000);
+    // Wake lock — keep screen on during generation
+    var wakeLock:any=null;
+    if("wakeLock" in navigator){
+      (navigator as any).wakeLock.request("screen").then(function(lock:any){wakeLock=lock;}).catch(function(){});
+    }
+    function releaseWakeLock(){if(wakeLock)wakeLock.release().catch(function(){});}
     var SESSIONS_MAP:any={
       asia:"ASIA OPEN (SGT 6am-3pm) — Sydney/Tokyo sessions",
       london:"LONDON OPEN (SGT 4pm-1am) — European session, FX focus",
@@ -492,7 +521,7 @@ export default function Auxiron(){
     var now=new Date().toLocaleString("en-SG",{timeZone:"Asia/Singapore"});
     var p1msg="LIVE MARKET DATA:\n"+snap+"\n\nSESSION: "+label+"\n\nCurrent SGT time: "+now+"\n\nGenerate Phase 1 situational awareness briefing. Search for latest headlines, overnight moves, VIX, economic calendar for tonight.";
     callProxy(
-      {model:"claude-sonnet-4-6",max_tokens:3000,system:INTEL_P1_SYS,
+      {model:"claude-haiku-4-5",max_tokens:3000,system:INTEL_P1_SYS,
        messages:[{role:"user",content:p1msg}],useWebSearch:true},
       function(p1:any){
         setIntelP1(p1);
@@ -505,12 +534,17 @@ export default function Auxiron(){
             setIntelP2(p2);
             setIntelPhase("complete");
             clearInterval(intelElapsedRef.current);
-            setIntelCache(function(prev:any){var n={...prev};n[session]={p1,p2};return n;});
+            releaseWakeLock();
+            setIntelCache(function(prev:any){
+              var n={...prev};n[session]={p1,p2};
+              try{localStorage.setItem("auxiron_intel_cache",JSON.stringify(n));}catch(e){}
+              return n;
+            });
           },
-          function(e:string){setIntelErr("Phase 2 failed: "+e);setIntelPhase("p1done");clearInterval(intelElapsedRef.current);}
+          function(e:string){setIntelErr("Phase 2 failed: "+e);setIntelPhase("p1done");clearInterval(intelElapsedRef.current);releaseWakeLock();}
         );
       },
-      function(e:string){setIntelErr("Failed: "+e);setIntelPhase("idle");clearInterval(intelElapsedRef.current);}
+      function(e:string){setIntelErr("Failed: "+e);setIntelPhase("idle");clearInterval(intelElapsedRef.current);releaseWakeLock();}
     );
   }
 
@@ -1113,21 +1147,27 @@ export default function Auxiron(){
                   {key:"london",icon:"🌍",label:"LONDON OPEN",time:"4pm–1am SGT",color:C.blue},
                   {key:"ny",icon:"🗽",label:"NY SESSION",time:"9pm–6am SGT",color:C.goldL},
                 ].map(function(s){
+                  var currentSess=getSessionKey();
                   var active=intelSession===s.key;
                   var cached=!!intelCache[s.key];
+                  var isCurrentSession=s.key===currentSess;
                   var isLoading=active&&(intelPhase==="p1loading"||intelPhase==="p2loading");
                   var isDone=active&&intelPhase==="complete";
+                  var isLocked=!isCurrentSession&&!cached;
                   return <button key={s.key} className="tap"
                     onClick={function(){setIntelSession(s.key);fetchIntel(s.key);}}
-                    style={{background:active?"rgba(0,0,0,0.2)":C.bg1,
-                      border:"1px solid "+(active?s.color+"55":C.border),
-                      borderRadius:10,padding:"10px 14px",textAlign:"left",width:"100%"}}>
+                    style={{background:active?"rgba(0,0,0,0.2)":isLocked?"rgba(0,0,0,0.1)":C.bg1,
+                      border:"1px solid "+(active?s.color+"55":isLocked?C.txt3+"22":C.border),
+                      borderRadius:10,padding:"10px 14px",textAlign:"left",width:"100%",
+                      opacity:isLocked?0.45:1}}>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                       <div style={{display:"flex",alignItems:"center",gap:9}}>
                         <span style={{fontSize:17}}>{s.icon}</span>
                         <div>
                           <div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:13,fontWeight:700,color:active?s.color:C.txt0}}>{s.label}</div>
-                          <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:active?s.color:C.txt2}}>{s.time}</div>
+                          <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:active?s.color:isLocked?C.txt3:C.txt2}}>
+                            {isLocked?"Not active yet":cached?"Report ready · "+s.time:isCurrentSession?"Active now · "+s.time:s.time}
+                          </div>
                         </div>
                       </div>
                       <div style={{display:"flex",alignItems:"center",gap:6}}>
