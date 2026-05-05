@@ -554,7 +554,7 @@ export default function Auxiron(){
         setIntelPhase("p2loading");
         var p2msg="LIVE MARKET DATA:\n"+snap+"\n\nSESSION: "+label+"\n\nPhase 1 context (already delivered to user):\n"+JSON.stringify(p1)+"\n\nNow generate Phase 2 deep analysis: inflation risk, central banks, macro framework, liquidity, position management, instruments, watchlist, trade focus. Search for: Fed cut probabilities, real yields, BOJ risk, ECB path, Gold positioning, liquidity conditions.";
         callProxy(
-          {model:"claude-sonnet-4-6",max_tokens:6000,system:INTEL_P2_SYS,
+          {model:"claude-sonnet-4-6",max_tokens:8000,system:INTEL_P2_SYS,
            messages:[{role:"user",content:p2msg}],useWebSearch:true},
           function(p2:any){
             setIntelP2(p2);
@@ -1213,7 +1213,7 @@ export default function Auxiron(){
                         <div>
                           <div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:13,fontWeight:700,color:active?s.color:C.txt0}}>{s.label}</div>
                           <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:active?s.color:isLocked?C.txt3:sessionActive?C.up:C.txt2}}>
-                            {isLocked?"Unlocks at "+getSessionUnlockSGT(s.key)+" SGT":cached?"✓ Report saved · "+s.time:sessionActive?"● LIVE NOW · "+s.time:s.time}
+                            {isLocked?"Unlocks at "+getSessionUnlockSGT(s.key):cached?"✓ Report saved · "+s.time:sessionActive?"● LIVE NOW · "+s.time:s.time}
                           </div>
                         </div>
                       </div>
