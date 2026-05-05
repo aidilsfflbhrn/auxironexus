@@ -84,16 +84,14 @@ ALERT RULES: Only include genuinely active risks. 0-3 alerts max. P1=imminent, P
 CALENDAR RULES: ASIA=JPY/AUD/NZD/CNY only. LONDON=EUR/GBP/CHF only. NY=USD/CAD only. 2-star and 3-star only. Max 3 events.
 SESSION H/L: Use approximate values based on live data provided. If unavailable use 0.`;
 
-const INTEL_P2_SYS=`You are a senior macro strategist at a top investment bank. Generate PHASE 2 of a pre-session intelligence briefing — deep analysis. You have Phase 1 context already provided. Be CONCISE. Max 2 sentences per text field unless analysis requires more. Short, punchy, actionable.
+const INTEL_P2_SYS=`You are a senior macro strategist. Generate PHASE 2 deep analysis for a pre-session trading briefing. Be STRICTLY CONCISE — maximum 2 sentences per text field, maximum 3 items per array. No exceptions.
 
-Search the web for: Fed rate cut probabilities CME FedWatch, real yield 10Y TIPS, BOJ intervention risk, ECB rate path, inflation CPI PCE latest, geopolitical risk assessment, Gold institutional positioning, liquidity conditions tonight.
+NO web search needed — use the Phase 1 context and your knowledge of current macro conditions.
 
 Respond ONLY with valid JSON:
-{"inflationRisk":{"level":"<HIGH|ELEVATED|MODERATE|LOW>","color":"<#f04545 for HIGH|#f0a020 for ELEVATED|#f0a020 for MODERATE|#22d46e for LOW>","realYield":"<e.g. 1.82%>","realYieldChg":"<e.g. +0.08%>","drivers":["<driver1>","<driver2>","<driver3>"],"goldImplication":"<2 sentences: how inflation risk affects Gold specifically tonight>","fedCutProb":"<e.g. July: 38% · Sep: 62% · Dec: 89%>"},"centralBanks":{"fed":{"rate":"<rate>","nextMeeting":"<date>","cutProb":"<e.g. July 38%>","recentSignal":"<1 sentence: latest signal>","goldImpact":"<1 sentence>"},"boj":{"rate":"<rate>","nextMeeting":"<date>","hikeProb":"<e.g. June 35%>","recentSignal":"<1 sentence>","goldImpact":"<1 sentence>"},"ecb":{"rate":"<rate>","nextMeeting":"<date>","cutProb":"<e.g. June 78%>","recentSignal":"<1 sentence>","goldImpact":"<1 sentence>"},"whichMattersTonight":"<1 sentence: which CB is the focus and why>"},"macro":[{"heading":"<heading>","color":"<hex>","body":"<2-3 sentences: analysis with specific data points>","keyData":"<data points separated by ·>"}],"liquidityAssessment":{"sessionLiquidity":"<e.g. NORMAL → THIN after midnight>","thinPeriods":"<when spreads widen>","goldSpread":"<normal and news spread>","note":"<1-2 sentences: how liquidity affects trading tonight>"},"positionManagement":{"maxRiskPerTrade":"<e.g. 1.5% maximum>","stopDistance":"<e.g. Gold: minimum $25-30>","avoidHours":"<SGT times>","newsRule":"<1 sentence>","note":"<1 sentence: key sizing guidance>"},"instruments":[{"name":"<name>","color":"<hex>","price":"<price>","bias":"<BULLISH|BEARISH|NEUTRAL|AVOID LONGS|WATCH>","conviction":"<HIGH|MEDIUM|LOW>","summary":"<2-3 sentences: macro drivers, what changes thesis>","levels":{"s2":<n>,"s1":<n>,"now":<n>,"r1":<n>,"r2":<n>},"setup":"<entry, stop, target, R/R or NO SETUP with reason>","avoid":["<condition1>","<condition2>"]}],"watchlist":[{"symbol":"<sym>","price":"<price>","bias":"<bias>","priority":"<CRITICAL|HIGH|MEDIUM>","color":"<hex>","note":"<1-2 sentences>"}],"tradeFocus":"<3-4 sentences direct to trader: primary opportunity, key risks, what to avoid, most important level tonight>"}
+{"inflationRisk":{"level":"<HIGH|ELEVATED|MODERATE|LOW>","color":"<#f04545 for HIGH|#f0a020 for ELEVATED or MODERATE|#22d46e for LOW>","realYield":"<e.g. 1.82%>","drivers":["<driver1>","<driver2>"],"goldImplication":"<1-2 sentences max>","fedCutProb":"<e.g. July: 38% · Sep: 62%>"},"centralBanks":{"fed":{"rate":"<rate>","nextMeeting":"<date>","cutProb":"<e.g. July 38%>","recentSignal":"<1 sentence>","goldImpact":"<1 sentence>"},"boj":{"rate":"<rate>","nextMeeting":"<date>","hikeProb":"<e.g. June 35%>","recentSignal":"<1 sentence>","goldImpact":"<1 sentence>"},"ecb":{"rate":"<rate>","nextMeeting":"<date>","cutProb":"<e.g. June 78%>","recentSignal":"<1 sentence>","goldImpact":"<1 sentence>"},"whichMattersTonight":"<1 sentence>"},"macro":[{"heading":"<heading>","color":"<hex>","body":"<2 sentences max>","keyData":"<3 data points separated by ·>"}],"liquidityAssessment":{"sessionLiquidity":"<e.g. NORMAL>","thinPeriods":"<e.g. After midnight SGT>","goldSpread":"<e.g. $0.30-0.50>","note":"<1 sentence>"},"positionManagement":{"maxRiskPerTrade":"<e.g. 1.5% max>","stopDistance":"<e.g. Gold min $25>","avoidHours":"<e.g. After 12:30am SGT>","newsRule":"<1 sentence>","note":"<1 sentence>"},"instruments":[{"name":"<name>","color":"<hex>","price":"<price>","bias":"<BULLISH|BEARISH|NEUTRAL|AVOID LONGS|WATCH>","conviction":"<HIGH|MEDIUM|LOW>","summary":"<2 sentences max>","levels":{"s2":<n>,"s1":<n>,"now":<n>,"r1":<n>,"r2":<n>},"setup":"<1-2 sentences: entry stop target or NO SETUP>","avoid":["<condition1>"]}],"watchlist":[{"symbol":"<sym>","price":"<price>","bias":"<bias>","priority":"<CRITICAL|HIGH|MEDIUM>","color":"<hex>","note":"<1 sentence>"}],"tradeFocus":"<3 sentences max: primary opportunity, what to avoid, most important level tonight>"}
 
-INSTRUMENT RULES: Always Gold first, DXY second. Include USD/JPY if intervention risk. Include GBP/JPY if carry trade risk. 3-5 instruments max — only relevant ones.
-MACRO: Fed always. BOJ if Asia/intervention risk. ECB/BOE if London. Geopolitical if active. Max 4 sections.
-POSITION MANAGEMENT: Be specific. Reference tonight's VIX level and volatility regime from Phase 1 context.`;
+RULES: Max 3 macro sections. Max 3 instruments. Max 4 watchlist items. Max 3 array items anywhere. Keep ALL text fields to 1-2 sentences. This is critical for performance.`;
 
 
 const dp=function(b:number){return b>=1000?2:b>=10?3:4;};
@@ -522,7 +520,7 @@ export default function Auxiron(){
     // Block generation if session is not yet active
     if(!isSessionActive(session)&&!force){
       var unlockTime=getSessionUnlockSGT(session);
-      setIntelErr("🔒 "+getSessionLabel2(session)+" has not started yet. This report will unlock at "+unlockTime+". Your previous report is shown above if available.");
+      setIntelErr("🔒 "+getSessionLabel2(session)+" hasn't started yet. Unlocks at "+unlockTime+". Tap to view your previous report if one was saved.");
       setIntelPhase("idle");
       return;
     }
@@ -552,10 +550,12 @@ export default function Auxiron(){
       function(p1:any){
         setIntelP1(p1);
         setIntelPhase("p2loading");
-        var p2msg="LIVE MARKET DATA:\n"+snap+"\n\nSESSION: "+label+"\n\nPhase 1 context (already delivered to user):\n"+JSON.stringify(p1)+"\n\nNow generate Phase 2 deep analysis: inflation risk, central banks, macro framework, liquidity, position management, instruments, watchlist, trade focus. Search for: Fed cut probabilities, real yields, BOJ risk, ECB path, Gold positioning, liquidity conditions.";
+        // Pass only compact P1 summary — not full JSON (too large)
+    var p1summary="Session: "+label+"\nRegime: "+(p1.marketRegime||"UNKNOWN")+"\nHeadline: "+(p1.headline||"")+"\nAlerts: "+(p1.alerts?p1.alerts.map(function(a:any){return a.type+": "+a.headline;}).join("; "):"none")+"\nVIX: "+(p1.vixSnapshot?p1.vixSnapshot.level+" "+p1.vixSnapshot.label:"unknown");
+    var p2msg="LIVE MARKET DATA:\n"+snap+"\n\nSESSION: "+label+"\n\nPHASE 1 SUMMARY:\n"+p1summary+"\n\nGenerate Phase 2 deep analysis: inflation risk, central banks, macro framework, liquidity assessment, position management, instruments with key levels, watchlist, trade focus. Use your knowledge of current macro conditions — no web search needed.";
         callProxy(
-          {model:"claude-sonnet-4-6",max_tokens:8000,system:INTEL_P2_SYS,
-           messages:[{role:"user",content:p2msg}],useWebSearch:true},
+          {model:"claude-sonnet-4-6",max_tokens:5000,system:INTEL_P2_SYS,
+           messages:[{role:"user",content:p2msg}],useWebSearch:false},
           function(p2:any){
             setIntelP2(p2);
             setIntelPhase("complete");
