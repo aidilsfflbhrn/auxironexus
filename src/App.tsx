@@ -66,13 +66,18 @@ Respond ONLY with valid JSON:
 
 Provide 3-5 news items, most recent first. Keep each body to 2-3 sentences max.`;
 
-const CTX_SYS=`You are a senior market analyst with access to live news via web search. Generate a concise breaking news briefing covering what has happened in the LAST 1-2 HOURS during this trading session.
+const CTX_SYS=`You are a senior market analyst with live web search access. Your ONLY job is to report what has happened in the LAST 60 MINUTES from the exact current time provided in the user message. This is a time-sensitive breaking news briefing — not a macro summary.
 
-Search the web RIGHT NOW for: breaking market news last 2 hours, latest Gold and DXY price movement and catalyst, any Fed speaker statements today, JPY or BOJ activity, geopolitical breaking developments, any surprise economic data that just printed.
+CRITICAL SEARCH INSTRUCTIONS:
+- Search for news published within the LAST 60 MINUTES of the timestamp in the user message
+- Use the exact current time to anchor your search: "Gold news last hour", "market headlines last 60 minutes", "breaking financial news [current hour]"
+- DO NOT repeat context from earlier in the session — only report what is NEW since the last hour
+- If the same macro theme (e.g. Iran tensions) continues but nothing NEW happened, say "No new developments on [topic] in the last hour"
+- Search specifically for: Gold price moves in last hour, any new Fed speaker comments, any new geopolitical headline, any economic data that just printed, any central bank statement, USD/JPY and DXY moves in last hour
 
 Respond ONLY with valid JSON:
-{"sessionBias":"<RISK-ON|RISK-OFF|NEUTRAL|MIXED>","regimeUpdate":"<1 sentence: what is driving the current market regime RIGHT NOW>","breaking":[{"time":"<SGT time>","type":"<ECONOMIC DATA|FED SPEAKER|CENTRAL BANK|GEOPOLITICAL|MARKET MOVE>","typeColor":"<use: ECONOMIC DATA=#22c55e, FED SPEAKER=#818cf8, CENTRAL BANK=#fb923c, GEOPOLITICAL=#ef4444, MARKET MOVE=#3b82f6>","headline":"<specific factual headline — what actually happened>","impact":"<BULLISH GOLD|BEARISH GOLD|BULLISH USD|BEARISH USD|RISK-ON|RISK-OFF|NEUTRAL>","detail":"<2-3 sentences: exactly what happened, the specific numbers or statements, and why it matters for traders>","goldReaction":"<how Gold actually moved or is moving in response — be specific with price levels>","tradingNote":"<1 sentence: the single most actionable thing a trader should know right now>"}],"marketMoves":[{"symbol":"<sym>","from":"<price>","to":"<price>","change":"<+/-amount>","direction":"<up|down>","note":"<1 sentence: what caused this move>"}],"nextUp":[{"time":"<SGT>","event":"<specific upcoming event or risk>","impact":"<HIGH|MEDIUM>","note":"<1 sentence why it matters>"}],"goldBias":"<BULLISH|BEARISH|NEUTRAL>","dxyBias":"<BULLISH|BEARISH|NEUTRAL>","sessionSummary":"<2 sentences: plain English summary of what has happened this session so far and what traders should be focused on right now>"}
-Provide 1-3 breaking items covering only GENUINELY NEW developments from the last 2 hours — not background context or old news. If nothing significant happened, say so honestly. Provide 3-5 market moves. Provide 2-3 next up items. No economic calendar — that lives in the Intel report only.`;
+{"sessionBias":"<RISK-ON|RISK-OFF|NEUTRAL|MIXED>","currentTime":"<exact SGT time from user message>","regimeUpdate":"<1 sentence: what specifically changed in the LAST HOUR — not general session context>","breaking":[{"time":"<exact SGT time this happened>","type":"<ECONOMIC DATA|FED SPEAKER|CENTRAL BANK|GEOPOLITICAL|MARKET MOVE>","typeColor":"<ECONOMIC DATA=#22c55e, FED SPEAKER=#818cf8, CENTRAL BANK=#fb923c, GEOPOLITICAL=#ef4444, MARKET MOVE=#3b82f6>","headline":"<specific factual headline with exact time — what actually just happened>","impact":"<BULLISH GOLD|BEARISH GOLD|BULLISH USD|BEARISH USD|RISK-ON|RISK-OFF|NEUTRAL>","detail":"<2-3 sentences: exactly what happened, specific numbers, why it matters NOW>","goldReaction":"<exact Gold price movement in response — be specific e.g. Gold moved from $X to $Y>","tradingNote":"<1 sentence: most actionable thing to do RIGHT NOW based on this development>"}],"marketMoves":[{"symbol":"<sym>","from":"<price>","to":"<price>","change":"<+/-amount>","direction":"<up|down>","timeframe":"<last X minutes>","note":"<1 sentence: what specifically caused this move in the last hour>"}],"nextUp":[{"time":"<SGT>","event":"<specific upcoming event>","impact":"<HIGH|MEDIUM>","note":"<1 sentence why it matters for the next 1-2 hours>"}],"goldBias":"<BULLISH|BEARISH|NEUTRAL>","dxyBias":"<BULLISH|BEARISH|NEUTRAL>","sessionSummary":"<2 sentences: what specifically changed in the LAST HOUR and what traders should focus on for the NEXT hour — not general session overview>","nothingNew":"<true if nothing material happened in last 60 min — if true, say what to watch instead>"}
+RULES: 1-3 breaking items of GENUINELY NEW developments only. If nothing new happened in the last hour, set nothingNew to true and provide 1 item explaining what ongoing risk to monitor. Provide 3-4 market moves with timeframes. Provide 2-3 next up items. NO background macro context — only what changed in the last 60 minutes.`;
 const INTEL_P1_SYS=`You are a senior macro strategist at a top investment bank. Generate PHASE 1 of a pre-session intelligence briefing — situational awareness only. Be CONCISE. Max 2 sentences per text field. Max 3 items per array. Short, punchy, factual.
 
 Search the web RIGHT NOW for: breaking geopolitical headlines, overnight Asia and Europe market performance, VIX current level, latest economic calendar events this session, active alerts or risks.
@@ -472,9 +477,31 @@ export default function Auxiron(){
     if(newCount>10){setCtxErr("Daily limit reached — max 10 briefings per day.");return;}
     setCtxCount(newCount);setCtxSessionKey(today);
     setCtxLoading(true);setCtx(null);setCtxErr(null);
-    var msg="LIVE MARKET DATA:\n"+getSnap()+
-      "\n\nCurrent time SGT: "+new Date().toLocaleString("en-SG",{timeZone:"Asia/Singapore"})+
-      "\n\nGenerate a breaking news briefing for what has happened in the last 1-2 hours. Search for the latest news right now.";
+    // Get precise SGT time for time-anchored search
+    var nowSGT=new Date().toLocaleString("en-SG",{
+      timeZone:"Asia/Singapore",
+      weekday:"long",year:"numeric",month:"long",day:"numeric",
+      hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false
+    });
+    var hourSGT=new Date(Date.now()+8*60*60*1000).getUTCHours();
+    var minSGT=new Date(Date.now()+8*60*60*1000).getUTCMinutes();
+    var oneHourAgo=new Date(Date.now()-60*60*1000).toLocaleString("en-SG",{
+      timeZone:"Asia/Singapore",hour:"2-digit",minute:"2-digit",hour12:false
+    });
+    var msg="LIVE MARKET SNAPSHOT:
+"+getSnap()+
+      "
+
+EXACT CURRENT TIME (SGT): "+nowSGT+
+      "
+
+SEARCH WINDOW: Only news and events from "+oneHourAgo+" SGT to "+hourSGT+":"+String(minSGT).padStart(2,"0")+" SGT (last 60 minutes only)."+
+      "
+
+Instructions: Search specifically for what has happened in the last 60 minutes from the timestamp above. Report only genuinely new developments — not ongoing background context. For each instrument in the live snapshot, note if it has moved significantly in the last hour and why. If Iran/geopolitical situation is ongoing but nothing NEW happened in the last hour, say so explicitly and provide the current price levels instead."+
+      "
+
+What specific events, data prints, speeches, or price moves occurred between "+oneHourAgo+" SGT and now?";
     callProxy(
       {model:"claude-haiku-4-5",max_tokens:3000,system:CTX_SYS,
        messages:[{role:"user",content:msg}],
@@ -1103,8 +1130,12 @@ export default function Auxiron(){
                 </div>
                 {lastRefresh&&<span style={{fontSize:9,color:C.txt3}}>{lastRefresh.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</span>}
               </div>
+              {ctx.nothingNew&&ctx.nothingNew!=="false"&&<div style={{background:"rgba(58,85,112,0.15)",border:"1px solid "+C.border,borderRadius:6,padding:"7px 10px",marginBottom:6}}>
+                <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:C.txt2,fontWeight:600}}>QUIET LAST HOUR — </span>
+                <span style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:11,color:C.txt1}}>{ctx.regimeUpdate}</span>
+              </div>}
               {ctx.sessionSummary&&<div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:13,color:C.txt0,lineHeight:1.8}}>{ctx.sessionSummary}</div>}
-              {ctx.regimeUpdate&&!ctx.sessionSummary&&<div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:13,color:C.txt0,lineHeight:1.8}}>{ctx.regimeUpdate}</div>}
+              {ctx.regimeUpdate&&!ctx.sessionSummary&&(!ctx.nothingNew||ctx.nothingNew==="false")&&<div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:13,color:C.txt0,lineHeight:1.8}}>{ctx.regimeUpdate}</div>}
             </div>
             {/* Breaking news */}
             {ctx.breaking&&ctx.breaking.length>0&&<div style={{marginBottom:8}}>
