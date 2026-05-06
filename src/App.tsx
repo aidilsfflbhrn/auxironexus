@@ -107,26 +107,41 @@ const fmt=function(v:any,b:number){
 const vixClr=function(v:number){return v<15?"#28cc78":v<20?"#e8c858":v<30?"#f09020":"#f04040";};
 const vixLbl=function(v:number){return v<15?"CALM":v<20?"NORMAL":v<30?"ELEVATED":"HIGH FEAR";};
 
-function genFB(base:number,vol:number,pts?:number){
-  pts=pts||48;var data:any[]=[];var now=Date.now();
+// Seeded RNG — same seed = same chart always, no flickering
+function seededRand(seed:number){
+  var x=Math.sin(seed+1)*10000;
+  return x-Math.floor(x);
+}
+function genFB(base:number,vol:number,pts?:number,seed?:number){
+  pts=pts||48;
+  var s=seed||Math.round(base*100);
+  var data:any[]=[];var now=Date.now();
   var dailyRange=Math.max(vol*2,0.002);
-  var trendDir=Math.random()>0.5?1:-1;
-  var trendStrength=dailyRange*(0.3+Math.random()*0.7);
+  var trendDir=seededRand(s)>0.5?1:-1;
+  var trendStrength=dailyRange*(0.3+seededRand(s+1)*0.7);
   var startPct=trendDir*(-trendStrength*0.8);
   var p=base*(1+startPct);
   var momentum=0;
   for(var i=0;i<pts;i++){
-    momentum=momentum*0.92+(Math.random()-0.5)*dailyRange*0.12;
+    var r1=seededRand(s+i*3);
+    var r2=seededRand(s+i*3+1);
+    var r3=seededRand(s+i*3+2);
+    momentum=momentum*0.92+(r1-0.5)*dailyRange*0.12;
     var maxMom=dailyRange*0.3;
     if(momentum>maxMom)momentum=maxMom;
     if(momentum<-maxMom)momentum=-maxMom;
     p=p*(1+momentum);
     var maxDev=base*(dailyRange*1.5);
-    if(p>base+maxDev)p=base+maxDev-Math.random()*base*0.001;
-    if(p<base-maxDev)p=base-maxDev+Math.random()*base*0.001;
-    data.push({t:new Date(now-(pts-1-i)*30*60*1000).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}),p:parseFloat(p.toFixed(dp(base)))});
+    if(p>base+maxDev)p=base+maxDev-r2*base*0.001;
+    if(p<base-maxDev)p=base-maxDev+r2*base*0.001;
+    var mins=pts===48?30:pts===168?60:pts===360?120:360;
+    data.push({
+      t:new Date(now-(pts-1-i)*mins*60*1000).toLocaleDateString([],{month:"short",day:"numeric"}),
+      p:parseFloat(p.toFixed(dp(base)))
+    });
   }
-  data[data.length-1].p=parseFloat((base*(1+(Math.random()-0.5)*0.001)).toFixed(dp(base)));
+  // Last point = actual current price ± tiny noise
+  data[data.length-1].p=parseFloat((base*(1+(seededRand(s+999)-0.5)*0.0005)).toFixed(dp(base)));
   return data;
 }
 
@@ -799,23 +814,26 @@ What specific events, data prints, speeches, or price moves occurred between "+o
             </div>
             <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,background:"rgba(212,168,67,0.12)",color:C.goldL,padding:"2px 6px",borderRadius:3,letterSpacing:".1em",border:"1px solid rgba(212,168,67,0.25)"}}>PRO</span>
           </div>
-          <div style={{display:"flex",alignItems:"center",gap:5}}>
-            {/* Session timer */}
-            <div style={{background:"rgba(0,0,0,0.3)",border:"1px solid "+sessionLbl.color+"44",borderRadius:6,padding:"3px 7px"}}>
-              <span style={{fontSize:8,color:sessionLbl.color,fontWeight:600}}>{sessionLbl.label}</span>
+          <div style={{display:"flex",alignItems:"center",gap:4}}>
+            {/* Session — icon + short abbrev */}
+            <div style={{background:sessionLbl.color+"0d",border:"1px solid "+sessionLbl.color+"30",borderRadius:4,padding:"2px 6px",display:"flex",alignItems:"center",gap:3}}>
+              <span style={{fontSize:9}}>{sessionLbl.label.includes("NY")?"🗽":sessionLbl.label.includes("LONDON")||sessionLbl.label.includes("LDN")?"🌍":"🌏"}</span>
+              <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:7,color:sessionLbl.color,fontWeight:700,letterSpacing:".04em"}}>{sessionLbl.label.replace("ASIA/TOKYO","ASIA").replace("LDN/NY OVERLAP","LDN/NY").replace("NY SESSION","NY").replace("LONDON","LDN").replace("SYDNEY","SYD").replace("OFF-HOURS","OFF")}</span>
             </div>
-            {/* RORO pill */}
-            <div style={{background:"rgba(0,0,0,0.3)",border:"1px solid "+roro.color+"44",borderRadius:6,padding:"3px 8px"}}>
-              <span style={{fontSize:8,fontWeight:700,color:roro.color}}>{roro.label}</span>
+            {/* Risk — coloured dot + R-OFF/R-ON */}
+            <div style={{background:roro.color+"0d",border:"1px solid "+roro.color+"30",borderRadius:4,padding:"2px 6px",display:"flex",alignItems:"center",gap:3}}>
+              <div style={{width:5,height:5,borderRadius:"50%",background:roro.color,flexShrink:0}}/>
+              <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:7,color:roro.color,fontWeight:700}}>{roro.label==="RISK-ON"?"R-ON":roro.label==="RISK-OFF"?"R-OFF":"MIX"}</span>
             </div>
-            <span style={{fontSize:8,color:stClr,letterSpacing:".05em"}}>● {anyLive?"LIVE":"SIM"}</span>
+            {/* Live dot only */}
+            <div style={{width:6,height:6,borderRadius:"50%",background:stClr,boxShadow:"0 0 5px "+stClr}}/>
           </div>
         </div>
         {/* RORO score bar */}
         <div style={{marginBottom:6}}>
           <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}>
             <span style={{fontSize:7,color:"#f04040"}}>RISK-OFF</span>
-            <span style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:9,color:C.txt2}}>{roro.desc}</span>
+            <span style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:8,color:C.txt3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:160}}>{roro.desc.split(" · ").slice(0,2).join(" · ")}</span>
             <span style={{fontSize:7,color:"#28cc78"}}>RISK-ON</span>
           </div>
           <div style={{height:4,background:C.bg2,borderRadius:2,overflow:"hidden",position:"relative"}}>
@@ -1849,16 +1867,18 @@ What specific events, data prints, speeches, or price moves occurred between "+o
         var isGold=m.s==="XAU/USD";
         var lc=isBond?C.bond:up?C.up:C.dn;
         var tfs=["1D","1W","1M","3M"];
-        var pts=[48,7*24,30*8,90*4];
-        var chartData=instTf===0?m.ch:genFB(m.b,m.v,pts[instTf]);
+        var pts=[48,168,360,720];
+        var tfSeed=m.s.split("").reduce(function(a:number,c:string){return a+c.charCodeAt(0);},0)+instTf*1000;
+        var chartData=instTf===0?m.ch:genFB(m.b,m.v,pts[instTf],tfSeed);
         var minP=Math.min.apply(null,chartData.map(function(d:any){return d.p;}))*0.9995;
         var maxP=Math.max.apply(null,chartData.map(function(d:any){return d.p;}))*1.0005;
         var news=instNews[m.s];
         var roroColor=m.roro==="ON"?C.up:m.roro==="OFF"?C.dn:C.txt3;
-        return <div style={{position:"fixed",top:0,left:"50%",transform:"translateX(-50%)",
-          width:"100%",maxWidth:480,height:"100%",background:C.bg0,
-          zIndex:600,display:"flex",flexDirection:"column",overflowY:"auto",
-          animation:"slideUp 0.24s cubic-bezier(0.32,0.72,0,1) forwards"}}>
+        return <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,
+          width:"100%",height:"100%",background:C.bg0,
+          zIndex:600,display:"flex",flexDirection:"column",
+          overflowY:"auto",WebkitOverflowScrolling:"touch",
+          animation:"slideUp 0.22s cubic-bezier(0.32,0.72,0,1) forwards"}}>
           {/* Header */}
           <div style={{background:"linear-gradient(180deg,#0d1824,#080e14)",
             borderBottom:"1px solid "+C.border,padding:"14px 16px",flexShrink:0}}>
