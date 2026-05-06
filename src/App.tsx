@@ -503,20 +503,7 @@ export default function Auxiron(){
     var oneHourAgo=new Date(Date.now()-60*60*1000).toLocaleString("en-SG",{
       timeZone:"Asia/Singapore",hour:"2-digit",minute:"2-digit",hour12:false
     });
-    var msg="LIVE MARKET SNAPSHOT:
-"+getSnap()+
-      "
-
-EXACT CURRENT TIME (SGT): "+nowSGT+
-      "
-
-SEARCH WINDOW: Only news and events from "+oneHourAgo+" SGT to "+hourSGT+":"+String(minSGT).padStart(2,"0")+" SGT (last 60 minutes only)."+
-      "
-
-Instructions: Search specifically for what has happened in the last 60 minutes from the timestamp above. Report only genuinely new developments — not ongoing background context. For each instrument in the live snapshot, note if it has moved significantly in the last hour and why. If Iran/geopolitical situation is ongoing but nothing NEW happened in the last hour, say so explicitly and provide the current price levels instead."+
-      "
-
-What specific events, data prints, speeches, or price moves occurred between "+oneHourAgo+" SGT and now?";
+    var msg="LIVE MARKET SNAPSHOT:\n"+getSnap()+"\n\nEXACT CURRENT TIME (SGT): "+nowSGT+"\n\nSEARCH WINDOW: Only news and events from "+oneHourAgo+" SGT to "+hourSGT+":"+String(minSGT).padStart(2,"0")+" SGT (last 60 minutes only).\n\nInstructions: Search specifically for what has happened in the last 60 minutes from the timestamp above. Report only genuinely new developments not ongoing background context. If Iran/geopolitical situation is ongoing but nothing NEW happened in the last hour, say so explicitly and provide current price levels instead.\n\nWhat specific events, data prints, speeches, or price moves occurred between "+oneHourAgo+" SGT and now?";
     callProxy(
       {model:"claude-haiku-4-5",max_tokens:3000,system:CTX_SYS,
        messages:[{role:"user",content:msg}],
