@@ -583,7 +583,7 @@ export default function Auxiron(){
     var p1summary="Session: "+label+"\nRegime: "+(p1.marketRegime||"UNKNOWN")+"\nHeadline: "+(p1.headline||"")+"\nAlerts: "+(p1.alerts?p1.alerts.map(function(a:any){return a.type+": "+a.headline;}).join("; "):"none")+"\nVIX: "+(p1.vixSnapshot?p1.vixSnapshot.level+" "+p1.vixSnapshot.label:"unknown");
     var p2msg="LIVE MARKET DATA:\n"+snap+"\n\nSESSION: "+label+"\n\nPHASE 1 SUMMARY:\n"+p1summary+"\n\nGenerate Phase 2 deep analysis: inflation risk, central banks, macro framework, liquidity assessment, position management, instruments with key levels, watchlist, trade focus. Use your knowledge of current macro conditions — no web search needed.";
         callProxy(
-          {model:"claude-haiku-4-5",max_tokens:3000,system:INTEL_P2_SYS,
+          {model:"claude-sonnet-4-6",max_tokens:5000,system:INTEL_P2_SYS,
            messages:[{role:"user",content:p2msg}],useWebSearch:false},
           function(p2:any){
             setIntelP2(p2);
