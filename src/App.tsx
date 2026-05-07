@@ -156,7 +156,7 @@ function callProxy(body:any,onSuccess:Function,onError:Function){
   var xhr=new XMLHttpRequest();
   xhr.open("POST","/api/analyze",true);
   xhr.setRequestHeader("Content-Type","application/json");
-  xhr.timeout=body.useWebSearch?295000:55000;
+  xhr.timeout=body.useWebSearch?295000:120000;
   xhr.onload=function(){
     try{
       var raw=(xhr.responseText||"").trim();
@@ -583,7 +583,7 @@ export default function Auxiron(){
     var p1summary="Session: "+label+"\nRegime: "+(p1.marketRegime||"UNKNOWN")+"\nHeadline: "+(p1.headline||"")+"\nAlerts: "+(p1.alerts?p1.alerts.map(function(a:any){return a.type+": "+a.headline;}).join("; "):"none")+"\nVIX: "+(p1.vixSnapshot?p1.vixSnapshot.level+" "+p1.vixSnapshot.label:"unknown");
     var p2msg="LIVE MARKET DATA:\n"+snap+"\n\nSESSION: "+label+"\n\nPHASE 1 SUMMARY:\n"+p1summary+"\n\nGenerate Phase 2 deep analysis: inflation risk, central banks, macro framework, liquidity assessment, position management, instruments with key levels, watchlist, trade focus. Use your knowledge of current macro conditions — no web search needed.";
         callProxy(
-          {model:"claude-sonnet-4-6",max_tokens:5000,system:INTEL_P2_SYS,
+          {model:"claude-haiku-4-5",max_tokens:3000,system:INTEL_P2_SYS,
            messages:[{role:"user",content:p2msg}],useWebSearch:false},
           function(p2:any){
             setIntelP2(p2);
@@ -717,7 +717,8 @@ export default function Auxiron(){
           .auxiron-bottom-nav{display:none !important;}
           .auxiron-inner{max-width:100%;padding:0;}
         }
-        @media(min-width:1280px){.auxiron-sidebar{width:260px;}.auxiron-main{margin-left:260px;}.auxiron-inner{max-width:960px;margin:0 auto;}}
+        .auxiron-right-panel{display:none;}
+        @media(min-width:1280px){.auxiron-sidebar{width:260px;}.auxiron-main{margin-left:260px;margin-right:280px;}.auxiron-inner{max-width:100%;padding:0 20px;}.auxiron-right-panel{display:flex;flex-direction:column;width:280px;position:fixed;right:0;top:0;bottom:0;z-index:200;background:#111820;border-left:1px solid #1e2d40;overflow-y:auto;overflow-x:hidden;}}
       `}</style>
 
       {/* DESKTOP SIDEBAR */}
@@ -774,6 +775,95 @@ export default function Auxiron(){
           })}
         </div>
         <div style={{padding:"10px 14px",borderTop:"1px solid "+C.border,fontSize:8,color:C.txt3,letterSpacing:".06em"}}>© 2025 AUXIRON</div>
+      </div>
+
+      {/* DESKTOP RIGHT PANEL */}
+      <div className="auxiron-right-panel">
+        {/* Market Regime */}
+        <div style={{padding:"14px 14px 12px",borderBottom:"1px solid "+C.border}}>
+          <div style={{fontSize:8,color:C.txt3,letterSpacing:".1em",marginBottom:8}}>MARKET REGIME</div>
+          <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:8}}>
+            <div style={{width:9,height:9,borderRadius:"50%",background:roro.color,boxShadow:"0 0 8px "+roro.color}} className="pd"/>
+            <span style={{fontSize:13,fontWeight:700,color:roro.color,letterSpacing:".04em"}}>{roro.label}</span>
+          </div>
+          <div style={{marginBottom:8}}>
+            <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
+              <span style={{fontSize:7,color:"#f04040",letterSpacing:".04em"}}>RISK-OFF</span>
+              <span style={{fontSize:7,color:"#28cc78",letterSpacing:".04em"}}>RISK-ON</span>
+            </div>
+            <div style={{height:6,background:C.bg2,borderRadius:3,overflow:"hidden",position:"relative"}}>
+              <div style={{position:"absolute",left:0,width:"50%",height:"100%",background:"rgba(240,64,64,0.25)"}}/>
+              <div style={{position:"absolute",right:0,width:"50%",height:"100%",background:"rgba(40,204,120,0.25)"}}/>
+              <div style={{position:"absolute",left:roro_score+"%",transform:"translateX(-50%)",width:11,height:11,borderRadius:"50%",background:roro.color,top:-2.5,boxShadow:"0 0 7px "+roro.color}}/>
+            </div>
+          </div>
+          <div style={{fontSize:9,color:C.txt2,lineHeight:1.6}}>{roro.desc.split(" · ").slice(0,2).join(" · ")}</div>
+        </div>
+        {/* Gold */}
+        <div style={{padding:"12px 14px",borderBottom:"1px solid "+C.border}}>
+          <div style={{fontSize:8,color:C.txt3,letterSpacing:".1em",marginBottom:8}}>GOLD BIAS</div>
+          {goldI&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <div>
+              <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:16,fontWeight:700,color:goldI.pct>=0?C.up:C.dn,fontVariantNumeric:"tabular-nums"}}>{fmt(goldI.cur,goldI.b)}</div>
+              <div style={{fontSize:9,color:goldI.pct>=0?C.up:C.dn,marginTop:2}}>{goldI.pct>=0?"+":""}{goldI.pct.toFixed(2)}% today</div>
+            </div>
+            <div style={{background:goldBiasColor+"1a",border:"1px solid "+goldBiasColor+"55",borderRadius:6,padding:"5px 10px",textAlign:"center"}}>
+              <div style={{fontSize:11,fontWeight:700,color:goldBiasColor,letterSpacing:".06em"}}>{goldBias}</div>
+              <div style={{fontSize:7,color:C.txt3,marginTop:2}}>XAU/USD</div>
+            </div>
+          </div>}
+        </div>
+        {/* VIX */}
+        <div style={{padding:"12px 14px",borderBottom:"1px solid "+C.border}}>
+          <div style={{fontSize:8,color:C.txt3,letterSpacing:".1em",marginBottom:8}}>VOLATILITY</div>
+          {vixI&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <div>
+              <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:16,fontWeight:700,color:vixClr(vixI.cur)}}>{vixI.cur.toFixed(2)}</div>
+              <div style={{fontSize:9,color:C.txt3,marginTop:2}}>VIX Index</div>
+            </div>
+            <div style={{background:vixClr(vixI.cur)+"18",border:"1px solid "+vixClr(vixI.cur)+"44",borderRadius:6,padding:"5px 10px",textAlign:"center"}}>
+              <div style={{fontSize:10,fontWeight:700,color:vixClr(vixI.cur)}}>{vixLbl(vixI.cur)}</div>
+              <div style={{fontSize:7,color:C.txt3,marginTop:2}}>{vixI.pct>=0?"+":""}{vixI.pct.toFixed(2)}%</div>
+            </div>
+          </div>}
+        </div>
+        {/* Yield Curve */}
+        {spread!==null&&<div style={{padding:"12px 14px",borderBottom:"1px solid "+C.border}}>
+          <div style={{fontSize:8,color:C.txt3,letterSpacing:".1em",marginBottom:8}}>YIELD CURVE 2s10s</div>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+            <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:20,fontWeight:700,color:inverted?C.dn:C.up}}>{spread>0?"+":""}{spread}%</div>
+            <div style={{background:inverted?C.dnD:C.upD,border:"1px solid "+(inverted?C.dn:C.up)+"44",borderRadius:5,padding:"3px 8px"}}>
+              <div style={{fontSize:9,fontWeight:700,color:inverted?C.dn:C.up}}>{inverted?"INVERTED":"NORMAL"}</div>
+            </div>
+          </div>
+        </div>}
+        {/* Top Movers */}
+        <div style={{padding:"12px 14px",borderBottom:"1px solid "+C.border}}>
+          <div style={{fontSize:8,color:C.txt3,letterSpacing:".1em",marginBottom:8}}>TOP MOVERS</div>
+          {mkt.slice().sort(function(a:any,b:any){return Math.abs(b.pct)-Math.abs(a.pct);}).slice(0,5).map(function(m:any){
+            var up=m.pct>=0;
+            return <div key={m.s} style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:7}}>
+              <div>
+                <div style={{fontSize:10,fontWeight:600,color:C.txt1}}>{m.l}</div>
+                <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.txt3}}>{fmt(m.cur,m.b)}</div>
+              </div>
+              <div style={{background:up?C.upD:C.dnD,border:"1px solid "+(up?C.up:C.dn)+"44",borderRadius:4,padding:"2px 8px"}}>
+                <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,fontWeight:700,color:up?C.up:C.dn}}>{up?"+":""}{m.pct.toFixed(2)}%</span>
+              </div>
+            </div>;
+          })}
+        </div>
+        {/* Active Session */}
+        <div style={{padding:"12px 14px"}}>
+          <div style={{fontSize:8,color:C.txt3,letterSpacing:".1em",marginBottom:8}}>ACTIVE SESSION</div>
+          <div style={{display:"flex",alignItems:"center",gap:8,background:sessionLbl.color+"0d",border:"1px solid "+sessionLbl.color+"30",borderRadius:8,padding:"9px 11px"}}>
+            <span style={{fontSize:18}}>{sessionLbl.label.includes("NY")?"🗽":sessionLbl.label.includes("LONDON")||sessionLbl.label.includes("LDN")?"🌍":"🌏"}</span>
+            <div>
+              <div style={{fontSize:11,fontWeight:700,color:sessionLbl.color,letterSpacing:".04em"}}>{sessionLbl.label.replace("🌏 ","").replace("🌍 ","").replace("🗽 ","").replace("🤝 ","").replace("💤 ","")}</div>
+              <div style={{fontSize:8,color:C.txt3,marginTop:2}}>SGT timezone</div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* MAIN CONTENT AREA */}
