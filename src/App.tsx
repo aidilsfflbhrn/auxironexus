@@ -1434,49 +1434,78 @@ export default function Auxiron(){
                 ].map(function(s){
                   var active=intelSession===s.key;
                   var cached=!!intelCache[s.key];
+                  var cacheEntry=intelCache[s.key];
                   var sessionActive=isSessionActive(s.key);
                   var isLoading=active&&(intelPhase==="p1loading"||intelPhase==="p2loading");
-                  var isDone=active&&intelPhase==="complete";
-                  // Locked = session not active AND no cached report
                   var isLocked=!sessionActive&&!cached;
-                  // Can generate = session is active and no cache yet (or force)
-                  var canGenerate=sessionActive&&!cached;
-                  return <button key={s.key} className="tap"
-                    onClick={function(){
-                      setIntelSession(s.key);
-                      if(cached){
-                        // Load from cache instantly — no API call
-                        setIntelP1(intelCache[s.key].p1);
-                        setIntelP2(intelCache[s.key].p2);
-                        setIntelPhase("complete");
-                      } else if(!isLocked){
-                        fetchIntel(s.key);
-                      }
-                      // if locked and no cache: do nothing
-                      // if locked and no cache: do nothing
-                    }}
-                    style={{background:active?"rgba(0,0,0,0.2)":cached?"rgba(34,212,110,0.04)":isLocked?"rgba(0,0,0,0.08)":C.bg1,
-                      border:"1px solid "+(active?s.color+"55":cached?"rgba(34,212,110,0.2)":isLocked?C.txt3+"22":C.border),
-                      borderRadius:10,padding:"10px 14px",textAlign:"left",width:"100%",
-                      opacity:isLocked?0.4:1,cursor:isLocked?"default":"pointer"}}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                      <div style={{display:"flex",alignItems:"center",gap:9}}>
-                        <span style={{fontSize:17}}>{s.icon}</span>
-                        <div>
-                          <div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:13,fontWeight:700,color:active?s.color:C.txt0}}>{s.label}</div>
-                          <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:active?s.color:isLocked?C.txt3:sessionActive?C.up:C.txt2}}>
-                            {isLocked?"Unlocks at "+getSessionUnlockSGT(s.key):cached?"✓ Report saved · "+s.time:sessionActive?"● LIVE NOW · "+s.time:s.time}
+                  var generatedAt=cacheEntry?.generatedAt?new Date(cacheEntry.generatedAt).toLocaleString("en-SG",{timeZone:"Asia/Singapore",hour:"2-digit",minute:"2-digit",day:"numeric",month:"short"}):null;
+                  return <div key={s.key} style={{borderRadius:10,overflow:"hidden",
+                    border:"1px solid "+(active?s.color+"55":cached?"rgba(34,212,110,0.28)":isLocked?C.txt3+"18":C.border)}}>
+                    {/* Main card row */}
+                    <button className="tap"
+                      onClick={function(){
+                        setIntelSession(s.key);
+                        if(cached){
+                          setIntelP1(intelCache[s.key].p1);
+                          setIntelP2(intelCache[s.key].p2);
+                          setIntelPhase("complete");
+                          setIntelErr(null);
+                        } else if(!isLocked){
+                          fetchIntel(s.key);
+                        }
+                      }}
+                      style={{background:active?"rgba(0,0,0,0.25)":cached?"rgba(34,212,110,0.05)":isLocked?"rgba(0,0,0,0.06)":C.bg1,
+                        border:"none",padding:"10px 14px",textAlign:"left",width:"100%",
+                        opacity:isLocked?0.4:1,cursor:isLocked?"default":"pointer"}}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                        <div style={{display:"flex",alignItems:"center",gap:9}}>
+                          <span style={{fontSize:17}}>{s.icon}</span>
+                          <div>
+                            <div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:13,fontWeight:700,
+                              color:active?s.color:cached?C.up:C.txt0}}>{s.label}</div>
+                            <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,
+                              color:active?s.color:isLocked?C.txt3:sessionActive?C.up:cached?C.txt2:C.txt2}}>
+                              {isLocked?"🔒 Unlocks at "+getSessionUnlockSGT(s.key)
+                                :cached?"✓ Saved · "+s.time
+                                :sessionActive?"● LIVE NOW · "+s.time
+                                :s.time}
+                            </div>
                           </div>
                         </div>
+                        <div style={{display:"flex",alignItems:"center",gap:6}}>
+                          {sessionActive&&!cached&&!isLoading&&<span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:s.color,background:s.color+"12",padding:"2px 8px",borderRadius:4,border:"1px solid "+s.color+"30"}}>Generate ▸</span>}
+                          {isLoading&&<div className="sp" style={{width:10,height:10,border:"2px solid "+C.border2,borderTopColor:s.color,borderRadius:"50%"}}/>}
+                          {active&&!isLoading&&intelPhase==="complete"&&<span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.up}}>✓</span>}
+                        </div>
                       </div>
-                      <div style={{display:"flex",alignItems:"center",gap:6}}>
-                        {isLocked&&<span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.txt3,background:"rgba(0,0,0,0.25)",padding:"2px 6px",borderRadius:3}}>🔒</span>}
-                        {cached&&!isLoading&&<span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.up,background:"rgba(34,212,110,0.12)",padding:"2px 6px",borderRadius:3}}>✓ Saved</span>}
-                        {sessionActive&&!cached&&!isLoading&&<span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:s.color,background:s.color+"12",padding:"2px 6px",borderRadius:3}}>Generate</span>}
-                        {isLoading&&<div className="sp" style={{width:10,height:10,border:"2px solid "+C.border2,borderTopColor:s.color,borderRadius:"50%"}}/>}
-                      </div>
-                    </div>
-                  </button>;
+                    </button>
+                    {/* VIEW SAVED REPORT button — only when cached and not currently active/showing */}
+                    {cached&&!(active&&intelPhase==="complete")&&!isLoading&&(
+                      <button className="tap"
+                        onClick={function(){
+                          setIntelSession(s.key);
+                          setIntelP1(intelCache[s.key].p1);
+                          setIntelP2(intelCache[s.key].p2);
+                          setIntelPhase("complete");
+                          setIntelErr(null);
+                        }}
+                        style={{width:"100%",background:"rgba(34,212,110,0.07)",
+                          border:"none",borderTop:"1px solid rgba(34,212,110,0.15)",
+                          padding:"8px 14px",cursor:"pointer",
+                          display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
+                        <div style={{display:"flex",alignItems:"center",gap:7}}>
+                          <span style={{fontSize:11}}>📋</span>
+                          <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,fontWeight:700,
+                            color:C.up,letterSpacing:".06em"}}>VIEW SAVED REPORT</span>
+                        </div>
+                        <div style={{textAlign:"right"}}>
+                          {generatedAt&&<div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.txt3}}>
+                            Generated {generatedAt}
+                          </div>}
+                        </div>
+                      </button>
+                    )}
+                  </div>;
                 })}
               </div>
             </div>
