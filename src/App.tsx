@@ -659,12 +659,25 @@ export default function Auxiron(){
     return accumulated;
   }
 
+  function isValidP1(p:any){return !!(p&&(p.headline||p.executiveSummary||p.marketRegime));}
+  function isValidP2(p:any){return !!(p&&Object.keys(p).length>2);}
+
   async function fetchIntel(session:string,force?:boolean){
     if(!force&&intelCache[session]){
-      setIntelP1(intelCache[session].p1);
-      setIntelP2(intelCache[session].p2);
-      setIntelPhase("complete");
-      return;
+      var cached=intelCache[session];
+      if(isValidP1(cached.p1)){
+        setIntelP1(cached.p1);
+        setIntelP2(cached.p2||null);
+        setIntelPhase("complete");
+        return;
+      } else {
+        // Cache exists but is empty/corrupted — delete it and regenerate
+        setIntelCache(function(prev:any){
+          var n={...prev};delete n[session];
+          try{var s=JSON.parse(localStorage.getItem("auxiron_intel_cache")||"{}");delete s[session];localStorage.setItem("auxiron_intel_cache",JSON.stringify(s));}catch(ex){}
+          return n;
+        });
+      }
     }
     if(!isSessionActive(session)&&!force){
       var unlockTime=getSessionUnlockSGT(session);
@@ -709,15 +722,21 @@ export default function Auxiron(){
       setIntelP2(p2);setIntelP2Progress(100);
       setIntelPhase("complete");
       releaseWakeLock();
-      setIntelCache(function(prev:any){
-        var n={...prev};n[session]={p1,p2};
-        try{
-          var toSave:any={};
-          Object.keys(n).forEach(function(k){toSave[k]={p1:n[k].p1,p2:n[k].p2,generatedAt:new Date().toISOString()};});
-          localStorage.setItem("auxiron_intel_cache",JSON.stringify(toSave));
-        }catch(ex){}
-        return n;
-      });
+      // Only cache if p1 has real content — never save empty reports
+      if(p1&&(p1.headline||p1.executiveSummary||p1.marketRegime)){
+        setIntelCache(function(prev:any){
+          var n={...prev};n[session]={p1,p2};
+          try{
+            var toSave:any={};
+            Object.keys(n).forEach(function(k){toSave[k]={p1:n[k].p1,p2:n[k].p2,generatedAt:new Date().toISOString()};});
+            localStorage.setItem("auxiron_intel_cache",JSON.stringify(toSave));
+          }catch(ex){}
+          return n;
+        });
+      } else {
+        setIntelErr("⚠ Report generated but content was empty. Please try again.");
+        setIntelPhase("idle");
+      }
     }catch(e:any){
       if((e as any).name!=="AbortError"){setIntelErr("Failed: "+(e as any).message);setIntelPhase("idle");}
       releaseWakeLock();
@@ -827,6 +846,7 @@ export default function Auxiron(){
         .auxiron-right-panel{display:none;}
         @media(min-width:1280px){.auxiron-sidebar{width:260px;}.auxiron-main{margin-left:260px;margin-right:280px;}.auxiron-inner{max-width:100%;padding:0 20px;}.auxiron-right-panel{display:flex;flex-direction:column;width:280px;position:fixed;right:0;top:0;bottom:0;z-index:200;background:#111820;border-left:1px solid #1e2d40;overflow-y:auto;overflow-x:hidden;}}
       `}</style>
+
       {/* DESKTOP SIDEBAR */}
       <div className="auxiron-sidebar">
         <div style={{padding:"16px 14px",borderBottom:"1px solid "+C.border}}>
@@ -1432,7 +1452,7 @@ export default function Auxiron(){
                   {key:"ny",icon:"🗽",label:"NY SESSION",time:"9pm–6am SGT",color:C.goldL},
                 ].map(function(s){
                   var active=intelSession===s.key;
-                  var cached=!!(intelCache[s.key]&&(intelCache[s.key].p1||intelCache[s.key].generatedAt));
+                  var cached=!!(intelCache[s.key]&&intelCache[s.key].p1&&(intelCache[s.key].p1.headline||intelCache[s.key].p1.executiveSummary||intelCache[s.key].p1.marketRegime));
                   var cacheEntry=intelCache[s.key];
                   var sessionActive=isSessionActive(s.key);
                   var isLoading=active&&(intelPhase==="p1loading"||intelPhase==="p2loading");
@@ -1444,17 +1464,12 @@ export default function Auxiron(){
                     <button className="tap"
                       onClick={function(){
                         setIntelSession(s.key);
-                        if(cached){
+                        if(cached&&isValidP1(intelCache[s.key]?.p1)){
                           var entry=intelCache[s.key];
-                          if(entry&&(entry.p1||entry.p2)){
-                            setIntelP1(entry.p1||null);
-                            setIntelP2(entry.p2||null);
-                            setIntelPhase("complete");
-                            setIntelErr(null);
-                          } else {
-                            setIntelPhase("idle");setIntelP1(null);setIntelP2(null);
-                            setIntelErr("⚠ Saved report is incomplete. Please generate a fresh report.");
-                          }
+                          setIntelP1(entry.p1);
+                          setIntelP2(entry.p2||null);
+                          setIntelPhase("complete");
+                          setIntelErr(null);
                         } else if(!isLocked){
                           fetchIntel(s.key);
                         }
@@ -1485,7 +1500,7 @@ export default function Auxiron(){
                       </div>
                     </button>
                     {/* VIEW SAVED REPORT button — only when cached and not currently active/showing */}
-                    {cached&&!(active&&intelPhase==="complete")&&!isLoading&&(
+                    {cached&&isValidP1(intelCache[s.key]?.p1)&&!(active&&intelPhase==="complete")&&!isLoading&&(
                       <button className="tap"
                         onClick={function(){
                           var entry=intelCache[s.key];
@@ -2498,4 +2513,3 @@ export default function Auxiron(){
     </div>
   );
 }
-
