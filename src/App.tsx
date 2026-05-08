@@ -1433,7 +1433,7 @@ export default function Auxiron(){
                   {key:"ny",icon:"🗽",label:"NY SESSION",time:"9pm–6am SGT",color:C.goldL},
                 ].map(function(s){
                   var active=intelSession===s.key;
-                  var cached=!!intelCache[s.key];
+                  var cached=!!(intelCache[s.key]&&(intelCache[s.key].p1||intelCache[s.key].generatedAt));
                   var cacheEntry=intelCache[s.key];
                   var sessionActive=isSessionActive(s.key);
                   var isLoading=active&&(intelPhase==="p1loading"||intelPhase==="p2loading");
@@ -1446,10 +1446,16 @@ export default function Auxiron(){
                       onClick={function(){
                         setIntelSession(s.key);
                         if(cached){
-                          setIntelP1(intelCache[s.key].p1);
-                          setIntelP2(intelCache[s.key].p2);
-                          setIntelPhase("complete");
-                          setIntelErr(null);
+                          var entry=intelCache[s.key];
+                          if(entry&&(entry.p1||entry.p2)){
+                            setIntelP1(entry.p1||null);
+                            setIntelP2(entry.p2||null);
+                            setIntelPhase("complete");
+                            setIntelErr(null);
+                          } else {
+                            setIntelPhase("idle");setIntelP1(null);setIntelP2(null);
+                            setIntelErr("⚠ Saved report is incomplete. Please generate a fresh report.");
+                          }
                         } else if(!isLocked){
                           fetchIntel(s.key);
                         }
@@ -1483,11 +1489,18 @@ export default function Auxiron(){
                     {cached&&!(active&&intelPhase==="complete")&&!isLoading&&(
                       <button className="tap"
                         onClick={function(){
+                          var entry=intelCache[s.key];
                           setIntelSession(s.key);
-                          setIntelP1(intelCache[s.key].p1);
-                          setIntelP2(intelCache[s.key].p2);
-                          setIntelPhase("complete");
-                          setIntelErr(null);
+                          if(entry&&(entry.p1||entry.p2)){
+                            setIntelP1(entry.p1||null);
+                            setIntelP2(entry.p2||null);
+                            setIntelPhase("complete");
+                            setIntelErr(null);
+                          } else {
+                            setIntelPhase("idle");
+                            setIntelP1(null);setIntelP2(null);
+                            setIntelErr("⚠ Saved report data is incomplete or corrupted. Please generate a fresh report.");
+                          }
                         }}
                         style={{width:"100%",background:"rgba(34,212,110,0.07)",
                           border:"none",borderTop:"1px solid rgba(34,212,110,0.15)",
@@ -1510,6 +1523,28 @@ export default function Auxiron(){
               </div>
             </div>
 
+            {/* No-content fallback: complete but nothing to show (corrupted cache) */}
+            {intelPhase==="complete"&&intelP1&&!intelP1.headline&&!intelP1.executiveSummary&&!intelP1.marketRegime&&(
+              <div style={{background:"rgba(240,160,32,0.07)",border:"1px solid rgba(240,160,32,0.2)",
+                borderRadius:10,padding:"14px",marginBottom:10,textAlign:"center"}}>
+                <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:C.amber,marginBottom:6,letterSpacing:".08em"}}>⚠ REPORT DATA INCOMPLETE</div>
+                <div style={{fontSize:12,color:C.txt2,marginBottom:10}}>
+                  The saved report exists but content could not be read — likely saved by an older version.
+                </div>
+                <button className="tap" onClick={function(){
+                  setIntelCache(function(p:any){
+                    var n={...p};delete n[intelSession];
+                    try{localStorage.setItem("auxiron_intel_cache",JSON.stringify(n));}catch(e){}
+                    return n;
+                  });
+                  setIntelP1(null);setIntelP2(null);setIntelPhase("idle");setIntelErr(null);
+                }} style={{background:C.gold,color:"#080e14",border:"none",borderRadius:8,
+                  padding:"7px 18px",fontFamily:"'IBM Plex Mono',monospace",fontSize:10,
+                  fontWeight:700,cursor:"pointer"}}>
+                  Clear & Generate Fresh
+                </button>
+              </div>
+            )}
             {/* Error state */}
             {intelErr&&<div style={{
               background:intelErr.startsWith("🔒")?"rgba(58,85,112,0.15)":"rgba(240,69,69,0.07)",
@@ -1558,7 +1593,7 @@ export default function Auxiron(){
             )}
 
             {/* Phase 1 content — progressive */}
-            {intelP1&&intelP1.headline&&(
+            {intelP1&&(intelP1.headline||intelP1.executiveSummary||intelP1.marketRegime)&&(
               <div>
                 <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}>
                   <div style={{flex:1,height:1,background:C.border}}/>
@@ -1687,7 +1722,7 @@ export default function Auxiron(){
                 </div>}
 
                 {/* Phase 2 skeleton — only if no content yet */}
-                {intelPhase==="p2loading"&&!(intelP2&&intelP2.inflationRisk)&&<div>
+                {intelPhase==="p2loading"&&!(intelP2&&Object.keys(intelP2).length>0)&&<div>
                   <div style={{display:"flex",alignItems:"center",gap:6,margin:"4px 0 8px"}}>
                     <div style={{flex:1,height:1,background:C.border}}/>
                     <div style={{display:"flex",alignItems:"center",gap:5,fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.amber,background:"rgba(240,160,32,0.08)",border:"1px solid rgba(240,160,32,0.2)",borderRadius:4,padding:"2px 8px"}}>
@@ -1702,7 +1737,7 @@ export default function Auxiron(){
             )}
 
             {/* Phase 2 content — progressive */}
-            {(intelPhase==="p2loading"||intelPhase==="complete")&&intelP2&&intelP2.inflationRisk&&(
+            {(intelPhase==="p2loading"||intelPhase==="complete")&&intelP2&&Object.keys(intelP2).length>0&&(
               <div>
                 <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}>
                   <div style={{flex:1,height:1,background:C.border}}/>
