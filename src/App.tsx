@@ -2184,12 +2184,13 @@ export default function Auxiron(){
             {(function(){
               var pts2=chartData;
               if(pts2.length<2)return null;
-              var mn=Math.min.apply(null,pts2.map(function(d:any){return d.p;}))*0.9995;
-              var mx=Math.max.apply(null,pts2.map(function(d:any){return d.p;}))*1.0005;
-              var rng=mx-mn||1;
+              var mn=Math.min.apply(null,pts2.map(function(d:any){return d.p;}));
+              var mx=Math.max.apply(null,pts2.map(function(d:any){return d.p;}));
+              var rng=mx-mn||0.01;
+              var lo=mn-rng*0.30,hi=mx+rng*0.30,rngP=hi-lo;
               var W=200,h=chartH;
               var svgP=pts2.map(function(d:any,j:number){
-                return [(j/(pts2.length-1))*W,h-((d.p-mn)/rng)*(h-8)-4];
+                return [(j/(pts2.length-1))*W,h-((d.p-lo)/rngP)*(h-2)-1];
               });
               var pd=svgP.map(function(p:number[],j:number){return (j===0?"M":"L")+p[0].toFixed(1)+","+p[1].toFixed(1);}).join(" ");
               var ad=pd+" L"+W+","+h+" L0,"+h+" Z";
