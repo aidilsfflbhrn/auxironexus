@@ -1,4 +1,8 @@
 {
+  "github": {
+    "enabled": true,
+    "autoJobCancelation": true
+  },
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" }
   ],
