@@ -145,6 +145,14 @@ function genFB(base:number,vol:number,pts?:number,seed?:number){
   return data;
 }
 
+function samplePts(data:any[],max:number){
+  if(!data||data.length<=max)return data;
+  var step=(data.length-1)/(max-1);
+  var out=[];
+  for(var i=0;i<max;i++)out.push(data[Math.round(i*step)]);
+  return out;
+}
+
 function initMkt(){
   return INSTRUMENTS.map(function(inst){
     var ch=genFB(inst.b,inst.v);var open=ch[0].p;var cur=ch[ch.length-1].p;
@@ -1237,7 +1245,7 @@ export default function Auxiron(){
           {cv==="single"&&selI&&(function(){
             var sTfPts=[48,168,360,720];
             var sTfSeed=selI.s.split("").reduce(function(a:number,c:string){return a+c.charCodeAt(0);},0)+chartTf*1000;
-            var sChartData=chartTf===0?selI.ch:genFB(selI.b,selI.v,sTfPts[chartTf],sTfSeed);
+            var sChartData=samplePts(chartTf===0?selI.ch:genFB(selI.b,selI.v,sTfPts[chartTf],sTfSeed),30);
             var sXint=Math.max(1,Math.floor(sChartData.length/6));
             return <div style={{padding:"12px"}}>
               <div style={{background:"#0a0e1a",border:"1px solid rgba(255,255,255,0.08)",borderRadius:12,padding:"14px"}}>
@@ -1305,7 +1313,7 @@ export default function Auxiron(){
                 <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:14,fontWeight:700,color:"#e8d5a3",fontVariantNumeric:"tabular-nums",lineHeight:1}}>{fmt(m.cur,m.b)}{isBond?"%":""}</div>
                 <div style={{fontSize:10,fontWeight:600,color:m.pct>=0?"#00d084":"#ff4d4d",marginTop:3,marginBottom:7}}>{m.pct>=0?"+":""}{m.pct.toFixed(2)}%</div>
                 <ResponsiveContainer width="100%" height={72}>
-                  <AreaChart data={m.ch} margin={{top:2,right:2,bottom:2,left:2}}>
+                  <AreaChart data={samplePts(m.ch,30)} margin={{top:2,right:2,bottom:2,left:2}}>
                     <defs>
                       <linearGradient id={qgid} x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0%" stopColor="rgba(232,213,163,0.22)"/>
@@ -2217,7 +2225,7 @@ export default function Auxiron(){
         var tfs=["1D","1W","1M","3M"];
         var pts=[48,168,360,720];
         var tfSeed=m.s.split("").reduce(function(a:number,cv:string){return a+cv.charCodeAt(0);},0)+instTf*1000;
-        var chartData=instTf===0?m.ch:genFB(m.b,m.v,pts[instTf],tfSeed);
+        var chartData=samplePts(instTf===0?m.ch:genFB(m.b,m.v,pts[instTf],tfSeed),30);
         var nd=instNewsData, ad=instAnalysisData;
         var chartH=screenW<400?170:screenW<600?200:220;
         function PBar(props:{pct:number,done:boolean}){
