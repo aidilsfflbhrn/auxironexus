@@ -1176,29 +1176,22 @@ export default function Auxiron(){
                     </div>
                     <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:screenW<480?8:9,fontWeight:700,color:up?C.up:C.dn}}>{up?"+":""}{m.pct.toFixed(2)}%</span>
                   </div>
-                  <div style={{height:cardH,background:"rgba(0,0,0,0.5)"}}>
+                  <div style={{height:cardH,background:"#0a0e1a"}}>
                     {(function(){
-                      var pts=m.ch.slice(-30);
-                      if(pts.length<2)return null;
-                      var mn=Math.min.apply(null,pts.map(function(d:any){return d.p;}));
-                      var mx=Math.max.apply(null,pts.map(function(d:any){return d.p;}));
-                      var rng=mx-mn||1;
-                      var W=200,h=cardH;
-                      var svgP=pts.map(function(d:any,j:number){
-                        return [(j/(pts.length-1))*W,h-((d.p-mn)/rng)*(h-6)-3];
-                      });
-                      var pd=svgP.map(function(p:number[],j:number){return (j===0?"M":"L")+p[0].toFixed(1)+","+p[1].toFixed(1);}).join(" ");
-                      var ad=pd+" L"+W+","+h+" L0,"+h+" Z";
-                      var lc2=up?C.up:C.dn;
-                      var gc="rgba(120,170,255,0.35)";
-                      var last=svgP[svgP.length-1];
-                      return <svg viewBox={"0 0 "+W+" "+h} preserveAspectRatio="none" style={{width:"100%",height:"100%",display:"block"}}>
-                        {([0.2,0.4,0.6,0.8] as number[]).map(function(t){return <line key={"h"+t} x1={0} y1={h*t} x2={W} y2={h*t} stroke={gc} strokeWidth={0.8}/>;}) }
-                        {([0.2,0.4,0.6,0.8] as number[]).map(function(t){return <line key={"v"+t} x1={W*t} y1={0} x2={W*t} y2={h} stroke={gc} strokeWidth={0.8}/>;}) }
-                        <path d={ad} fill={up?"rgba(34,212,110,0.07)":"rgba(240,69,69,0.07)"}/>
-                        <path d={pd} fill="none" stroke={lc2} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"/>
-                        <circle cx={last[0]} cy={last[1]} r={2.5} fill={lc2}/>
-                      </svg>;
+                      var gcgId="gcg_"+m.s.replace(/[^a-z0-9]/gi,"_");
+                      return <ResponsiveContainer width="100%" height={cardH}>
+                        <AreaChart data={samplePts(m.ch,30)} margin={{top:2,right:0,bottom:0,left:0}}>
+                          <defs>
+                            <linearGradient id={gcgId} x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="rgba(232,213,163,0.22)"/>
+                              <stop offset="100%" stopColor="rgba(232,213,163,0)"/>
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid stroke="rgba(255,255,255,0.07)" vertical={true} horizontal={true} strokeDasharray=""/>
+                          <YAxis domain={["auto","auto"]} hide/>
+                          <Area type="monotone" dataKey="p" stroke="#e8d5a3" strokeWidth={1.5} fill={"url(#"+gcgId+")"} dot={false} activeDot={{r:2,fill:"#e8d5a3",strokeWidth:0}}/>
+                        </AreaChart>
+                      </ResponsiveContainer>;
                     })()}
                   </div>
                   <div style={{padding:"3px 6px 5px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
