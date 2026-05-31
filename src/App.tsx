@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine, AreaChart, Area, CartesianGrid } from "recharts";
+import { canSpend, recordSpend, getBudgetStatus } from "./lib/budgetGate";
+import { hasAccess } from "./lib/userTier";
 
 const C={
   bg0:"#080e14",bg1:"#0d1520",bg2:"#121d2c",bg3:"#192538",
@@ -143,6 +145,63 @@ function genFB(base:number,vol:number,pts?:number,seed?:number){
   // Last point = actual current price ± tiny noise
   data[data.length-1].p=parseFloat((base*(1+(seededRand(s+999)-0.5)*0.0005)).toFixed(dp(base)));
   return data;
+}
+
+function samplePts(data:any[],max:number){
+  if(!data||data.length<=max)return data;
+  var step=(data.length-1)/(max-1);
+  var out=[];
+  for(var i=0;i<max;i++)out.push(data[Math.round(i*step)]);
+  return out;
+}
+
+// ── EXPANDED VIEW HELPERS ─────────────────────────────────────────────────
+function calcFearGreed(mkt:any[]):number{
+  var vix=mkt.find(function(m){return m.s==="VIX";});
+  var spx=mkt.find(function(m){return m.s==="SPX";});
+  var gold=mkt.find(function(m){return m.s==="XAU/USD";});
+  var score=50;
+  if(vix)score+=vix.cur<15?15:vix.cur>30?-20:(20-vix.cur)*0.8;
+  if(spx)score+=Math.max(-20,Math.min(20,spx.pct*8));
+  if(gold)score+=Math.max(-10,Math.min(10,gold.pct*-3));
+  return Math.max(0,Math.min(100,score));
+}
+
+function calcCorrelation(a:any[],b:any[]):number{
+  var n=Math.min(a.length,b.length,20);
+  if(n<3)return 0;
+  var d1=a.slice(-n).map(function(v:any){return v.p;});
+  var d2=b.slice(-n).map(function(v:any){return v.p;});
+  var m1=d1.reduce(function(s:number,v:number){return s+v;},0)/n;
+  var m2=d2.reduce(function(s:number,v:number){return s+v;},0)/n;
+  var cov=0,var1=0,var2=0;
+  for(var i=0;i<n;i++){cov+=(d1[i]-m1)*(d2[i]-m2);var1+=(d1[i]-m1)**2;var2+=(d2[i]-m2)**2;}
+  return var1*var2>0?cov/Math.sqrt(var1*var2):0;
+}
+
+function calcVolProfile(data:any[]):{buckets:any[];poc:number;mn:number;mx:number}|null{
+  if(data.length<4)return null;
+  var mn=Math.min.apply(null,data.map(function(d:any){return d.p;}));
+  var mx=Math.max.apply(null,data.map(function(d:any){return d.p;}));
+  var rng=mx-mn||0.01;
+  var N=7;var bsz=rng/N;
+  var bkts=Array.from({length:N},function(_:any,i:number){return{lo:mn+i*bsz,hi:mn+(i+1)*bsz,mid:mn+(i+0.5)*bsz,ct:0};});
+  data.forEach(function(d:any){var idx=Math.min(N-1,Math.floor((d.p-mn)/bsz));bkts[idx].ct++;});
+  var maxCt=Math.max.apply(null,bkts.map(function(b:any){return b.ct;}))||1;
+  var poc=bkts.reduce(function(best:any,b:any){return b.ct>best.ct?b:best;},bkts[0]);
+  return{buckets:bkts.map(function(b:any){return Object.assign({},b,{pct:b.ct/maxCt*100});}).reverse(),poc:poc.mid,mn,mx};
+}
+
+function calcKeyLevels(data:any[],cur:number):{r2:number;r1:number;cur:number;s1:number;s2:number}{
+  var highs:number[]=[],lows:number[]=[];
+  for(var i=2;i<data.length-2;i++){
+    if(data[i].p>data[i-1].p&&data[i].p>data[i+1].p&&data[i].p>data[i-2].p&&data[i].p>data[i+2].p)highs.push(data[i].p);
+    if(data[i].p<data[i-1].p&&data[i].p<data[i+1].p&&data[i].p<data[i-2].p&&data[i].p<data[i+2].p)lows.push(data[i].p);
+  }
+  var res=highs.filter(function(p){return p>cur;}).sort(function(a,b){return a-b;});
+  var sup=lows.filter(function(p){return p<cur;}).sort(function(a,b){return b-a;});
+  var fb=cur*0.003;
+  return{r2:res[1]||cur+fb*2,r1:res[0]||cur+fb,cur,s1:sup[0]||cur-fb,s2:sup[1]||cur-fb*2};
 }
 
 function initMkt(){
@@ -303,7 +362,7 @@ export default function Auxiron(){
     // PWA manifest name
     document.title="AuxiroNexus — Pro";
   },[]);
-  var [tab,setTab]=useState("markets");
+  var [tab,setTab]=useState("home");
   var [mkt,setMkt]=useState(initMkt);
   var [sel,setSel]=useState("XAU/USD");
   var [cv,setCv]=useState("single");
@@ -367,6 +426,18 @@ export default function Auxiron(){
   var [instAnalysisPhase,setInstAnalysisPhase]=useState<string>("idle");
   var [instAnalysisProgress,setInstAnalysisProgress]=useState(0);
   var [instAnalysisData,setInstAnalysisData]=useState<any>({});
+  var [instCot,setInstCot]=useState<any>(null);
+  var [instCotLoading,setInstCotLoading]=useState(false);
+  var [instEtfFlow,setInstEtfFlow]=useState<any>(null);
+  var [instEtfLoading,setInstEtfLoading]=useState(false);
+  // Dashboard state
+  var [dashWatchlist,setDashWatchlist]=useState<string[]>(function(){
+    try{var s=localStorage.getItem("auxiron_watchlist");if(s)return JSON.parse(s);}catch{}
+    return ["XAU/USD","DX","US10Y","WTI/USD"];
+  });
+  var [dashWatchEdit,setDashWatchEdit]=useState(false);
+  var [dashNewsData,setDashNewsData]=useState<any[]>([]);
+  var [dashNewsLoading,setDashNewsLoading]=useState(false);
   var screenW=useScreenWidth();
 
   useEffect(function(){
@@ -544,6 +615,7 @@ export default function Auxiron(){
     if(!force&&instNews[sym]){
       setInstNewsData(instNews[sym]);setInstNewsPhase("done");setInstNewsProgress(100);return;
     }
+    if(!canSpend()){setInstNewsPhase("done");return;}
     setInstNewsPhase("loading");setInstNewsProgress(2);setInstNewsData({});
     try{
       var acc=await _streamPhase("/api/stream",
@@ -564,10 +636,12 @@ export default function Auxiron(){
       if(!fin){fin={};var b2=_exStr(acc,"brief");if(b2)fin.brief=b2;var it2=_exBkt(acc,"items","[");if(it2)fin.items=it2;var kl2=_exBkt(acc,"keyLevel","{");if(kl2)fin.keyLevel=kl2;}
       setInstNewsData(fin);setInstNewsProgress(100);setInstNewsPhase("done");
       setInstNews(function(p:any){var n={...p};n[sym]=fin;return n;});
+      recordSpend("news_tagging","claude-haiku-4-5",700,1200);
     }catch(e:any){setInstNewsPhase("idle");}
   }
 
   async function fetchInstAnalysis(m:any){
+    if(!canSpend()){setInstAnalysisPhase("idle");return;}
     setInstAnalysisPhase("loading");setInstAnalysisProgress(2);setInstAnalysisData({});
     try{
       var acc=await _streamPhase("/api/stream",
@@ -587,14 +661,57 @@ export default function Auxiron(){
       try{var si2=acc.indexOf("{"),ei2=acc.lastIndexOf("}");if(si2!==-1&&ei2>si2)fin=JSON.parse(acc.slice(si2,ei2+1));}catch(ex){}
       if(!fin){fin={};["bias","biasColor","summary","setup","risk"].forEach(function(f:string){var v=_exStr(acc,f);if(v)fin[f]=v;});var drv2=_exBkt(acc,"drivers","[");if(drv2)fin.drivers=drv2;var lv2=_exBkt(acc,"levels","{");if(lv2)fin.levels=lv2;}
       setInstAnalysisData(fin);setInstAnalysisProgress(100);setInstAnalysisPhase("done");
+      recordSpend("expanded_chart_summary","claude-sonnet-4-6",1000,1500);
     }catch(e:any){setInstAnalysisPhase("idle");}
   }
 
+  async function fetchInstCot(sym:string){
+    setInstCotLoading(true);setInstCot(null);
+    try{
+      var r=await fetch("/api/cot?symbol="+encodeURIComponent(sym));
+      var d=await r.json();
+      if(!d.error)setInstCot(d);
+    }catch(e){}
+    setInstCotLoading(false);
+  }
+
+  var INST_ETF_MAP:Record<string,string>={
+    "XAU/USD":"GLD","XAG/USD":"SLV","SPX":"SPY","NDX":"QQQ","DJI":"DIA",
+    "DX":"UUP","WTI/USD":"USO","US10Y":"TLT","US02Y":"SHY","US30Y":"TLT",
+    "BTC/USD":"IBIT","ETH/USD":"ETHA","BRENT":"BNO","VIX":"VXX",
+    "DAX":"EWG","FTSE":"EWU","NI225":"EWJ",
+  };
+
+  async function fetchInstEtfFlow(sym:string){
+    var etfSym=INST_ETF_MAP[sym];
+    if(!etfSym){setInstEtfFlow(null);return;}
+    setInstEtfLoading(true);
+    try{
+      var r=await fetch("/api/prices?symbol="+encodeURIComponent(etfSym)+"&endpoint=timeseries&interval=1day&outputsize=2");
+      var d=await r.json();
+      if(d.values&&d.values.length>=2){
+        var cur2=parseFloat(d.values[0].close);
+        var prev2=parseFloat(d.values[1].close);
+        var vol2=parseInt(d.values[0].volume||0);
+        setInstEtfFlow({sym:etfSym,price:cur2,pct:((cur2-prev2)/prev2)*100,vol:vol2});
+      }else if(d.values&&d.values.length===1){
+        setInstEtfFlow({sym:etfSym,price:parseFloat(d.values[0].close),pct:0,vol:0});
+      }
+    }catch(e){}
+    setInstEtfLoading(false);
+  }
+
   function openInstDetail(m:any){
-    setInstDetail(m);setInstDetailTab("news");setInstTf(1);
+    setInstDetail(m);setInstDetailTab("news");setInstTf(2);
     setInstNewsPhase("idle");setInstNewsData({});setInstNewsProgress(0);
     setInstAnalysisPhase("idle");setInstAnalysisData({});setInstAnalysisProgress(0);
-    setTimeout(function(){fetchInstNews(m);},30);
+    setInstCot(null);setInstCotLoading(false);
+    setInstEtfFlow(null);setInstEtfLoading(false);
+    setTimeout(function(){
+      fetchInstNews(m);
+      fetchInstCot(m.s);
+      fetchInstEtfFlow(m.s);
+    },30);
   }
 
   function closeInstDetail(){setInstDetail(null);}
@@ -778,6 +895,12 @@ export default function Auxiron(){
     mkt.filter(function(m){return m.tier<=2;});
 
   const NAV=[
+    {key:"home",label:"Home",accent:C.gold,
+     icon:function(active:boolean){return(<svg width="20" height="20" viewBox="0 0 18 18" fill="none">
+       <path d="M2.5 8L9 2.5L15.5 8V15.5H11.5V11.5H6.5V15.5H2.5V8Z"
+         stroke={active?C.gold:"#3a5570"} strokeWidth="1.4" strokeLinejoin="round"
+         fill={active?"rgba(212,168,67,0.15)":"none"}/>
+     </svg>);}},
     {key:"markets",label:"Markets",accent:C.goldL,
      icon:function(active:boolean){return(<svg width="20" height="20" viewBox="0 0 18 18" fill="none">
        <rect x="2.5" y="6" width="3" height="8" rx="1" fill={active?"#f0cc5a":"#3a5570"}/>
@@ -811,6 +934,19 @@ export default function Auxiron(){
          fill={active?"rgba(176,96,240,0.15)":"none"}/>
        <circle cx="13.5" cy="13.5" r="2.8" fill={active?C.vix:"none"} stroke={active?"none":"#3a5570"} strokeWidth="1.2"/>
        {active&&<path d="M12.3 13.5L13.2 14.4L14.8 12.6" stroke="#080e14" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>}
+     </svg>);}},
+    {key:"journal",label:"Journal",accent:"#38bdf8",
+     icon:function(active:boolean){return(<svg width="20" height="20" viewBox="0 0 18 18" fill="none">
+       <rect x="3" y="2" width="12" height="14" rx="2" stroke={active?"#38bdf8":"#3a5570"} strokeWidth="1.4" fill={active?"rgba(56,189,248,0.1)":"none"}/>
+       <line x1="6" y1="6" x2="12" y2="6" stroke={active?"#38bdf8":"#3a5570"} strokeWidth="1.2" strokeLinecap="round"/>
+       <line x1="6" y1="9" x2="12" y2="9" stroke={active?"#38bdf8":"#3a5570"} strokeWidth="1.2" strokeLinecap="round"/>
+       <line x1="6" y1="12" x2="9" y2="12" stroke={active?"#38bdf8":"#3a5570"} strokeWidth="1.2" strokeLinecap="round"/>
+     </svg>);}},
+    {key:"more",label:"More",accent:"#64748b",
+     icon:function(active:boolean){return(<svg width="20" height="20" viewBox="0 0 18 18" fill="none">
+       <line x1="3" y1="5" x2="15" y2="5" stroke={active?"#94a3b8":"#3a5570"} strokeWidth="1.5" strokeLinecap="round"/>
+       <line x1="3" y1="9" x2="15" y2="9" stroke={active?"#94a3b8":"#3a5570"} strokeWidth="1.5" strokeLinecap="round"/>
+       <line x1="3" y1="13" x2="15" y2="13" stroke={active?"#94a3b8":"#3a5570"} strokeWidth="1.5" strokeLinecap="round"/>
      </svg>);}},
   ];
 
@@ -1048,6 +1184,16 @@ export default function Auxiron(){
               boxShadow:"0 0 6px "+roro.color}}/>
           </div>
         </div>
+        {/* Budget bar */}
+        {(function(){var bs=getBudgetStatus();var bc=bs.percentage<40?"#00d084":bs.percentage<80?"#e8d5a3":"#ff4d4d";return <div style={{marginBottom:6}}>
+          <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}>
+            <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:7,color:"#3a5570",letterSpacing:".08em"}}>AI BUDGET</span>
+            <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:7,color:bc}}>${bs.spent.toFixed(3)} / $0.50</span>
+          </div>
+          <div style={{height:2,background:"#121d2c",borderRadius:1,overflow:"hidden"}}>
+            <div style={{height:"100%",width:bs.percentage+"%",background:bc,transition:"width .5s ease",borderRadius:1}}/>
+          </div>
+        </div>;}())}
         {/* Quick stats */}
         <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
           {goldI&&<div style={{background:C.bg2,border:"1px solid rgba(200,168,64,0.2)",borderRadius:6,padding:"3px 7px",display:"flex",alignItems:"center",gap:4}}>
@@ -1088,6 +1234,182 @@ export default function Auxiron(){
 
       <div className="auxiron-content">
         <div className="auxiron-inner">
+
+        {/* ── HOME DASHBOARD ── */}
+        {tab==="home"&&<div style={{paddingBottom:80}}>
+          {/* Sticky header */}
+          <div style={{position:"sticky",top:0,zIndex:50,background:C.bg1,borderBottom:"1px solid "+C.border,padding:"10px 14px"}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <span style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:15,color:C.gold,letterSpacing:".06em"}}>AUXIRONEXUS</span>
+                <span style={{background:"#1a4a8a",color:"#60a5fa",fontSize:8,fontFamily:"'IBM Plex Mono',monospace",fontWeight:700,letterSpacing:".12em",padding:"2px 6px",borderRadius:4}}>PRO</span>
+              </div>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                {(function(){var s=getBudgetStatus();var pct=Math.round(s.remaining/s.limit*100);var r=16;var circ=2*Math.PI*r;var dash=circ*(pct/100);
+                  var col=pct>60?"#00d084":pct>20?"#e8d5a3":"#ff4d4d";
+                  return <svg width="38" height="38" viewBox="0 0 38 38" style={{transform:"rotate(-90deg)"}}>
+                    <circle cx="19" cy="19" r={r} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="3"/>
+                    <circle cx="19" cy="19" r={r} fill="none" stroke={col} strokeWidth="3"
+                      strokeDasharray={`${dash} ${circ}`} strokeLinecap="round"/>
+                    <text x="19" y="19" textAnchor="middle" dominantBaseline="central"
+                      style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,fill:col,fontWeight:700,transform:"rotate(90deg)",transformOrigin:"19px 19px"}}>{pct}%</text>
+                  </svg>;
+                }())}
+                <div style={{textAlign:"right"}}>
+                  <div style={{fontSize:8,color:C.txt3,fontFamily:"'IBM Plex Mono',monospace",letterSpacing:".08em"}}>{sessionLbl.toUpperCase()} SESSION</div>
+                  <div style={{fontSize:9,color:C.txt1,fontWeight:600,marginTop:1}}>{nowStr.slice(12,20)} UTC</div>
+                </div>
+                <div style={{width:30,height:30,borderRadius:"50%",background:"linear-gradient(135deg,#1a4a8a,#0d2040)",border:"1px solid #2a4a7a",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,color:"#60a5fa",fontWeight:700}}>A</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Performance section */}
+          <div style={{padding:"14px 14px 0"}}>
+            <div style={{fontSize:9,color:"#4a5568",letterSpacing:".1em",fontVariant:"small-caps",fontFamily:"'IBM Plex Mono',monospace",marginBottom:8}}>TRADING PERFORMANCE</div>
+            <div style={{background:C.bg2,border:"1px solid "+C.border,borderRadius:10,padding:"14px"}}>
+              <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:28,fontWeight:600,color:C.gold,letterSpacing:"-.01em"}}>$24,831.50</div>
+              <div style={{fontSize:9,color:C.txt3,marginTop:2,fontFamily:"'IBM Plex Mono',monospace"}}>Account Balance</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginTop:12}}>
+                {[{l:"TODAY P&L",v:"+$142.30",c:"#00d084"},{l:"WEEK P&L",v:"+$891.20",c:"#00d084"},{l:"WIN RATE",v:"67%",c:C.gold}].map(function(x){
+                  return <div key={x.l} style={{background:"rgba(255,255,255,0.03)",borderRadius:7,padding:"9px 10px"}}>
+                    <div style={{fontSize:8,color:"#4a5568",letterSpacing:".08em",fontFamily:"'IBM Plex Mono',monospace",marginBottom:4}}>{x.l}</div>
+                    <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:14,fontWeight:600,color:x.c}}>{x.v}</div>
+                  </div>;
+                })}
+              </div>
+              <div style={{marginTop:10,borderTop:"1px solid rgba(255,255,255,0.05)",paddingTop:10}}>
+                <div style={{fontSize:8,color:"#4a5568",letterSpacing:".08em",fontFamily:"'IBM Plex Mono',monospace",marginBottom:7}}>OPEN POSITION</div>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <div>
+                    <span style={{color:C.gold,fontFamily:"'IBM Plex Mono',monospace",fontWeight:700,fontSize:12}}>XAU/USD</span>
+                    <span style={{marginLeft:7,background:"rgba(0,208,132,0.12)",color:"#00d084",fontSize:8,padding:"2px 6px",borderRadius:4,fontFamily:"'IBM Plex Mono',monospace"}}>LONG</span>
+                  </div>
+                  <div style={{textAlign:"right"}}>
+                    <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:13,color:"#00d084",fontWeight:600}}>+$142.30</div>
+                    <div style={{fontSize:8,color:C.txt3,fontFamily:"'IBM Plex Mono',monospace",marginTop:1}}>+1.4% · 0.5 lot</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Watchlist */}
+          <div style={{padding:"14px 14px 0"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+              <div style={{fontSize:9,color:"#4a5568",letterSpacing:".1em",fontVariant:"small-caps",fontFamily:"'IBM Plex Mono',monospace"}}>WATCHLIST</div>
+              <button onClick={function(){setDashWatchEdit(true);}} style={{background:"none",border:"none",color:C.txt3,fontSize:11,padding:0,cursor:"pointer",lineHeight:1}}>⚙</button>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+              {dashWatchlist.map(function(sym){
+                var inst=mkt.find(function(m){return m.s===sym;});
+                if(!inst)return null;
+                var chg=inst.ch&&inst.ch.length>1?(inst.ch[inst.ch.length-1].c-inst.ch[0].c)/inst.ch[0].c*100:0;
+                var chgColor=chg>=0?"#00d084":"#ff4d4d";
+                var sparkData=samplePts(inst.ch||[],20);
+                return <div key={sym} onClick={function(){openInstDetail(inst);}}
+                  style={{background:C.bg2,border:"1px solid "+C.border,borderRadius:9,padding:"11px",cursor:"pointer"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+                    <div>
+                      <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:11,fontWeight:700,color:C.gold}}>{sym.replace("/USD","").replace("US","").replace("/","")}</div>
+                      <div style={{fontSize:8,color:C.txt3,marginTop:1}}>{inst.n}</div>
+                    </div>
+                    <div style={{textAlign:"right"}}>
+                      <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:11,fontWeight:600,color:C.txt0}}>{inst.cur?inst.cur.toFixed(inst.dp||2):"—"}</div>
+                      <div style={{fontSize:9,color:chgColor,fontFamily:"'IBM Plex Mono',monospace"}}>{chg>=0?"+":""}{chg.toFixed(2)}%</div>
+                    </div>
+                  </div>
+                  {sparkData.length>1&&<ResponsiveContainer width="100%" height={36}>
+                    <AreaChart data={sparkData} margin={{top:2,right:0,left:0,bottom:2}}>
+                      <defs><linearGradient id={"dw_"+sym.replace(/[^a-z0-9]/gi,"_")} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor={chgColor} stopOpacity={0.25}/>
+                        <stop offset="100%" stopColor={chgColor} stopOpacity={0}/>
+                      </linearGradient></defs>
+                      <Area type="monotone" dataKey="c" stroke={chgColor} strokeWidth={1.5} dot={false}
+                        fill={"url(#dw_"+sym.replace(/[^a-z0-9]/gi,"_")+")"} isAnimationActive={false}/>
+                    </AreaChart>
+                  </ResponsiveContainer>}
+                </div>;
+              })}
+            </div>
+          </div>
+
+          {/* Watchlist edit sheet */}
+          {dashWatchEdit&&<div style={{position:"fixed",inset:0,zIndex:200,background:"rgba(0,0,0,0.7)",display:"flex",alignItems:"flex-end"}}
+            onClick={function(e){if(e.target===e.currentTarget)setDashWatchEdit(false);}}>
+            <div style={{background:C.bg1,borderRadius:"14px 14px 0 0",border:"1px solid "+C.border,width:"100%",padding:"16px",maxHeight:"70vh",overflowY:"auto"}}>
+              <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:C.gold,letterSpacing:".1em",marginBottom:12}}>CONFIGURE WATCHLIST</div>
+              {mkt.filter(function(m){return m.tier<=2;}).map(function(m){
+                var inW=dashWatchlist.includes(m.s);
+                return <button key={m.s} onClick={function(){
+                  setDashWatchlist(function(prev){
+                    var next=inW?prev.filter(function(s){return s!==m.s;}):prev.length<4?[...prev,m.s]:prev;
+                    try{localStorage.setItem("auxiron_watchlist",JSON.stringify(next));}catch{}
+                    return next;
+                  });
+                }} style={{display:"flex",justifyContent:"space-between",alignItems:"center",width:"100%",background:inW?"rgba(212,168,67,0.08)":"transparent",border:"1px solid "+(inW?C.gold:C.border),borderRadius:7,padding:"9px 12px",marginBottom:6,cursor:"pointer",color:inW?C.gold:C.txt1}}>
+                  <div style={{textAlign:"left"}}>
+                    <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:11,fontWeight:600}}>{m.s}</div>
+                    <div style={{fontSize:9,color:C.txt3,marginTop:1}}>{m.n}</div>
+                  </div>
+                  <div style={{fontSize:14,color:inW?C.gold:"#3a5570"}}>{inW?"✓":"+"}</div>
+                </button>;
+              })}
+              <button onClick={function(){setDashWatchEdit(false);}} style={{width:"100%",marginTop:8,background:C.gold,color:"#080e14",border:"none",borderRadius:8,padding:"12px",fontFamily:"'IBM Plex Mono',monospace",fontWeight:700,fontSize:12,cursor:"pointer"}}>Done</button>
+            </div>
+          </div>}
+
+          {/* AI News Headlines */}
+          <div style={{padding:"14px 14px 0"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+              <div style={{fontSize:9,color:"#4a5568",letterSpacing:".1em",fontVariant:"small-caps",fontFamily:"'IBM Plex Mono',monospace"}}>AI NEWS HEADLINES</div>
+              <button onClick={function(){setTab("intel");}} style={{background:"none",border:"none",color:C.txt3,fontSize:9,fontFamily:"'IBM Plex Mono',monospace",cursor:"pointer",letterSpacing:".06em"}}>View all →</button>
+            </div>
+            <div style={{background:C.bg2,border:"1px solid "+C.border,borderRadius:10,overflow:"hidden"}}>
+              {[
+                {bias:"BULL",tag:"FED",time:"2h ago",headline:"Fed minutes signal pause — markets price in rate hold through Q3"},
+                {bias:"BEAR",tag:"GEO",time:"4h ago",headline:"Middle East tensions push oil premium higher as shipping routes disrupted"},
+                {bias:"BULL",tag:"RATES",time:"6h ago",headline:"US 10Y yields retreat from resistance as inflation expectations moderate"},
+              ].map(function(item,i){
+                var bc=item.bias==="BULL"?"#00d084":"#ff4d4d";
+                var tagColors:any={FED:"#38bdf8",GEO:"#f59e0b",RATES:"#a78bfa"};
+                return <div key={i} style={{padding:"11px 14px",borderBottom:i<2?"1px solid rgba(255,255,255,0.05)":"none"}}>
+                  <div style={{display:"flex",gap:6,marginBottom:5,alignItems:"center"}}>
+                    <span style={{background:bc+"1a",color:bc,fontSize:7,fontFamily:"'IBM Plex Mono',monospace",fontWeight:700,padding:"2px 5px",borderRadius:3,letterSpacing:".1em"}}>{item.bias}</span>
+                    <span style={{background:(tagColors[item.tag]||C.gold)+"1a",color:tagColors[item.tag]||C.gold,fontSize:7,fontFamily:"'IBM Plex Mono',monospace",fontWeight:700,padding:"2px 5px",borderRadius:3,letterSpacing:".1em"}}>{item.tag}</span>
+                    <span style={{fontSize:8,color:"#4a5568",marginLeft:"auto"}}>{item.time}</span>
+                  </div>
+                  <div style={{fontSize:12,color:C.txt0,lineHeight:1.5}}>{item.headline}</div>
+                </div>;
+              })}
+            </div>
+          </div>
+
+          {/* Economic Calendar */}
+          <div style={{padding:"14px 14px 16px"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+              <div style={{fontSize:9,color:"#4a5568",letterSpacing:".1em",fontVariant:"small-caps",fontFamily:"'IBM Plex Mono',monospace"}}>ECONOMIC CALENDAR</div>
+              <span style={{fontSize:9,color:C.txt3,fontFamily:"'IBM Plex Mono',monospace",letterSpacing:".06em"}}>Today</span>
+            </div>
+            <div style={{background:C.bg2,border:"1px solid "+C.border,borderRadius:10,overflow:"hidden"}}>
+              {[
+                {time:"08:30",impact:"high",event:"US Non-Farm Payrolls",ccy:"🇺🇸"},
+                {time:"08:30",impact:"high",event:"US Unemployment Rate",ccy:"🇺🇸"},
+                {time:"10:00",impact:"medium",event:"ISM Manufacturing PMI",ccy:"🇺🇸"},
+                {time:"14:00",impact:"low",event:"EZ Consumer Confidence",ccy:"🇪🇺"},
+                {time:"18:00",impact:"medium",event:"FOMC Member Speech",ccy:"🇺🇸"},
+              ].map(function(ev,i){
+                var dotColor=ev.impact==="high"?"#ff4d4d":ev.impact==="medium"?"#f59e0b":"#38bdf8";
+                return <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",borderBottom:i<4?"1px solid rgba(255,255,255,0.05)":"none"}}>
+                  <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:C.txt3,minWidth:38}}>{ev.time}</div>
+                  <div style={{width:6,height:6,borderRadius:"50%",background:dotColor,flexShrink:0}}/>
+                  <div style={{fontSize:11,color:C.txt0,flex:1,lineHeight:1.3}}>{ev.event}</div>
+                  <div style={{fontSize:14}}>{ev.ccy}</div>
+                </div>;
+              })}
+            </div>
+          </div>
+        </div>}
 
         {/* ── MARKETS ── */}
         {tab==="markets"&&<div>
@@ -1168,29 +1490,22 @@ export default function Auxiron(){
                     </div>
                     <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:screenW<480?8:9,fontWeight:700,color:up?C.up:C.dn}}>{up?"+":""}{m.pct.toFixed(2)}%</span>
                   </div>
-                  <div style={{height:cardH,background:"rgba(0,0,0,0.5)"}}>
+                  <div style={{height:cardH,background:"#0a0e1a"}}>
                     {(function(){
-                      var pts=m.ch.slice(-30);
-                      if(pts.length<2)return null;
-                      var mn=Math.min.apply(null,pts.map(function(d:any){return d.p;}));
-                      var mx=Math.max.apply(null,pts.map(function(d:any){return d.p;}));
-                      var rng=mx-mn||1;
-                      var W=200,h=cardH;
-                      var svgP=pts.map(function(d:any,j:number){
-                        return [(j/(pts.length-1))*W,h-((d.p-mn)/rng)*(h-6)-3];
-                      });
-                      var pd=svgP.map(function(p:number[],j:number){return (j===0?"M":"L")+p[0].toFixed(1)+","+p[1].toFixed(1);}).join(" ");
-                      var ad=pd+" L"+W+","+h+" L0,"+h+" Z";
-                      var lc2=up?C.up:C.dn;
-                      var gc="rgba(120,170,255,0.35)";
-                      var last=svgP[svgP.length-1];
-                      return <svg viewBox={"0 0 "+W+" "+h} preserveAspectRatio="none" style={{width:"100%",height:"100%",display:"block"}}>
-                        {([0.2,0.4,0.6,0.8] as number[]).map(function(t){return <line key={"h"+t} x1={0} y1={h*t} x2={W} y2={h*t} stroke={gc} strokeWidth={0.8}/>;}) }
-                        {([0.2,0.4,0.6,0.8] as number[]).map(function(t){return <line key={"v"+t} x1={W*t} y1={0} x2={W*t} y2={h} stroke={gc} strokeWidth={0.8}/>;}) }
-                        <path d={ad} fill={up?"rgba(34,212,110,0.07)":"rgba(240,69,69,0.07)"}/>
-                        <path d={pd} fill="none" stroke={lc2} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"/>
-                        <circle cx={last[0]} cy={last[1]} r={2.5} fill={lc2}/>
-                      </svg>;
+                      var gcgId="gcg_"+m.s.replace(/[^a-z0-9]/gi,"_");
+                      return <ResponsiveContainer width="100%" height={cardH}>
+                        <AreaChart data={samplePts(m.ch,30)} margin={{top:2,right:0,bottom:0,left:0}}>
+                          <defs>
+                            <linearGradient id={gcgId} x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="rgba(232,213,163,0.22)"/>
+                              <stop offset="100%" stopColor="rgba(232,213,163,0)"/>
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid stroke="rgba(255,255,255,0.07)" vertical={true} horizontal={true} strokeDasharray=""/>
+                          <YAxis domain={["auto","auto"]} hide/>
+                          <Area type="monotone" dataKey="p" stroke="#e8d5a3" strokeWidth={1.5} fill={"url(#"+gcgId+")"} dot={false} activeDot={{r:2,fill:"#e8d5a3",strokeWidth:0}}/>
+                        </AreaChart>
+                      </ResponsiveContainer>;
                     })()}
                   </div>
                   <div style={{padding:"3px 6px 5px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
@@ -1237,7 +1552,7 @@ export default function Auxiron(){
           {cv==="single"&&selI&&(function(){
             var sTfPts=[48,168,360,720];
             var sTfSeed=selI.s.split("").reduce(function(a:number,c:string){return a+c.charCodeAt(0);},0)+chartTf*1000;
-            var sChartData=chartTf===0?selI.ch:genFB(selI.b,selI.v,sTfPts[chartTf],sTfSeed);
+            var sChartData=samplePts(chartTf===0?selI.ch:genFB(selI.b,selI.v,sTfPts[chartTf],sTfSeed),30);
             var sXint=Math.max(1,Math.floor(sChartData.length/6));
             return <div style={{padding:"12px"}}>
               <div style={{background:"#0a0e1a",border:"1px solid rgba(255,255,255,0.08)",borderRadius:12,padding:"14px"}}>
@@ -1305,7 +1620,7 @@ export default function Auxiron(){
                 <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:14,fontWeight:700,color:"#e8d5a3",fontVariantNumeric:"tabular-nums",lineHeight:1}}>{fmt(m.cur,m.b)}{isBond?"%":""}</div>
                 <div style={{fontSize:10,fontWeight:600,color:m.pct>=0?"#00d084":"#ff4d4d",marginTop:3,marginBottom:7}}>{m.pct>=0?"+":""}{m.pct.toFixed(2)}%</div>
                 <ResponsiveContainer width="100%" height={72}>
-                  <AreaChart data={m.ch} margin={{top:2,right:2,bottom:2,left:2}}>
+                  <AreaChart data={samplePts(m.ch,30)} margin={{top:2,right:2,bottom:2,left:2}}>
                     <defs>
                       <linearGradient id={qgid} x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0%" stopColor="rgba(232,213,163,0.22)"/>
@@ -2207,19 +2522,80 @@ export default function Auxiron(){
         </div>
       </div>
 
+      {/* JOURNAL TAB */}
+      {tab==="journal"&&<div style={{padding:"24px 14px",textAlign:"center"}}>
+        <div style={{fontSize:28,marginBottom:12}}>📓</div>
+        <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:12,color:C.gold,marginBottom:8}}>TRADE JOURNAL</div>
+        <div style={{fontSize:12,color:C.txt3,lineHeight:1.6}}>Track your trades, review performance,<br/>and build a record of your edge.</div>
+        <div style={{marginTop:20,fontSize:10,color:"#4a5568",fontFamily:"'IBM Plex Mono',monospace"}}>Coming soon</div>
+      </div>}
+
+      {/* MORE TAB */}
+      {tab==="more"&&<div style={{padding:"14px"}}>
+        <div style={{fontSize:9,color:"#4a5568",letterSpacing:".1em",fontVariant:"small-caps",fontFamily:"'IBM Plex Mono',monospace",marginBottom:12}}>NAVIGATION</div>
+        {[{key:"markets",label:"Markets",desc:"All instruments & categories"},{key:"charts",label:"Charts",desc:"Bloomberg-style chart view"},{key:"session",label:"Session",desc:"Live session & RORO analysis"},{key:"intel",label:"Intel",desc:"AI-powered market briefings"},{key:"filter",label:"Filter",desc:"AI instrument screener"}].map(function(item){
+          return <button key={item.key} onClick={function(){setTab(item.key);}} style={{display:"flex",justifyContent:"space-between",alignItems:"center",width:"100%",background:C.bg2,border:"1px solid "+C.border,borderRadius:8,padding:"12px",marginBottom:8,cursor:"pointer",color:C.txt0,textAlign:"left"}}>
+            <div>
+              <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:11,fontWeight:600,color:C.gold}}>{item.label}</div>
+              <div style={{fontSize:10,color:C.txt3,marginTop:2}}>{item.desc}</div>
+            </div>
+            <span style={{color:C.txt3,fontSize:14}}>›</span>
+          </button>;
+        })}
+      </div>}
+
       {/* INSTRUMENT DETAIL — streaming news + analysis */}
       {instDetail&&(function(){
         var m=instDetail;
         var up=m.pct>=0;
         var isBond=m.cat==="Bonds";
-        var lc=isBond?C.bond:up?C.up:C.dn;
-        var cc=m.cat==="Commodities"?C.amber:m.cat==="Indices"?C.up:m.cat==="Volatility"?C.vix:m.cat==="Bonds"?C.bond:C.blue;
-        var tfs=["1D","1W","1M","3M"];
-        var pts=[48,168,360,720];
+        var tfs=["1H","4H","1D","1W","1M","3M"];
+        var tPts=[24,60,48,168,360,720];
         var tfSeed=m.s.split("").reduce(function(a:number,cv:string){return a+cv.charCodeAt(0);},0)+instTf*1000;
-        var chartData=instTf===0?m.ch:genFB(m.b,m.v,pts[instTf],tfSeed);
+        var chartData=samplePts(instTf===2?m.ch:genFB(m.b,m.v,tPts[instTf],tfSeed),30);
         var nd=instNewsData, ad=instAnalysisData;
-        var chartH=screenW<400?170:screenW<600?200:220;
+        // Computed indicators
+        var roroScoreV=calcROROScore(mkt);
+        var fg=calcFearGreed(mkt);
+        var fgColor=fg<30?"#ff4d4d":fg<50?"#f0a020":fg<70?"#e8d5a3":"#00d084";
+        var fgLabel=fg<20?"EXTREME FEAR":fg<40?"FEAR":fg<60?"NEUTRAL":fg<80?"GREED":"EXTREME GREED";
+        var dxyInst=mkt.find(function(x:any){return x.s==="DX";});
+        var corr=m.s==="DX"?1:dxyInst?calcCorrelation(m.ch,dxyInst.ch):0;
+        var corrColor=Math.abs(corr)>0.5?"#e8d5a3":Math.abs(corr)>0.25?"#8892a4":"#5a6478";
+        var corrNote=m.s==="DX"?"This IS DXY — self-referential":
+          corr>0.5?"Strong positive — tends to move WITH DXY":
+          corr>0.2?"Mild positive correlation with DXY":
+          corr<-0.5?"Strong inverse — typically moves OPPOSITE DXY":
+          corr<-0.2?"Mild inverse correlation with DXY":
+          "Low / uncorrelated with DXY";
+        var us10yInst=mkt.find(function(x:any){return x.s==="US10Y";});
+        var realYield:number|null=us10yInst?parseFloat((us10yInst.cur-3.0).toFixed(2)):null;
+        var ryColor=realYield===null?"#5a6478":realYield>1?"#ff4d4d":realYield>0?"#f0a020":realYield>-1?"#e8d5a3":"#00d084";
+        var ryNote=realYield===null?"US 10Y data unavailable":
+          realYield>2?"Deeply positive — headwind for Gold, dollar bullish":
+          realYield>0.5?"Positive real yield — mild USD support":
+          realYield>-0.5?"Near zero — neutral for risk assets":
+          realYield>-2?"Negative real yield — bullish for Gold":
+          "Deeply negative — strong inflation hedge demand";
+        var instRoroClass=m.roro;
+        var sessionBiasLabel:string,sessionBiasColor:string,sessionBiasNote:string;
+        if(instRoroClass==="ON"){
+          if(roroScoreV>=58){sessionBiasLabel="BULLISH";sessionBiasColor="#00d084";sessionBiasNote="Risk-on regime supports "+m.l;}
+          else if(roroScoreV<=42){sessionBiasLabel="BEARISH";sessionBiasColor="#ff4d4d";sessionBiasNote="Risk-off headwind for "+m.l;}
+          else{sessionBiasLabel="NEUTRAL";sessionBiasColor="#e8d5a3";sessionBiasNote="Mixed regime signals";}
+        }else if(instRoroClass==="OFF"){
+          if(roroScoreV<=42){sessionBiasLabel="BULLISH";sessionBiasColor="#00d084";sessionBiasNote="Risk-off regime supports "+m.l;}
+          else if(roroScoreV>=58){sessionBiasLabel="BEARISH";sessionBiasColor="#ff4d4d";sessionBiasNote="Risk-on weighs on "+m.l;}
+          else{sessionBiasLabel="NEUTRAL";sessionBiasColor="#e8d5a3";sessionBiasNote="Mixed regime signals";}
+        }else{
+          sessionBiasLabel=up?"BULLISH":m.pct<-0.1?"BEARISH":"NEUTRAL";
+          sessionBiasColor=up?"#00d084":m.pct<-0.1?"#ff4d4d":"#e8d5a3";
+          sessionBiasNote="Based on price action";
+        }
+        var volProf=calcVolProfile(chartData);
+        var keyLvls=calcKeyLevels(chartData,m.cur);
+        var cs:any={background:"#0d1220",border:"1px solid rgba(255,255,255,0.06)",borderRadius:8,padding:"11px"};
+        var lb:any={fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:"#5a6478",letterSpacing:".12em",marginBottom:7,fontWeight:600};
         function PBar(props:{pct:number,done:boolean}){
           return <div style={{height:3,background:"#060c14",borderRadius:2,overflow:"hidden",marginBottom:10}}>
             <div style={{height:"100%",width:props.pct+"%",
@@ -2244,252 +2620,284 @@ export default function Auxiron(){
             background:"linear-gradient(90deg,#121d2c 25%,#1a2840 50%,#121d2c 75%)",backgroundSize:"200% 100%",animation:"shimmer 1.5s infinite"}}/>;
         }
         return <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,
-          background:C.bg0,zIndex:600,display:"flex",flexDirection:"column",
+          background:"#070b14",zIndex:600,display:"flex",flexDirection:"column",
           overflowY:"auto",WebkitOverflowScrolling:"touch",
           animation:"slideUp 0.22s cubic-bezier(0.32,0.72,0,1) forwards"}}>
 
-          {/* ── Header with visible back button ── */}
-          <div style={{background:"linear-gradient(180deg,#0d1824,#080e14)",
-            borderBottom:"1px solid "+C.border,padding:"12px 14px",flexShrink:0}}>
-            <button className="tap" onClick={function(){setInstDetail(null);}}
-              style={{display:"inline-flex",alignItems:"center",gap:7,
-                background:"rgba(255,255,255,0.07)",
-                border:"1px solid rgba(255,255,255,0.22)",
-                borderRadius:8,padding:"6px 14px",
-                fontFamily:"'IBM Plex Mono',monospace",fontSize:10,fontWeight:600,
-                color:"#ffffff",letterSpacing:".08em",cursor:"pointer",marginBottom:12}}>
-              ← BACK TO MARKETS
-            </button>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              <div style={{display:"flex",alignItems:"center",gap:10}}>
-                <div style={{width:4,height:screenW<400?28:34,background:cc,borderRadius:2,
-                  boxShadow:"0 0 10px "+cc+"99"}}/>
-                <div>
-                  <div style={{fontFamily:"'Syne',sans-serif",fontSize:screenW<400?18:22,
-                    fontWeight:800,color:"#ffffff",lineHeight:1}}>{m.l}</div>
-                  <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:C.txt3,marginTop:3}}>{m.s}</div>
+          {/* ── 1: HEADER ── */}
+          <div style={{background:"#0d1220",borderBottom:"1px solid rgba(255,255,255,0.08)",padding:"10px 14px",flexShrink:0}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+              <button className="tap" onClick={function(){setInstDetail(null);}}
+                style={{display:"inline-flex",alignItems:"center",gap:6,background:"rgba(255,255,255,0.06)",
+                  border:"1px solid rgba(255,255,255,0.12)",borderRadius:6,padding:"5px 12px",
+                  fontFamily:"'IBM Plex Mono',monospace",fontSize:9,fontWeight:600,color:"#8892a4",
+                  letterSpacing:".08em",cursor:"pointer"}}>
+                ← BACK
+              </button>
+              <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:"#5a6478"}}>{new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})} SGT</span>
+            </div>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+              <div>
+                <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:"#5a6478",letterSpacing:".12em",marginBottom:4}}>{m.s} · {m.cat.toUpperCase()}</div>
+                <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:26,fontWeight:700,color:"#e8d5a3",fontVariantNumeric:"tabular-nums",lineHeight:1}}>{fmt(m.cur,m.b)}{isBond?"%":""}</div>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginTop:6}}>
+                  <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:13,fontWeight:700,color:up?"#00d084":"#ff4d4d"}}>{up?"▲":"▼"} {up?"+":""}{m.pct.toFixed(2)}%</span>
+                  <div style={{background:sessionBiasColor+"1a",border:"1px solid "+sessionBiasColor+"40",borderRadius:4,padding:"2px 8px"}}>
+                    <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,fontWeight:700,color:sessionBiasColor,letterSpacing:".08em"}}>{sessionBiasLabel}</span>
+                  </div>
                 </div>
               </div>
               <div style={{textAlign:"right"}}>
-                <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:screenW<400?18:22,
-                  fontWeight:700,color:"#ffffff",lineHeight:1}}>{fmt(m.cur,m.b)}{isBond?"%":""}</div>
-                <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:12,fontWeight:700,
-                  color:up?C.up:C.dn,marginTop:4,display:"flex",alignItems:"center",
-                  gap:4,justifyContent:"flex-end"}}>
-                  {up?"▲":"▼"} {up?"+":""}{m.pct.toFixed(2)}%
-                </div>
+                <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:"#5a6478",marginBottom:4}}>{m.l}</div>
+                {m.live&&<div style={{display:"flex",alignItems:"center",gap:4,justifyContent:"flex-end"}}>
+                  <div style={{width:5,height:5,borderRadius:"50%",background:"#00d084"}} className="pd"/>
+                  <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:"#00d084"}}>LIVE</span>
+                </div>}
               </div>
             </div>
           </div>
 
-          {/* ── Chart ── */}
-          <div style={{background:"#0a0e1a",borderBottom:"1px solid rgba(255,255,255,0.08)",flexShrink:0,padding:"0 0 4px"}}>
-            <ResponsiveContainer width="100%" height={chartH}>
-              <AreaChart data={chartData} margin={{top:8,right:8,bottom:4,left:0}}>
-                <defs>
-                  <linearGradient id="idcg" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="rgba(232,213,163,0.22)"/>
-                    <stop offset="100%" stopColor="rgba(232,213,163,0)"/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid stroke="rgba(255,255,255,0.07)" vertical={true} horizontal={true} strokeDasharray=""/>
-                <XAxis dataKey="t" tick={{fill:"#5a6478",fontSize:10}} tickLine={false} axisLine={false} interval={Math.max(1,Math.floor(chartData.length/6))}/>
-                <YAxis orientation="right" domain={["auto","auto"]} padding={{top:10,bottom:10}} tick={{fill:"#5a6478",fontSize:10}} tickLine={false} axisLine={false} width={60} tickCount={8} tickFormatter={function(v){return fmt(v,m.b);}}/>
-                <Tooltip content={<ChartTip/>}/>
-                <Area type="monotone" dataKey="p" stroke="#e8d5a3" strokeWidth={2} fill="url(#idcg)" dot={false} activeDot={{r:4,fill:"#e8d5a3",strokeWidth:0}}/>
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-
-          {/* Timeframe + OHLC strip */}
-          <div style={{background:C.bg1,borderBottom:"1px solid "+C.border,padding:"8px 12px",flexShrink:0}}>
-            <div style={{display:"flex",gap:4,marginBottom:6}}>
+          {/* ── 2: TIMEFRAME + OHLC ── */}
+          <div style={{background:"#070b14",borderBottom:"1px solid rgba(255,255,255,0.08)",padding:"8px 12px",flexShrink:0}}>
+            <div style={{display:"flex",gap:3,marginBottom:7}}>
               {tfs.map(function(tf:string,i:number){
                 return <button key={tf} className="tap" onClick={function(){setInstTf(i);}}
-                  style={{flex:1,background:instTf===i?"rgba(255,255,255,0.08)":"transparent",
-                    border:instTf===i?"1px solid rgba(255,255,255,0.15)":"1px solid rgba(255,255,255,0.05)",
-                    borderRadius:6,padding:"5px 0",fontFamily:"'IBM Plex Mono',monospace",
-                    fontSize:10,fontWeight:instTf===i?600:400,letterSpacing:".06em",
-                    color:instTf===i?"#ffffff":"#5a6478",transition:"all .12s",cursor:"pointer"}}>
+                  style={{flex:1,background:instTf===i?"rgba(232,213,163,0.12)":"transparent",
+                    border:instTf===i?"1px solid rgba(232,213,163,0.25)":"1px solid rgba(255,255,255,0.05)",
+                    borderRadius:5,padding:"5px 0",fontFamily:"'IBM Plex Mono',monospace",
+                    fontSize:9,fontWeight:instTf===i?600:400,letterSpacing:".04em",
+                    color:instTf===i?"#e8d5a3":"#5a6478",transition:"all .12s",cursor:"pointer"}}>
                   {tf}
                 </button>;
               })}
             </div>
-            <div style={{display:"flex",gap:4}}>
-              {[["Open",chartData[0]?.p?.toLocaleString()],
-                ["High",Math.max.apply(null,chartData.map(function(d:any){return d.p;})).toLocaleString()],
-                ["Low",Math.min.apply(null,chartData.map(function(d:any){return d.p;})).toLocaleString()],
-                ["Now",fmt(m.cur,m.b)]].map(function(row:any){
-                return <div key={row[0]} style={{flex:1,background:C.bg2,border:"1px solid "+C.border,
-                  borderRadius:6,padding:"4px 6px",textAlign:"center"}}>
-                  <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:7,color:C.txt3,marginBottom:1}}>{row[0]}</div>
-                  <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,fontWeight:600,color:"#ffffff"}}>{row[1]}</div>
+            <div style={{display:"flex",gap:3}}>
+              {([["O",chartData[0]?.p],["H",Math.max.apply(null,chartData.map(function(d:any){return d.p;}))],
+                ["L",Math.min.apply(null,chartData.map(function(d:any){return d.p;}))],["C",m.cur]] as any[]).map(function(row:any){
+                return <div key={row[0]} style={{flex:1,background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.06)",borderRadius:5,padding:"4px 5px",textAlign:"center"}}>
+                  <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:7,color:"#5a6478",marginBottom:1}}>{row[0]}</div>
+                  <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,fontWeight:600,color:"#ffffff",fontVariantNumeric:"tabular-nums"}}>{fmt(row[1],m.b)}</div>
                 </div>;
               })}
             </div>
           </div>
 
-          {/* Tabs */}
-          <div style={{display:"flex",background:C.bg1,borderBottom:"1px solid "+C.border,flexShrink:0}}>
-            {[["news","📰 NEWS BRIEF"],["analysis","🧠 AI ANALYSIS"]].map(function(t:any){
-              return <button key={t[0]} className="tap"
-                onClick={function(){
-                  setInstDetailTab(t[0]);
-                  if(t[0]==="analysis"&&instAnalysisPhase==="idle")fetchInstAnalysis(m);
-                }}
-                style={{flex:1,padding:"11px 0",background:"none",border:"none",
-                  borderBottom:"2px solid "+(instDetailTab===t[0]?cc:"transparent"),
-                  fontFamily:"'IBM Plex Mono',monospace",fontSize:screenW<400?8:9,fontWeight:600,
-                  color:instDetailTab===t[0]?cc:C.txt3,letterSpacing:".08em",cursor:"pointer",
-                  transition:"all .2s"}}>{t[1]}</button>;
-            })}
+          {/* ── 3: CHART 160px ── */}
+          <div style={{background:"#0a0e1a",borderBottom:"1px solid rgba(255,255,255,0.08)",flexShrink:0}}>
+            <ResponsiveContainer width="100%" height={160}>
+              <AreaChart data={chartData} margin={{top:6,right:8,bottom:4,left:0}}>
+                <defs>
+                  <linearGradient id="idcg2" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="rgba(232,213,163,0.22)"/>
+                    <stop offset="100%" stopColor="rgba(232,213,163,0)"/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid stroke="rgba(255,255,255,0.07)" vertical={true} horizontal={true} strokeDasharray=""/>
+                <XAxis dataKey="t" tick={{fill:"#5a6478",fontSize:9}} tickLine={false} axisLine={false} interval={Math.max(1,Math.floor(chartData.length/6))}/>
+                <YAxis orientation="right" domain={["auto","auto"]} padding={{top:8,bottom:8}} tick={{fill:"#5a6478",fontSize:9}} tickLine={false} axisLine={false} width={58} tickCount={6} tickFormatter={function(v){return fmt(v,m.b);}}/>
+                <Tooltip content={<ChartTip/>}/>
+                <Area type="monotone" dataKey="p" stroke="#e8d5a3" strokeWidth={2} fill="url(#idcg2)" dot={false} activeDot={{r:4,fill:"#e8d5a3",strokeWidth:0}}/>
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
 
-          {/* Content */}
-          <div style={{padding:"12px 12px 80px",flex:1}}>
+          {/* ── Scrollable content ── */}
+          <div style={{flex:1,padding:"10px 12px 80px"}}>
 
-            {/* NEWS TAB */}
-            {instDetailTab==="news"&&<div>
-              {instNewsPhase==="loading"&&<><PBar pct={instNewsProgress} done={false}/><GBar label="FETCHING NEWS..."/></>}
-              {instNewsPhase==="done"&&<PBar pct={100} done/>}
-
-              {nd.brief&&<div style={{background:"linear-gradient(135deg,rgba(212,168,67,.08),rgba(212,168,67,.02))",
-                border:"1px solid rgba(212,168,67,.2)",borderRadius:10,padding:"11px 13px",marginBottom:8,
-                animation:"fu .4s ease forwards",opacity:0}}>
-                <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.gold,letterSpacing:".1em",marginBottom:6}}>⬟ MARKET BRIEF</div>
-                <div style={{fontSize:12,color:C.txt1,lineHeight:1.78}}>{nd.brief}</div>
-              </div>}
-
-              {instNewsPhase==="loading"&&nd.brief&&!nd.items&&<Skel h={65}/>}
-
-              {nd.items&&nd.items.length>0&&<div style={{marginBottom:8,animation:"fu .4s ease forwards",opacity:0}}>
-                <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.txt3,letterSpacing:".1em",marginBottom:7}}>LATEST HEADLINES</div>
-                {nd.items.map(function(it:any,i:number){
-                  return <div key={i} style={{background:C.bg1,border:"1px solid "+C.border,
-                    borderLeft:"3px solid "+(it.sentColor||C.txt3),
-                    borderRadius:9,padding:"10px 12px",marginBottom:6,
-                    animation:"fu .35s ease forwards",animationDelay:(i*60)+"ms",opacity:0}}>
-                    <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
-                      <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.txt3}}>{it.time} · {it.src}</span>
-                      <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,fontWeight:700,
-                        color:it.sentColor,background:it.sentColor+"18",padding:"1px 6px",borderRadius:3}}>{it.sentiment}</span>
-                    </div>
-                    <div style={{fontSize:12,fontWeight:600,color:"#ffffff",lineHeight:1.4,marginBottom:4}}>{it.headline}</div>
-                    <div style={{fontSize:11,color:C.txt1,lineHeight:1.65}}>{it.body}</div>
-                  </div>;
-                })}
-              </div>}
-
-              {instNewsPhase==="loading"&&nd.items&&!nd.keyLevel&&<Skel h={55}/>}
-
-              {nd.keyLevel&&<div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,padding:"10px 13px",animation:"fu .4s ease forwards",opacity:0}}>
-                <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.txt3,letterSpacing:".1em",marginBottom:8}}>KEY LEVELS</div>
-                <div style={{display:"flex",gap:8,marginBottom:nd.keyLevel.note?6:0}}>
-                  {nd.keyLevel.support&&<div style={{flex:1,background:"rgba(240,69,69,.07)",border:"1px solid rgba(240,69,69,.2)",borderRadius:7,padding:"7px 8px",textAlign:"center"}}>
-                    <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.dn,marginBottom:3}}>SUPPORT</div>
-                    <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:14,fontWeight:700,color:"#ffffff"}}>{nd.keyLevel.support}</div>
-                  </div>}
-                  {nd.keyLevel.resistance&&<div style={{flex:1,background:"rgba(34,212,110,.07)",border:"1px solid rgba(34,212,110,.2)",borderRadius:7,padding:"7px 8px",textAlign:"center"}}>
-                    <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.up,marginBottom:3}}>RESISTANCE</div>
-                    <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:14,fontWeight:700,color:"#ffffff"}}>{nd.keyLevel.resistance}</div>
-                  </div>}
+            {/* ── 4: 3-COL ROW — Session Bias · Fear & Greed · ETF Flow ── */}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6,marginBottom:8}}>
+              {/* Session Bias */}
+              <div style={cs}>
+                <div style={lb}>SESSION BIAS</div>
+                <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:15,fontWeight:700,color:sessionBiasColor,lineHeight:1}}>{sessionBiasLabel}</div>
+                <div style={{fontSize:8,color:"#5a6478",marginTop:4,lineHeight:1.4}}>{sessionBiasNote}</div>
+                <div style={{height:2,background:sessionBiasColor+"18",borderRadius:1,marginTop:6,overflow:"hidden"}}>
+                  <div style={{height:"100%",width:sessionBiasLabel==="BULLISH"?"75%":sessionBiasLabel==="BEARISH"?"25%":"50%",background:sessionBiasColor,borderRadius:1}}/>
                 </div>
-                {nd.keyLevel.note&&<div style={{fontSize:11,color:C.txt2,lineHeight:1.65}}>{nd.keyLevel.note}</div>}
-              </div>}
-
-              {instNewsPhase==="done"&&nd.items&&<div style={{animation:"fu .5s ease forwards",opacity:0,marginTop:8,
-                background:"linear-gradient(135deg,rgba(34,212,110,.08),rgba(34,212,110,.02))",
-                border:"1px solid rgba(34,212,110,.25)",borderRadius:10,padding:"10px 14px",
-                display:"flex",alignItems:"center",gap:10}}>
-                <span>✓</span>
-                <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,fontWeight:700,color:C.up,letterSpacing:".08em"}}>NEWS BRIEF COMPLETE</span>
-                <button className="tap" onClick={function(){fetchInstNews(m,true);}}
-                  style={{marginLeft:"auto",background:C.bg2,border:"1px solid "+C.border,color:C.txt2,
-                    borderRadius:6,padding:"4px 10px",fontSize:8,fontFamily:"'IBM Plex Mono',monospace"}}>↻</button>
-              </div>}
-            </div>}
-
-            {/* ANALYSIS TAB */}
-            {instDetailTab==="analysis"&&<div>
-              {instAnalysisPhase==="idle"&&<button className="tap" onClick={function(){fetchInstAnalysis(m);}}
-                style={{width:"100%",background:cc,color:"#050a0e",border:"none",borderRadius:10,
-                  padding:"13px",fontSize:11,fontWeight:700,letterSpacing:".08em",cursor:"pointer",
-                  fontFamily:"'IBM Plex Mono',monospace",marginBottom:10}}>
-                ⬟ GENERATE AI ANALYSIS
-              </button>}
-              {instAnalysisPhase==="loading"&&<><PBar pct={instAnalysisProgress} done={false}/><GBar label="GENERATING..."/></>}
-              {instAnalysisPhase==="done"&&<PBar pct={100} done/>}
-
-              {ad.bias&&<div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8,animation:"fu .4s ease forwards",opacity:0}}>
-                <div style={{background:(ad.biasColor||C.amber)+"18",border:"1px solid "+(ad.biasColor||C.amber)+"44",
-                  borderRadius:8,padding:"6px 16px",display:"flex",alignItems:"center",gap:6}}>
-                  <div style={{width:7,height:7,borderRadius:"50%",background:ad.biasColor||C.amber,boxShadow:"0 0 6px "+(ad.biasColor||C.amber)}}/>
-                  <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:13,fontWeight:700,color:ad.biasColor||C.amber,letterSpacing:".06em"}}>{ad.bias}</span>
+              </div>
+              {/* Fear & Greed */}
+              <div style={cs}>
+                <div style={lb}>FEAR/GREED</div>
+                <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:19,fontWeight:700,color:fgColor,lineHeight:1}}>{Math.round(fg)}</div>
+                <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:7,color:fgColor,letterSpacing:".04em",marginTop:3}}>{fgLabel}</div>
+                <div style={{height:3,background:"#1a2a3a",borderRadius:2,marginTop:6,position:"relative",overflow:"hidden"}}>
+                  <div style={{position:"absolute",inset:0,background:"linear-gradient(90deg,#ff4d4d 0%,#f0a020 30%,#e8d5a3 55%,#00d084 100%)"}}/>
+                  <div style={{position:"absolute",left:Math.min(98,fg)+"%",top:0,width:2,height:"100%",background:"#fff",transform:"translateX(-50%)",borderRadius:1}}/>
                 </div>
-                <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:C.txt3}}>CURRENT BIAS</span>
-              </div>}
+              </div>
+              {/* ETF Flow */}
+              <div style={cs}>
+                <div style={lb}>ETF FLOW</div>
+                {instEtfLoading&&<div style={{fontSize:8,color:"#5a6478"}}>Loading…</div>}
+                {!instEtfLoading&&instEtfFlow&&<>
+                  <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:"#8892a4",marginBottom:2}}>{instEtfFlow.sym}</div>
+                  <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:16,fontWeight:700,color:instEtfFlow.pct>=0?"#00d084":"#ff4d4d",lineHeight:1}}>{instEtfFlow.pct>=0?"+":""}{instEtfFlow.pct.toFixed(2)}%</div>
+                  {instEtfFlow.vol>0&&<div style={{fontSize:8,color:"#5a6478",marginTop:3}}>Vol: {(instEtfFlow.vol/1e6).toFixed(1)}M</div>}
+                </>}
+                {!instEtfLoading&&!instEtfFlow&&<div style={{fontSize:9,color:"#5a6478"}}>—</div>}
+              </div>
+            </div>
 
-              {ad.summary&&<div style={{background:"linear-gradient(135deg,rgba(212,168,67,.07),rgba(212,168,67,.01))",
-                border:"1px solid rgba(212,168,67,.18)",borderRadius:10,padding:"11px 13px",marginBottom:8,animation:"fu .4s ease forwards",opacity:0}}>
-                <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.gold,letterSpacing:".1em",marginBottom:6}}>⬟ MACRO ANALYSIS</div>
-                <div style={{fontSize:12,color:C.txt1,lineHeight:1.78}}>{ad.summary}</div>
-              </div>}
+            {/* ── 5: 2-COL ROW — DXY Correlation · Real Yield ── */}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:8}}>
+              <div style={cs}>
+                <div style={lb}>DXY CORRELATION</div>
+                <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:20,fontWeight:700,color:corrColor,lineHeight:1,fontVariantNumeric:"tabular-nums"}}>{corr.toFixed(2)}</div>
+                <div style={{fontSize:9,color:"#5a6478",marginTop:4,lineHeight:1.5}}>{corrNote}</div>
+              </div>
+              <div style={cs}>
+                <div style={lb}>REAL YIELD 10Y</div>
+                <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:20,fontWeight:700,color:ryColor,lineHeight:1,fontVariantNumeric:"tabular-nums"}}>
+                  {realYield!==null?(realYield>0?"+":"")+realYield.toFixed(2)+"%":"—"}
+                </div>
+                <div style={{fontSize:9,color:"#5a6478",marginTop:4,lineHeight:1.5}}>{ryNote}</div>
+              </div>
+            </div>
 
-              {instAnalysisPhase==="loading"&&ad.summary&&!ad.drivers&&<Skel/>}
-
-              {ad.drivers&&ad.drivers.length>0&&<div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,
-                padding:"10px 13px",marginBottom:8,animation:"fu .4s ease forwards",opacity:0}}>
-                <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.txt3,letterSpacing:".1em",marginBottom:8}}>KEY DRIVERS</div>
-                {ad.drivers.map(function(d:string,i:number){
-                  return <div key={i} style={{display:"flex",gap:8,marginBottom:i<(ad.drivers.length-1)?7:0,
-                    animation:"fu .3s ease forwards",animationDelay:(i*50)+"ms",opacity:0}}>
-                    <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:C.gold,flexShrink:0}}>{String(i+1).padStart(2,"0")}</span>
-                    <span style={{fontSize:12,color:C.txt1,lineHeight:1.6}}>{d}</span>
-                  </div>;
-                })}
-              </div>}
-
-              {instAnalysisPhase==="loading"&&ad.drivers&&!ad.levels&&<Skel h={75}/>}
-
-              {ad.levels&&<div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:10,
-                padding:"10px 13px",marginBottom:8,animation:"fu .4s ease forwards",opacity:0}}>
-                <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.txt3,letterSpacing:".1em",marginBottom:8}}>PRICE LEVELS</div>
-                <div style={{display:"flex",justifyContent:"space-between",gap:3}}>
-                  {([["S2",ad.levels.s2,C.dn],["S1",ad.levels.s1,"#f08060"],["NOW",ad.levels.now,C.gold],["R1",ad.levels.r1,"#60c060"],["R2",ad.levels.r2,C.up]] as any[]).map(function(row:any){
-                    return row[1]?<div key={row[0]} style={{flex:1,textAlign:"center",
-                      background:row[0]==="NOW"?C.gold+"18":"transparent",
-                      border:row[0]==="NOW"?"1px solid "+C.gold+"33":"none",borderRadius:6,padding:"4px 2px"}}>
-                      <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:7,color:row[2],marginBottom:2}}>{row[0]}</div>
-                      <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,fontWeight:600,color:row[0]==="NOW"?C.gold:"#ffffff"}}>{fmt(row[1],row[1])}</div>
-                    </div>:null;
+            {/* ── 6: COT POSITIONING ── */}
+            <div style={{...cs,marginBottom:8}}>
+              <div style={lb}>COT POSITIONING · SPECULATOR (NON-COMMERCIAL)</div>
+              {instCotLoading&&<div style={{fontSize:9,color:"#5a6478",padding:"6px 0"}}>Fetching CFTC data…</div>}
+              {!instCotLoading&&(!instCot||instCot.error)&&<div style={{fontSize:9,color:"#5a6478",padding:"6px 0"}}>{instCot?.error||"No COT data for this instrument"}</div>}
+              {instCot&&!instCot.error&&<>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr 1fr",gap:3,marginBottom:6}}>
+                  {["LONG%","SHORT%","NET","WoW CHG","BIAS"].map(function(h:string){
+                    return <div key={h} style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:7,color:"#5a6478",letterSpacing:".04em",textAlign:"center"}}>{h}</div>;
                   })}
                 </div>
-              </div>}
-
-              {instAnalysisPhase==="loading"&&ad.levels&&!ad.setup&&<Skel h={55}/>}
-
-              {ad.setup&&<div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:8,animation:"fu .4s ease forwards",opacity:0}}>
-                <div style={{background:"rgba(34,212,110,.06)",border:"1px solid rgba(34,212,110,.18)",borderRadius:10,padding:"10px 13px"}}>
-                  <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.up,letterSpacing:".1em",marginBottom:5}}>TRADE SETUP</div>
-                  <div style={{fontSize:12,color:C.txt1,lineHeight:1.65}}>{ad.setup}</div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr 1fr",gap:3,marginBottom:8}}>
+                  {[
+                    [instCot.longPct+"%","#00d084"],
+                    [instCot.shortPct+"%","#ff4d4d"],
+                    [(instCot.net>=0?"+":"")+instCot.net.toLocaleString(),instCot.net>=0?"#00d084":"#ff4d4d"],
+                    [(instCot.netChg>=0?"+":"")+instCot.netChg.toLocaleString(),instCot.netChg>=0?"#00d084":"#ff4d4d"],
+                    [instCot.bias,instCot.biasColor],
+                  ].map(function(cell:any,i:number){
+                    return <div key={i} style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,fontWeight:700,color:cell[1],textAlign:"center",fontVariantNumeric:"tabular-nums"}}>{cell[0]}</div>;
+                  })}
                 </div>
-                {ad.risk&&<div style={{background:"rgba(240,69,69,.06)",border:"1px solid rgba(240,69,69,.18)",borderRadius:10,padding:"10px 13px"}}>
-                  <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.dn,letterSpacing:".1em",marginBottom:5}}>RISK TO THESIS</div>
-                  <div style={{fontSize:12,color:C.txt1,lineHeight:1.65}}>{ad.risk}</div>
-                </div>}
-              </div>}
+                <div style={{marginBottom:7}}>
+                  <div style={{display:"flex",height:5,borderRadius:3,overflow:"hidden",marginBottom:3}}>
+                    <div style={{width:instCot.longPct+"%",background:"#00d084",transition:"width .5s ease"}}/>
+                    <div style={{flex:1,background:"#ff4d4d"}}/>
+                  </div>
+                  <div style={{display:"flex",justifyContent:"space-between"}}>
+                    <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:7,color:"#00d084"}}>{instCot.longs.toLocaleString()} LONG</span>
+                    <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:7,color:"#ff4d4d"}}>{instCot.shorts.toLocaleString()} SHORT</span>
+                  </div>
+                </div>
+                <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:"#5a6478",marginBottom:7}}>
+                  OI: <span style={{color:"#e8d5a3"}}>{instCot.oi.toLocaleString()}</span> · Report: <span style={{color:"#8892a4"}}>{instCot.date}</span>
+                </div>
+                <div style={{borderLeft:"2px solid #e8d5a3",paddingLeft:8,background:"rgba(232,213,163,0.04)",borderRadius:"0 4px 4px 0",padding:"7px 8px"}}>
+                  <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:7,color:"#e8d5a3",letterSpacing:".08em",marginBottom:3}}>⬟ READING</div>
+                  <div style={{fontSize:11,color:"#c2d4e8",lineHeight:1.6}}>{instCot.reading}</div>
+                </div>
+              </>}
+            </div>
 
-              {instAnalysisPhase==="done"&&ad.summary&&<div style={{animation:"fu .5s ease forwards",opacity:0,
-                background:"linear-gradient(135deg,rgba(34,212,110,.08),rgba(34,212,110,.02))",
-                border:"1px solid rgba(34,212,110,.25)",borderRadius:10,padding:"10px 14px",
-                display:"flex",alignItems:"center",gap:10}}>
-                <span>✓</span>
-                <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,fontWeight:700,color:C.up,letterSpacing:".08em"}}>ANALYSIS COMPLETE</span>
-                <button className="tap" onClick={function(){setInstAnalysisPhase("idle");setInstAnalysisData({});}}
-                  style={{marginLeft:"auto",background:C.bg2,border:"1px solid "+C.border,color:C.txt2,
-                    borderRadius:6,padding:"4px 10px",fontSize:8,fontFamily:"'IBM Plex Mono',monospace"}}>↻</button>
+            {/* ── 7: VOLUME PROFILE + KEY LEVELS ── */}
+            <div style={{...cs,marginBottom:8}}>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+                {/* Volume Profile */}
+                <div>
+                  <div style={lb}>VOL PROFILE</div>
+                  {volProf?volProf.buckets.map(function(b:any,i:number){
+                    var isPoc=Math.abs(b.mid-volProf.poc)<(volProf.mx-volProf.mn)/14;
+                    var isAbove=b.mid>m.cur;
+                    var bc2=isPoc?"#e8d5a3":isAbove?"#ff4d4d":"#00d084";
+                    var tag=isPoc?"POC":isAbove?"R":"S";
+                    return <div key={i} style={{display:"flex",alignItems:"center",gap:3,marginBottom:3}}>
+                      <div style={{width:12,fontFamily:"'IBM Plex Mono',monospace",fontSize:6,color:bc2,textAlign:"right",flexShrink:0}}>{tag}</div>
+                      <div style={{flex:1,height:7,background:"rgba(255,255,255,0.04)",borderRadius:1,overflow:"hidden"}}>
+                        <div style={{height:"100%",width:b.pct+"%",background:bc2,opacity:0.75,borderRadius:1}}/>
+                      </div>
+                      <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:6,color:"#5a6478",width:36,flexShrink:0,textAlign:"right"}}>{fmt(b.mid,m.b)}</div>
+                    </div>;
+                  }):<div style={{fontSize:8,color:"#5a6478"}}>Insufficient data</div>}
+                </div>
+                {/* Key Levels */}
+                <div>
+                  <div style={lb}>KEY LEVELS</div>
+                  {([
+                    [keyLvls.r2,"R2","#ff4d4d","SUPPLY"],
+                    [keyLvls.r1,"R1","#f08060","SELL"],
+                    [keyLvls.cur,"NOW","#e8d5a3","HERE"],
+                    [keyLvls.s1,"S1","#60d080","BUY"],
+                    [keyLvls.s2,"S2","#00d084","DEMAND"],
+                  ] as any[]).map(function(row:any){
+                    var isNow=row[1]==="NOW";
+                    return <div key={row[1]} style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5,
+                      background:isNow?"rgba(232,213,163,0.06)":"transparent",borderRadius:4,padding:isNow?"4px 5px":"2px 5px",
+                      border:isNow?"1px solid rgba(232,213,163,0.15)":"none"}}>
+                      <div style={{display:"flex",alignItems:"center",gap:4}}>
+                        <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,fontWeight:700,color:row[2],width:22}}>{row[1]}</span>
+                        <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:6,color:row[2],opacity:0.6}}>{row[3]}</span>
+                      </div>
+                      <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,fontWeight:600,color:isNow?"#e8d5a3":"#ffffff",fontVariantNumeric:"tabular-nums"}}>{fmt(row[0],m.b)}{isBond?"%":""}</span>
+                    </div>;
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* ── 8: NEWS HEADLINES ── */}
+            <div style={{...cs,marginBottom:8}}>
+              <div style={{...lb,display:"flex",alignItems:"center",gap:6}}>
+                NEWS HEADLINES
+                <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:7,color:"#3a5570",fontWeight:400}}>· HAIKU</span>
+              </div>
+              {instNewsPhase==="loading"&&<><PBar pct={instNewsProgress} done={false}/><GBar label="FETCHING NEWS..."/></>}
+              {!canSpend()&&instNewsPhase!=="done"&&<div style={{fontSize:10,color:"#ff4d4d",padding:"6px 0"}}>Daily AI budget limit reached</div>}
+              {nd.items&&nd.items.slice(0,3).map(function(it:any,i:number){
+                return <div key={i} style={{background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.06)",
+                  borderLeft:"3px solid "+(it.sentColor||"#5a6478"),borderRadius:6,padding:"9px 10px",marginBottom:6,
+                  animation:"fu .35s ease forwards",animationDelay:(i*60)+"ms",opacity:0}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
+                    <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:7,color:"#5a6478"}}>{it.src} · {it.time}</span>
+                    <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:7,fontWeight:700,color:it.sentColor,background:(it.sentColor||"#5a6478")+"18",padding:"1px 5px",borderRadius:2}}>{it.sentiment}</span>
+                  </div>
+                  <div style={{fontSize:11,fontWeight:600,color:"#f0f5ff",lineHeight:1.4}}>{it.headline}</div>
+                </div>;
+              })}
+              {instNewsPhase==="done"&&nd.items&&<button className="tap" onClick={function(){fetchInstNews(m,true);}}
+                style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.07)",
+                  borderRadius:5,padding:"4px 10px",fontSize:8,color:"#5a6478",fontFamily:"'IBM Plex Mono',monospace",cursor:"pointer"}}>↻ refresh</button>}
+              {instNewsPhase==="idle"&&canSpend()&&<div style={{fontSize:9,color:"#5a6478"}}>Loading…</div>}
+            </div>
+
+            {/* ── 9: AI ANALYSIS SUMMARY ── */}
+            <div style={{...cs,marginBottom:8}}>
+              <div style={{...lb,display:"flex",alignItems:"center",gap:6}}>
+                AI ANALYSIS
+                <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:7,color:"#3a5570",fontWeight:400}}>· HAIKU · CACHED DAILY</span>
+              </div>
+              {instAnalysisPhase==="idle"&&canSpend()&&<button className="tap" onClick={function(){fetchInstAnalysis(m);}}
+                style={{width:"100%",background:"rgba(232,213,163,0.08)",border:"1px solid rgba(232,213,163,0.2)",
+                  borderRadius:7,padding:"10px",fontSize:10,fontWeight:600,color:"#e8d5a3",
+                  letterSpacing:".08em",cursor:"pointer",fontFamily:"'IBM Plex Mono',monospace",marginBottom:6}}>
+                ⬟ GENERATE ANALYSIS
+              </button>}
+              {!canSpend()&&instAnalysisPhase!=="done"&&<div style={{fontSize:10,color:"#ff4d4d",padding:"6px 0"}}>Daily AI budget limit reached</div>}
+              {instAnalysisPhase==="loading"&&<><PBar pct={instAnalysisProgress} done={false}/><GBar label="GENERATING..."/></>}
+              {instAnalysisPhase==="done"&&<PBar pct={100} done/>}
+              {ad.bias&&<div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8,animation:"fu .4s ease forwards",opacity:0}}>
+                <div style={{background:(ad.biasColor||"#e8d5a3")+"18",border:"1px solid "+(ad.biasColor||"#e8d5a3")+"44",borderRadius:6,padding:"5px 14px"}}>
+                  <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:12,fontWeight:700,color:ad.biasColor||"#e8d5a3",letterSpacing:".06em"}}>{ad.bias}</span>
+                </div>
               </div>}
-            </div>}
+              {ad.summary&&<div style={{fontSize:12,color:"#c2d4e8",lineHeight:1.8,marginBottom:8,animation:"fu .4s ease forwards",opacity:0}}>{ad.summary}</div>}
+              {ad.setup&&<div style={{background:"rgba(34,212,110,.05)",border:"1px solid rgba(34,212,110,.15)",borderRadius:6,padding:"8px 10px",marginBottom:6,animation:"fu .4s ease forwards",opacity:0}}>
+                <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:7,color:"#22d46e",letterSpacing:".1em",marginBottom:4}}>TRADE SETUP</div>
+                <div style={{fontSize:11,color:"#c2d4e8",lineHeight:1.65}}>{ad.setup}</div>
+              </div>}
+              {ad.risk&&<div style={{background:"rgba(240,69,69,.05)",border:"1px solid rgba(240,69,69,.15)",borderRadius:6,padding:"8px 10px",marginBottom:6,animation:"fu .4s ease forwards",opacity:0}}>
+                <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:7,color:"#f04545",letterSpacing:".1em",marginBottom:4}}>RISK</div>
+                <div style={{fontSize:11,color:"#c2d4e8",lineHeight:1.65}}>{ad.risk}</div>
+              </div>}
+              {instAnalysisPhase==="done"&&ad.summary&&<button className="tap" onClick={function(){setInstAnalysisPhase("idle");setInstAnalysisData({});}}
+                style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:5,padding:"4px 10px",fontSize:8,color:"#5a6478",fontFamily:"'IBM Plex Mono',monospace",cursor:"pointer"}}>↻ refresh</button>}
+            </div>
 
           </div>
         </div>;
