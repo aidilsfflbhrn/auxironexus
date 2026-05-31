@@ -362,7 +362,7 @@ export default function Auxiron(){
     // PWA manifest name
     document.title="AuxiroNexus — Pro";
   },[]);
-  var [tab,setTab]=useState("markets");
+  var [tab,setTab]=useState("home");
   var [mkt,setMkt]=useState(initMkt);
   var [sel,setSel]=useState("XAU/USD");
   var [cv,setCv]=useState("single");
@@ -430,6 +430,14 @@ export default function Auxiron(){
   var [instCotLoading,setInstCotLoading]=useState(false);
   var [instEtfFlow,setInstEtfFlow]=useState<any>(null);
   var [instEtfLoading,setInstEtfLoading]=useState(false);
+  // Dashboard state
+  var [dashWatchlist,setDashWatchlist]=useState<string[]>(function(){
+    try{var s=localStorage.getItem("auxiron_watchlist");if(s)return JSON.parse(s);}catch{}
+    return ["XAU/USD","DX","US10Y","WTI/USD"];
+  });
+  var [dashWatchEdit,setDashWatchEdit]=useState(false);
+  var [dashNewsData,setDashNewsData]=useState<any[]>([]);
+  var [dashNewsLoading,setDashNewsLoading]=useState(false);
   var screenW=useScreenWidth();
 
   useEffect(function(){
@@ -887,6 +895,12 @@ export default function Auxiron(){
     mkt.filter(function(m){return m.tier<=2;});
 
   const NAV=[
+    {key:"home",label:"Home",accent:C.gold,
+     icon:function(active:boolean){return(<svg width="20" height="20" viewBox="0 0 18 18" fill="none">
+       <path d="M2.5 8L9 2.5L15.5 8V15.5H11.5V11.5H6.5V15.5H2.5V8Z"
+         stroke={active?C.gold:"#3a5570"} strokeWidth="1.4" strokeLinejoin="round"
+         fill={active?"rgba(212,168,67,0.15)":"none"}/>
+     </svg>);}},
     {key:"markets",label:"Markets",accent:C.goldL,
      icon:function(active:boolean){return(<svg width="20" height="20" viewBox="0 0 18 18" fill="none">
        <rect x="2.5" y="6" width="3" height="8" rx="1" fill={active?"#f0cc5a":"#3a5570"}/>
@@ -920,6 +934,19 @@ export default function Auxiron(){
          fill={active?"rgba(176,96,240,0.15)":"none"}/>
        <circle cx="13.5" cy="13.5" r="2.8" fill={active?C.vix:"none"} stroke={active?"none":"#3a5570"} strokeWidth="1.2"/>
        {active&&<path d="M12.3 13.5L13.2 14.4L14.8 12.6" stroke="#080e14" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>}
+     </svg>);}},
+    {key:"journal",label:"Journal",accent:"#38bdf8",
+     icon:function(active:boolean){return(<svg width="20" height="20" viewBox="0 0 18 18" fill="none">
+       <rect x="3" y="2" width="12" height="14" rx="2" stroke={active?"#38bdf8":"#3a5570"} strokeWidth="1.4" fill={active?"rgba(56,189,248,0.1)":"none"}/>
+       <line x1="6" y1="6" x2="12" y2="6" stroke={active?"#38bdf8":"#3a5570"} strokeWidth="1.2" strokeLinecap="round"/>
+       <line x1="6" y1="9" x2="12" y2="9" stroke={active?"#38bdf8":"#3a5570"} strokeWidth="1.2" strokeLinecap="round"/>
+       <line x1="6" y1="12" x2="9" y2="12" stroke={active?"#38bdf8":"#3a5570"} strokeWidth="1.2" strokeLinecap="round"/>
+     </svg>);}},
+    {key:"more",label:"More",accent:"#64748b",
+     icon:function(active:boolean){return(<svg width="20" height="20" viewBox="0 0 18 18" fill="none">
+       <line x1="3" y1="5" x2="15" y2="5" stroke={active?"#94a3b8":"#3a5570"} strokeWidth="1.5" strokeLinecap="round"/>
+       <line x1="3" y1="9" x2="15" y2="9" stroke={active?"#94a3b8":"#3a5570"} strokeWidth="1.5" strokeLinecap="round"/>
+       <line x1="3" y1="13" x2="15" y2="13" stroke={active?"#94a3b8":"#3a5570"} strokeWidth="1.5" strokeLinecap="round"/>
      </svg>);}},
   ];
 
@@ -1207,6 +1234,182 @@ export default function Auxiron(){
 
       <div className="auxiron-content">
         <div className="auxiron-inner">
+
+        {/* ── HOME DASHBOARD ── */}
+        {tab==="home"&&<div style={{paddingBottom:80}}>
+          {/* Sticky header */}
+          <div style={{position:"sticky",top:0,zIndex:50,background:C.bg1,borderBottom:"1px solid "+C.border,padding:"10px 14px"}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <span style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:15,color:C.gold,letterSpacing:".06em"}}>AUXIRONEXUS</span>
+                <span style={{background:"#1a4a8a",color:"#60a5fa",fontSize:8,fontFamily:"'IBM Plex Mono',monospace",fontWeight:700,letterSpacing:".12em",padding:"2px 6px",borderRadius:4}}>PRO</span>
+              </div>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                {(function(){var s=getBudgetStatus();var pct=Math.round(s.remaining/s.limit*100);var r=16;var circ=2*Math.PI*r;var dash=circ*(pct/100);
+                  var col=pct>60?"#00d084":pct>20?"#e8d5a3":"#ff4d4d";
+                  return <svg width="38" height="38" viewBox="0 0 38 38" style={{transform:"rotate(-90deg)"}}>
+                    <circle cx="19" cy="19" r={r} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="3"/>
+                    <circle cx="19" cy="19" r={r} fill="none" stroke={col} strokeWidth="3"
+                      strokeDasharray={`${dash} ${circ}`} strokeLinecap="round"/>
+                    <text x="19" y="19" textAnchor="middle" dominantBaseline="central"
+                      style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,fill:col,fontWeight:700,transform:"rotate(90deg)",transformOrigin:"19px 19px"}}>{pct}%</text>
+                  </svg>;
+                }())}
+                <div style={{textAlign:"right"}}>
+                  <div style={{fontSize:8,color:C.txt3,fontFamily:"'IBM Plex Mono',monospace",letterSpacing:".08em"}}>{sessionLbl.toUpperCase()} SESSION</div>
+                  <div style={{fontSize:9,color:C.txt1,fontWeight:600,marginTop:1}}>{nowStr.slice(12,20)} UTC</div>
+                </div>
+                <div style={{width:30,height:30,borderRadius:"50%",background:"linear-gradient(135deg,#1a4a8a,#0d2040)",border:"1px solid #2a4a7a",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,color:"#60a5fa",fontWeight:700}}>A</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Performance section */}
+          <div style={{padding:"14px 14px 0"}}>
+            <div style={{fontSize:9,color:"#4a5568",letterSpacing:".1em",fontVariant:"small-caps",fontFamily:"'IBM Plex Mono',monospace",marginBottom:8}}>TRADING PERFORMANCE</div>
+            <div style={{background:C.bg2,border:"1px solid "+C.border,borderRadius:10,padding:"14px"}}>
+              <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:28,fontWeight:600,color:C.gold,letterSpacing:"-.01em"}}>$24,831.50</div>
+              <div style={{fontSize:9,color:C.txt3,marginTop:2,fontFamily:"'IBM Plex Mono',monospace"}}>Account Balance</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginTop:12}}>
+                {[{l:"TODAY P&L",v:"+$142.30",c:"#00d084"},{l:"WEEK P&L",v:"+$891.20",c:"#00d084"},{l:"WIN RATE",v:"67%",c:C.gold}].map(function(x){
+                  return <div key={x.l} style={{background:"rgba(255,255,255,0.03)",borderRadius:7,padding:"9px 10px"}}>
+                    <div style={{fontSize:8,color:"#4a5568",letterSpacing:".08em",fontFamily:"'IBM Plex Mono',monospace",marginBottom:4}}>{x.l}</div>
+                    <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:14,fontWeight:600,color:x.c}}>{x.v}</div>
+                  </div>;
+                })}
+              </div>
+              <div style={{marginTop:10,borderTop:"1px solid rgba(255,255,255,0.05)",paddingTop:10}}>
+                <div style={{fontSize:8,color:"#4a5568",letterSpacing:".08em",fontFamily:"'IBM Plex Mono',monospace",marginBottom:7}}>OPEN POSITION</div>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <div>
+                    <span style={{color:C.gold,fontFamily:"'IBM Plex Mono',monospace",fontWeight:700,fontSize:12}}>XAU/USD</span>
+                    <span style={{marginLeft:7,background:"rgba(0,208,132,0.12)",color:"#00d084",fontSize:8,padding:"2px 6px",borderRadius:4,fontFamily:"'IBM Plex Mono',monospace"}}>LONG</span>
+                  </div>
+                  <div style={{textAlign:"right"}}>
+                    <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:13,color:"#00d084",fontWeight:600}}>+$142.30</div>
+                    <div style={{fontSize:8,color:C.txt3,fontFamily:"'IBM Plex Mono',monospace",marginTop:1}}>+1.4% · 0.5 lot</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Watchlist */}
+          <div style={{padding:"14px 14px 0"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+              <div style={{fontSize:9,color:"#4a5568",letterSpacing:".1em",fontVariant:"small-caps",fontFamily:"'IBM Plex Mono',monospace"}}>WATCHLIST</div>
+              <button onClick={function(){setDashWatchEdit(true);}} style={{background:"none",border:"none",color:C.txt3,fontSize:11,padding:0,cursor:"pointer",lineHeight:1}}>⚙</button>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+              {dashWatchlist.map(function(sym){
+                var inst=mkt.find(function(m){return m.s===sym;});
+                if(!inst)return null;
+                var chg=inst.ch&&inst.ch.length>1?(inst.ch[inst.ch.length-1].c-inst.ch[0].c)/inst.ch[0].c*100:0;
+                var chgColor=chg>=0?"#00d084":"#ff4d4d";
+                var sparkData=samplePts(inst.ch||[],20);
+                return <div key={sym} onClick={function(){openInstDetail(inst);}}
+                  style={{background:C.bg2,border:"1px solid "+C.border,borderRadius:9,padding:"11px",cursor:"pointer"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+                    <div>
+                      <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:11,fontWeight:700,color:C.gold}}>{sym.replace("/USD","").replace("US","").replace("/","")}</div>
+                      <div style={{fontSize:8,color:C.txt3,marginTop:1}}>{inst.n}</div>
+                    </div>
+                    <div style={{textAlign:"right"}}>
+                      <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:11,fontWeight:600,color:C.txt0}}>{inst.cur?inst.cur.toFixed(inst.dp||2):"—"}</div>
+                      <div style={{fontSize:9,color:chgColor,fontFamily:"'IBM Plex Mono',monospace"}}>{chg>=0?"+":""}{chg.toFixed(2)}%</div>
+                    </div>
+                  </div>
+                  {sparkData.length>1&&<ResponsiveContainer width="100%" height={36}>
+                    <AreaChart data={sparkData} margin={{top:2,right:0,left:0,bottom:2}}>
+                      <defs><linearGradient id={"dw_"+sym.replace(/[^a-z0-9]/gi,"_")} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor={chgColor} stopOpacity={0.25}/>
+                        <stop offset="100%" stopColor={chgColor} stopOpacity={0}/>
+                      </linearGradient></defs>
+                      <Area type="monotone" dataKey="c" stroke={chgColor} strokeWidth={1.5} dot={false}
+                        fill={"url(#dw_"+sym.replace(/[^a-z0-9]/gi,"_")+")"} isAnimationActive={false}/>
+                    </AreaChart>
+                  </ResponsiveContainer>}
+                </div>;
+              })}
+            </div>
+          </div>
+
+          {/* Watchlist edit sheet */}
+          {dashWatchEdit&&<div style={{position:"fixed",inset:0,zIndex:200,background:"rgba(0,0,0,0.7)",display:"flex",alignItems:"flex-end"}}
+            onClick={function(e){if(e.target===e.currentTarget)setDashWatchEdit(false);}}>
+            <div style={{background:C.bg1,borderRadius:"14px 14px 0 0",border:"1px solid "+C.border,width:"100%",padding:"16px",maxHeight:"70vh",overflowY:"auto"}}>
+              <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:C.gold,letterSpacing:".1em",marginBottom:12}}>CONFIGURE WATCHLIST</div>
+              {mkt.filter(function(m){return m.tier<=2;}).map(function(m){
+                var inW=dashWatchlist.includes(m.s);
+                return <button key={m.s} onClick={function(){
+                  setDashWatchlist(function(prev){
+                    var next=inW?prev.filter(function(s){return s!==m.s;}):prev.length<4?[...prev,m.s]:prev;
+                    try{localStorage.setItem("auxiron_watchlist",JSON.stringify(next));}catch{}
+                    return next;
+                  });
+                }} style={{display:"flex",justifyContent:"space-between",alignItems:"center",width:"100%",background:inW?"rgba(212,168,67,0.08)":"transparent",border:"1px solid "+(inW?C.gold:C.border),borderRadius:7,padding:"9px 12px",marginBottom:6,cursor:"pointer",color:inW?C.gold:C.txt1}}>
+                  <div style={{textAlign:"left"}}>
+                    <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:11,fontWeight:600}}>{m.s}</div>
+                    <div style={{fontSize:9,color:C.txt3,marginTop:1}}>{m.n}</div>
+                  </div>
+                  <div style={{fontSize:14,color:inW?C.gold:"#3a5570"}}>{inW?"✓":"+"}</div>
+                </button>;
+              })}
+              <button onClick={function(){setDashWatchEdit(false);}} style={{width:"100%",marginTop:8,background:C.gold,color:"#080e14",border:"none",borderRadius:8,padding:"12px",fontFamily:"'IBM Plex Mono',monospace",fontWeight:700,fontSize:12,cursor:"pointer"}}>Done</button>
+            </div>
+          </div>}
+
+          {/* AI News Headlines */}
+          <div style={{padding:"14px 14px 0"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+              <div style={{fontSize:9,color:"#4a5568",letterSpacing:".1em",fontVariant:"small-caps",fontFamily:"'IBM Plex Mono',monospace"}}>AI NEWS HEADLINES</div>
+              <button onClick={function(){setTab("intel");}} style={{background:"none",border:"none",color:C.txt3,fontSize:9,fontFamily:"'IBM Plex Mono',monospace",cursor:"pointer",letterSpacing:".06em"}}>View all →</button>
+            </div>
+            <div style={{background:C.bg2,border:"1px solid "+C.border,borderRadius:10,overflow:"hidden"}}>
+              {[
+                {bias:"BULL",tag:"FED",time:"2h ago",headline:"Fed minutes signal pause — markets price in rate hold through Q3"},
+                {bias:"BEAR",tag:"GEO",time:"4h ago",headline:"Middle East tensions push oil premium higher as shipping routes disrupted"},
+                {bias:"BULL",tag:"RATES",time:"6h ago",headline:"US 10Y yields retreat from resistance as inflation expectations moderate"},
+              ].map(function(item,i){
+                var bc=item.bias==="BULL"?"#00d084":"#ff4d4d";
+                var tagColors:any={FED:"#38bdf8",GEO:"#f59e0b",RATES:"#a78bfa"};
+                return <div key={i} style={{padding:"11px 14px",borderBottom:i<2?"1px solid rgba(255,255,255,0.05)":"none"}}>
+                  <div style={{display:"flex",gap:6,marginBottom:5,alignItems:"center"}}>
+                    <span style={{background:bc+"1a",color:bc,fontSize:7,fontFamily:"'IBM Plex Mono',monospace",fontWeight:700,padding:"2px 5px",borderRadius:3,letterSpacing:".1em"}}>{item.bias}</span>
+                    <span style={{background:(tagColors[item.tag]||C.gold)+"1a",color:tagColors[item.tag]||C.gold,fontSize:7,fontFamily:"'IBM Plex Mono',monospace",fontWeight:700,padding:"2px 5px",borderRadius:3,letterSpacing:".1em"}}>{item.tag}</span>
+                    <span style={{fontSize:8,color:"#4a5568",marginLeft:"auto"}}>{item.time}</span>
+                  </div>
+                  <div style={{fontSize:12,color:C.txt0,lineHeight:1.5}}>{item.headline}</div>
+                </div>;
+              })}
+            </div>
+          </div>
+
+          {/* Economic Calendar */}
+          <div style={{padding:"14px 14px 16px"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+              <div style={{fontSize:9,color:"#4a5568",letterSpacing:".1em",fontVariant:"small-caps",fontFamily:"'IBM Plex Mono',monospace"}}>ECONOMIC CALENDAR</div>
+              <span style={{fontSize:9,color:C.txt3,fontFamily:"'IBM Plex Mono',monospace",letterSpacing:".06em"}}>Today</span>
+            </div>
+            <div style={{background:C.bg2,border:"1px solid "+C.border,borderRadius:10,overflow:"hidden"}}>
+              {[
+                {time:"08:30",impact:"high",event:"US Non-Farm Payrolls",ccy:"🇺🇸"},
+                {time:"08:30",impact:"high",event:"US Unemployment Rate",ccy:"🇺🇸"},
+                {time:"10:00",impact:"medium",event:"ISM Manufacturing PMI",ccy:"🇺🇸"},
+                {time:"14:00",impact:"low",event:"EZ Consumer Confidence",ccy:"🇪🇺"},
+                {time:"18:00",impact:"medium",event:"FOMC Member Speech",ccy:"🇺🇸"},
+              ].map(function(ev,i){
+                var dotColor=ev.impact==="high"?"#ff4d4d":ev.impact==="medium"?"#f59e0b":"#38bdf8";
+                return <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",borderBottom:i<4?"1px solid rgba(255,255,255,0.05)":"none"}}>
+                  <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:C.txt3,minWidth:38}}>{ev.time}</div>
+                  <div style={{width:6,height:6,borderRadius:"50%",background:dotColor,flexShrink:0}}/>
+                  <div style={{fontSize:11,color:C.txt0,flex:1,lineHeight:1.3}}>{ev.event}</div>
+                  <div style={{fontSize:14}}>{ev.ccy}</div>
+                </div>;
+              })}
+            </div>
+          </div>
+        </div>}
 
         {/* ── MARKETS ── */}
         {tab==="markets"&&<div>
@@ -2318,6 +2521,28 @@ export default function Auxiron(){
 
         </div>
       </div>
+
+      {/* JOURNAL TAB */}
+      {tab==="journal"&&<div style={{padding:"24px 14px",textAlign:"center"}}>
+        <div style={{fontSize:28,marginBottom:12}}>📓</div>
+        <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:12,color:C.gold,marginBottom:8}}>TRADE JOURNAL</div>
+        <div style={{fontSize:12,color:C.txt3,lineHeight:1.6}}>Track your trades, review performance,<br/>and build a record of your edge.</div>
+        <div style={{marginTop:20,fontSize:10,color:"#4a5568",fontFamily:"'IBM Plex Mono',monospace"}}>Coming soon</div>
+      </div>}
+
+      {/* MORE TAB */}
+      {tab==="more"&&<div style={{padding:"14px"}}>
+        <div style={{fontSize:9,color:"#4a5568",letterSpacing:".1em",fontVariant:"small-caps",fontFamily:"'IBM Plex Mono',monospace",marginBottom:12}}>NAVIGATION</div>
+        {[{key:"markets",label:"Markets",desc:"All instruments & categories"},{key:"charts",label:"Charts",desc:"Bloomberg-style chart view"},{key:"session",label:"Session",desc:"Live session & RORO analysis"},{key:"intel",label:"Intel",desc:"AI-powered market briefings"},{key:"filter",label:"Filter",desc:"AI instrument screener"}].map(function(item){
+          return <button key={item.key} onClick={function(){setTab(item.key);}} style={{display:"flex",justifyContent:"space-between",alignItems:"center",width:"100%",background:C.bg2,border:"1px solid "+C.border,borderRadius:8,padding:"12px",marginBottom:8,cursor:"pointer",color:C.txt0,textAlign:"left"}}>
+            <div>
+              <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:11,fontWeight:600,color:C.gold}}>{item.label}</div>
+              <div style={{fontSize:10,color:C.txt3,marginTop:2}}>{item.desc}</div>
+            </div>
+            <span style={{color:C.txt3,fontSize:14}}>›</span>
+          </button>;
+        })}
+      </div>}
 
       {/* INSTRUMENT DETAIL — streaming news + analysis */}
       {instDetail&&(function(){
