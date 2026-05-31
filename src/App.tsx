@@ -360,7 +360,7 @@ export default function Auxiron(){
     link.href=FAVICON_B64;
     document.head.appendChild(link);
     // PWA manifest name
-    document.title="AuxiroNexus — Pro";
+    document.title="AuxiroNexus Pro";
   },[]);
   var [tab,setTab]=useState("home");
   var [mkt,setMkt]=useState(initMkt);
