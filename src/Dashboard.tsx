@@ -242,7 +242,7 @@ export default function Dashboard({ mkt, sessionLbl, roro, roro_score, stClr, ta
       </div>
 
       {/* ── SCROLLABLE CONTENT ── */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "14px 12px 80px" }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: "14px 12px calc(60px + env(safe-area-inset-bottom,0px))" }}>
 
         {/* ── SECTION 1: TRADING PERFORMANCE ── */}
         <div style={{ marginBottom: 18 }}>
@@ -381,30 +381,6 @@ export default function Dashboard({ mkt, sessionLbl, roro, roro_score, stClr, ta
           ))}
         </div>
 
-      </div>
-
-      {/* ── BOTTOM TAB BAR ── */}
-      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 200, background: C2.header, borderTop: "1px solid rgba(255,255,255,0.07)", display: "flex", paddingBottom: "env(safe-area-inset-bottom,0px)" }}>
-        {TABS.map(item => {
-          const active = tab === item.key && !item.disabled;
-          return (
-            <button key={item.key} className="tap"
-              onClick={() => {
-                if (item.key === "more") { onOpenNav(); }
-                else if (!item.disabled) { setTab(item.key); }
-              }}
-              style={{ flex: 1, background: "transparent", border: "none", padding: "8px 0 6px", display: "flex", flexDirection: "column", alignItems: "center", gap: 3, position: "relative", minHeight: 52, opacity: item.disabled ? 0.38 : 1 }}>
-              {active && <div style={{ position: "absolute", top: 0, left: "22%", right: "22%", height: 2, background: item.accent, borderRadius: "0 0 2px 2px" }} />}
-              <div style={{ width: 32, height: 26, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                {item.icon(active)}
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
-                <span style={{ fontFamily: "'IBM Plex Sans',sans-serif", fontSize: 9, fontWeight: active ? 700 : 400, color: active ? item.accent : "rgba(255,255,255,0.3)", letterSpacing: ".03em" }}>{item.label}</span>
-                {item.disabled && <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 5, color: C2.blue, background: "rgba(74,158,255,0.15)", padding: "0 3px", borderRadius: 2 }}>NEW</span>}
-              </div>
-            </button>
-          );
-        })}
       </div>
 
       {/* ── WATCHLIST SHEET ── */}

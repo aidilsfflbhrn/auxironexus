@@ -940,23 +940,11 @@ export default function Auxiron(){
         @keyframes sp{to{transform:rotate(360deg)}} .sp{animation:sp 0.8s linear infinite;} @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
         @keyframes tk{0%{transform:translateX(0)}100%{transform:translateX(-50%)}} .tk{animation:tk 65s linear infinite;display:inline-block;white-space:nowrap;} .tk:hover{animation-play-state:paused;}
         .auxiron-root{display:flex;width:100%;min-height:100vh;min-height:100dvh;background:#080e14;font-family:'IBM Plex Sans',sans-serif;}
-        .auxiron-sidebar{display:none;}
         .auxiron-main{flex:1;display:flex;flex-direction:column;width:100%;min-width:0;}
-        .auxiron-content{flex:1;overflow-y:auto;overflow-x:hidden;padding-bottom:calc(64px + env(safe-area-inset-bottom,0px));-webkit-overflow-scrolling:touch;}
+        .auxiron-content{flex:1;overflow-y:auto;overflow-x:hidden;padding-bottom:calc(60px + env(safe-area-inset-bottom,0px));-webkit-overflow-scrolling:touch;}
         .auxiron-inner{width:100%;padding:0;}
-        .auxiron-bottom-nav{display:flex;position:fixed;bottom:0;left:0;right:0;z-index:300;background:#111820;padding-bottom:env(safe-area-inset-bottom,0px);}
-        .auxiron-bottom-nav button{padding:10px 0 6px !important;}
+        .auxiron-global-nav{display:flex;position:fixed;bottom:0;left:0;right:0;z-index:300;background:#0d1320;border-top:1px solid rgba(255,255,255,0.07);padding-bottom:env(safe-area-inset-bottom,0px);}
         @media(max-width:480px){.auxiron-inner{font-size:13px;}}
-        @media(min-width:481px) and (max-width:1023px){.auxiron-inner{max-width:100%;padding:0 4px;}.auxiron-content{padding-bottom:80px;}.auxiron-bottom-nav{height:68px;}}
-        @media(min-width:1024px){
-          .auxiron-sidebar{display:flex;flex-direction:column;width:240px;flex-shrink:0;position:fixed;left:0;top:0;bottom:0;z-index:200;background:#111820;border-right:1px solid #1e2d40;}
-          .auxiron-main{margin-left:240px;}
-          .auxiron-content{padding-bottom:0;}
-          .auxiron-bottom-nav{display:none !important;}
-          .auxiron-inner{max-width:100%;padding:0;}
-        }
-        .auxiron-right-panel{display:none;}
-        @media(min-width:1280px){.auxiron-sidebar{width:260px;}.auxiron-main{margin-left:260px;margin-right:280px;}.auxiron-inner{max-width:100%;padding:0 20px;}.auxiron-right-panel{display:flex;flex-direction:column;width:280px;position:fixed;right:0;top:0;bottom:0;z-index:200;background:#111820;border-left:1px solid #1e2d40;overflow-y:auto;overflow-x:hidden;}}
       `}</style>
 
       {/* HAMBURGER SIDE NAV OVERLAY */}
@@ -1039,151 +1027,6 @@ export default function Auxiron(){
         <div style={{flex:1,background:"rgba(0,0,0,0.55)"}}/>
       </div>}
 
-      {/* DESKTOP SIDEBAR */}
-      <div className="auxiron-sidebar">
-        <div style={{padding:"16px 14px",borderBottom:"1px solid "+C.border}}>
-          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
-            <div style={{width:7,height:7,borderRadius:"50%",background:stClr,boxShadow:"0 0 8px "+stClr}} className="pd"/>
-            <span style={{fontFamily:"'Syne',sans-serif",fontSize:18,fontWeight:800,letterSpacing:".1em",color:C.txt0}}>AUX</span>
-            <span style={{fontFamily:"'Syne',sans-serif",fontSize:18,fontWeight:700,letterSpacing:".1em",color:C.gold}}>IRON</span>
-            <span style={{fontSize:8,background:"rgba(200,168,64,0.12)",color:C.gold,padding:"2px 5px",borderRadius:3,letterSpacing:".1em",border:"1px solid rgba(200,168,64,0.22)"}}>PRO</span>
-          </div>
-          <div style={{fontSize:9,color:C.txt3,marginTop:2}}>{nowStr}</div>
-        </div>
-        <div style={{padding:"10px 14px",borderBottom:"1px solid "+C.border}}>
-          {goldI&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}>
-            <div style={{display:"flex",alignItems:"center",gap:5}}>
-              <span style={{fontSize:10,color:C.gold}}>Gold</span>
-              <span style={{fontSize:8,fontWeight:700,color:goldBiasColor,background:"rgba(0,0,0,0.3)",padding:"1px 5px",borderRadius:3,border:"1px solid "+goldBiasColor+"44"}}>{goldBias}</span>
-            </div>
-            <div style={{textAlign:"right"}}>
-              <div style={{fontSize:12,fontWeight:600,color:goldI.pct>=0?C.up:C.dn,fontVariantNumeric:"tabular-nums"}}>{fmt(goldI.cur,goldI.b)}</div>
-              <div style={{fontSize:9,color:goldI.pct>=0?C.up:C.dn}}>{goldI.pct>=0?"+":""}{goldI.pct.toFixed(2)}%</div>
-            </div>
-          </div>}
-          {vixI&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}>
-            <span style={{fontSize:10,color:C.txt2}}>VIX</span>
-            <div style={{textAlign:"right"}}>
-              <div style={{fontSize:12,fontWeight:600,color:vixClr(vixI.cur)}}>{vixI.cur.toFixed(2)}</div>
-              <div style={{fontSize:9,color:C.txt3}}>{vixLbl(vixI.cur)}</div>
-            </div>
-          </div>}
-          {dxyI&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-            <span style={{fontSize:10,color:C.txt2}}>DXY</span>
-            <div style={{textAlign:"right"}}>
-              <div style={{fontSize:12,fontWeight:600,color:dxyI.pct>=0?C.dn:C.up}}>{dxyI.cur.toFixed(2)}</div>
-              <div style={{fontSize:9,color:dxyI.pct>=0?C.dn:C.up}}>{dxyI.pct>=0?"+":""}{dxyI.pct.toFixed(2)}%</div>
-            </div>
-          </div>}
-        </div>
-        <div style={{padding:"8px 10px",flex:1,overflowY:"auto"}}>
-          {NAV.map(function(item:any){
-            var active=tab===item.key;
-            return <button key={item.key} className="tap" onClick={function(){setTab(item.key);}}
-              style={{display:"flex",alignItems:"center",gap:10,width:"100%",
-                background:active?"rgba(212,168,67,0.08)":"transparent",
-                border:active?"1px solid rgba(212,168,67,0.22)":"1px solid transparent",
-                borderRadius:9,padding:"9px 12px",marginBottom:3,textAlign:"left",transition:"all 0.12s"}}>
-              <div style={{flexShrink:0,width:24,display:"flex",justifyContent:"center"}}>
-                {item.icon(active)}
-              </div>
-              <span style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:13,fontWeight:active?700:500,color:active?C.txt0:C.txt2,letterSpacing:".02em"}}>{item.label}</span>
-              {active&&<div style={{marginLeft:"auto",width:3,height:18,background:item.accent||C.gold,borderRadius:2}}></div>}
-            </button>;
-          })}
-        </div>
-        <div style={{padding:"10px 14px",borderTop:"1px solid "+C.border,fontSize:8,color:C.txt3,letterSpacing:".06em"}}>© 2025 AUXIRON</div>
-      </div>
-
-      {/* DESKTOP RIGHT PANEL */}
-      <div className="auxiron-right-panel">
-        {/* Market Regime */}
-        <div style={{padding:"14px 14px 12px",borderBottom:"1px solid "+C.border}}>
-          <div style={{fontSize:8,color:C.txt3,letterSpacing:".1em",marginBottom:8}}>MARKET REGIME</div>
-          <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:8}}>
-            <div style={{width:9,height:9,borderRadius:"50%",background:roro.color,boxShadow:"0 0 8px "+roro.color}} className="pd"/>
-            <span style={{fontSize:13,fontWeight:700,color:roro.color,letterSpacing:".04em"}}>{roro.label}</span>
-          </div>
-          <div style={{marginBottom:8}}>
-            <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
-              <span style={{fontSize:7,color:"#f04040",letterSpacing:".04em"}}>RISK-OFF</span>
-              <span style={{fontSize:7,color:"#28cc78",letterSpacing:".04em"}}>RISK-ON</span>
-            </div>
-            <div style={{height:6,background:C.bg2,borderRadius:3,overflow:"hidden",position:"relative"}}>
-              <div style={{position:"absolute",left:0,width:"50%",height:"100%",background:"rgba(240,64,64,0.25)"}}/>
-              <div style={{position:"absolute",right:0,width:"50%",height:"100%",background:"rgba(40,204,120,0.25)"}}/>
-              <div style={{position:"absolute",left:roro_score+"%",transform:"translateX(-50%)",width:11,height:11,borderRadius:"50%",background:roro.color,top:-2.5,boxShadow:"0 0 7px "+roro.color}}/>
-            </div>
-          </div>
-          <div style={{fontSize:9,color:C.txt2,lineHeight:1.6}}>{roro.desc.split(" · ").slice(0,2).join(" · ")}</div>
-        </div>
-        {/* Gold */}
-        <div style={{padding:"12px 14px",borderBottom:"1px solid "+C.border}}>
-          <div style={{fontSize:8,color:C.txt3,letterSpacing:".1em",marginBottom:8}}>GOLD BIAS</div>
-          {goldI&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-            <div>
-              <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:16,fontWeight:700,color:goldI.pct>=0?C.up:C.dn,fontVariantNumeric:"tabular-nums"}}>{fmt(goldI.cur,goldI.b)}</div>
-              <div style={{fontSize:9,color:goldI.pct>=0?C.up:C.dn,marginTop:2}}>{goldI.pct>=0?"+":""}{goldI.pct.toFixed(2)}% today</div>
-            </div>
-            <div style={{background:goldBiasColor+"1a",border:"1px solid "+goldBiasColor+"55",borderRadius:6,padding:"5px 10px",textAlign:"center"}}>
-              <div style={{fontSize:11,fontWeight:700,color:goldBiasColor,letterSpacing:".06em"}}>{goldBias}</div>
-              <div style={{fontSize:7,color:C.txt3,marginTop:2}}>XAU/USD</div>
-            </div>
-          </div>}
-        </div>
-        {/* VIX */}
-        <div style={{padding:"12px 14px",borderBottom:"1px solid "+C.border}}>
-          <div style={{fontSize:8,color:C.txt3,letterSpacing:".1em",marginBottom:8}}>VOLATILITY</div>
-          {vixI&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-            <div>
-              <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:16,fontWeight:700,color:vixClr(vixI.cur)}}>{vixI.cur.toFixed(2)}</div>
-              <div style={{fontSize:9,color:C.txt3,marginTop:2}}>VIX Index</div>
-            </div>
-            <div style={{background:vixClr(vixI.cur)+"18",border:"1px solid "+vixClr(vixI.cur)+"44",borderRadius:6,padding:"5px 10px",textAlign:"center"}}>
-              <div style={{fontSize:10,fontWeight:700,color:vixClr(vixI.cur)}}>{vixLbl(vixI.cur)}</div>
-              <div style={{fontSize:7,color:C.txt3,marginTop:2}}>{vixI.pct>=0?"+":""}{vixI.pct.toFixed(2)}%</div>
-            </div>
-          </div>}
-        </div>
-        {/* Yield Curve */}
-        {spread!==null&&<div style={{padding:"12px 14px",borderBottom:"1px solid "+C.border}}>
-          <div style={{fontSize:8,color:C.txt3,letterSpacing:".1em",marginBottom:8}}>YIELD CURVE 2s10s</div>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-            <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:20,fontWeight:700,color:inverted?C.dn:C.up}}>{spread>0?"+":""}{spread}%</div>
-            <div style={{background:inverted?C.dnD:C.upD,border:"1px solid "+(inverted?C.dn:C.up)+"44",borderRadius:5,padding:"3px 8px"}}>
-              <div style={{fontSize:9,fontWeight:700,color:inverted?C.dn:C.up}}>{inverted?"INVERTED":"NORMAL"}</div>
-            </div>
-          </div>
-        </div>}
-        {/* Top Movers */}
-        <div style={{padding:"12px 14px",borderBottom:"1px solid "+C.border}}>
-          <div style={{fontSize:8,color:C.txt3,letterSpacing:".1em",marginBottom:8}}>TOP MOVERS</div>
-          {mkt.slice().sort(function(a:any,b:any){return Math.abs(b.pct)-Math.abs(a.pct);}).slice(0,5).map(function(m:any){
-            var up=m.pct>=0;
-            return <div key={m.s} style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:7}}>
-              <div>
-                <div style={{fontSize:10,fontWeight:600,color:C.txt1}}>{m.l}</div>
-                <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.txt3}}>{fmt(m.cur,m.b)}</div>
-              </div>
-              <div style={{background:up?C.upD:C.dnD,border:"1px solid "+(up?C.up:C.dn)+"44",borderRadius:4,padding:"2px 8px"}}>
-                <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,fontWeight:700,color:up?C.up:C.dn}}>{up?"+":""}{m.pct.toFixed(2)}%</span>
-              </div>
-            </div>;
-          })}
-        </div>
-        {/* Active Session */}
-        <div style={{padding:"12px 14px"}}>
-          <div style={{fontSize:8,color:C.txt3,letterSpacing:".1em",marginBottom:8}}>ACTIVE SESSION</div>
-          <div style={{display:"flex",alignItems:"center",gap:8,background:sessionLbl.color+"0d",border:"1px solid "+sessionLbl.color+"30",borderRadius:8,padding:"9px 11px"}}>
-            <span style={{fontSize:18}}>{sessionLbl.label.includes("NY")?"🗽":sessionLbl.label.includes("LONDON")||sessionLbl.label.includes("LDN")?"🌍":"🌏"}</span>
-            <div>
-              <div style={{fontSize:11,fontWeight:700,color:sessionLbl.color,letterSpacing:".04em"}}>{sessionLbl.label.replace("🌏 ","").replace("🌍 ","").replace("🗽 ","").replace("🤝 ","").replace("💤 ","")}</div>
-              <div style={{fontSize:8,color:C.txt3,marginTop:2}}>SGT timezone</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* DASHBOARD TAB — full screen, own header */}
       {tab==="dashboard"&&<div className="auxiron-main" style={{position:"relative"}}>
         <Dashboard mkt={mkt} sessionLbl={sessionLbl} roro={roro} roro_score={roro_score} stClr={stClr} tab={tab} setTab={setTab} onOpenNav={function(){setNavOpen(true);}}/>
@@ -1203,16 +1046,7 @@ export default function Auxiron(){
               <span style={{display:"block",width:20,height:2,background:"#ffffff",borderRadius:1}}/>
             </button>
             <div style={{width:7,height:7,borderRadius:"50%",background:stClr,boxShadow:"0 0 8px "+stClr}} className="pd"/>
-            <div style={{width:30,height:30,borderRadius:"50%",background:"linear-gradient(135deg,rgba(74,158,255,0.2),rgba(212,168,67,0.15))",border:"1px solid rgba(212,168,67,0.35)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                <circle cx="9" cy="9" r="3" fill="#4a9eff" opacity="0.9"/>
-                <line x1="9" y1="9" x2="14" y2="4" stroke="#d4a843" strokeWidth="1.8" strokeLinecap="round"/>
-                <path d="M4.5 13.5 A6.5 6.5 0 0 1 4.5 4.5" stroke="#4a9eff" strokeWidth="1.4" fill="none" opacity="0.7"/>
-                <path d="M6 15.2 A8.5 8.5 0 0 1 3 2.8" stroke="#4a9eff" strokeWidth="1" fill="none" opacity="0.4"/>
-                <path d="M13.5 4.5 A6.5 6.5 0 0 1 13.5 13.5" stroke="#d4a843" strokeWidth="1.4" fill="none" opacity="0.7"/>
-                <path d="M15 2.8 A8.5 8.5 0 0 1 15 15.2" stroke="#d4a843" strokeWidth="1" fill="none" opacity="0.4"/>
-              </svg>
-            </div>
+            <img src="/logo-192.png" alt="AuxiroNexus" style={{height:28,width:28,borderRadius:6,objectFit:"cover",flexShrink:0}}/>
             <div style={{display:"flex",alignItems:"baseline",gap:0}}>
               <span style={{fontFamily:"'Syne',sans-serif",fontSize:18,fontWeight:800,letterSpacing:"-.01em",color:C.txt0}}>Auxiro</span>
               <span style={{fontFamily:"'Syne',sans-serif",fontSize:18,fontWeight:800,letterSpacing:"-.01em",color:C.gold}}>Nexus</span>
@@ -2769,30 +2603,61 @@ export default function Auxiron(){
           </div>
         </div>;
       }())}
-      {/* BOTTOM NAV — mobile only */}
-      <div className="auxiron-bottom-nav" style={{background:C.bg1,borderTop:"1px solid "+C.border}}>
-        {NAV.map(function(item:any){
-          var active=tab===item.key;
-          var ac=item.accent||C.gold;
-          return <button key={item.key} className="tap" onClick={function(){setTab(item.key);}}
+      </div>
+      {/* GLOBAL FIXED BOTTOM NAV */}
+      <div className="auxiron-global-nav">
+        {[
+          {key:"dashboard",label:"Home",accent:"#e8d5a3",
+           icon:function(active:boolean){return(<svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+             <rect x="3" y="3" width="6" height="6" rx="1.5" fill={active?"#e8d5a3":"rgba(255,255,255,0.25)"}/>
+             <rect x="11" y="3" width="6" height="6" rx="1.5" fill={active?"#e8d5a3":"rgba(255,255,255,0.25)"}/>
+             <rect x="3" y="11" width="6" height="6" rx="1.5" fill={active?"#e8d5a3":"rgba(255,255,255,0.25)"}/>
+             <rect x="11" y="11" width="6" height="6" rx="1.5" fill={active?"#e8d5a3":"rgba(255,255,255,0.25)"}/>
+           </svg>);}},
+          {key:"markets",label:"Markets",accent:"#f0cc5a",
+           icon:function(active:boolean){return(<svg width="20" height="20" viewBox="0 0 18 18" fill="none">
+             <rect x="2.5" y="6" width="3" height="8" rx="1" fill={active?"#f0cc5a":"rgba(255,255,255,0.25)"}/>
+             <rect x="7" y="4" width="3" height="6" rx="1" fill={active?"#22d46e":"rgba(255,255,255,0.25)"}/>
+             <rect x="11.5" y="7" width="3" height="7" rx="1" fill={active?"#f04545":"rgba(255,255,255,0.25)"}/>
+           </svg>);}},
+          {key:"axrisk",label:"AX Risk",accent:"#f0a020",disabled:true,
+           icon:function(){return(<svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+             <path d="M10 3L17 16H3L10 3Z" stroke="rgba(255,255,255,0.2)" strokeWidth="1.5" strokeLinejoin="round"/>
+             <line x1="10" y1="8" x2="10" y2="12" stroke="rgba(255,255,255,0.2)" strokeWidth="1.5" strokeLinecap="round"/>
+             <circle cx="10" cy="14" r="0.8" fill="rgba(255,255,255,0.2)"/>
+           </svg>);}},
+          {key:"journal",label:"Journal",accent:"#9b77e8",disabled:true,
+           icon:function(){return(<svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+             <rect x="4" y="3" width="12" height="14" rx="1.5" stroke="rgba(255,255,255,0.2)" strokeWidth="1.3"/>
+             <line x1="7" y1="7" x2="13" y2="7" stroke="rgba(255,255,255,0.2)" strokeWidth="1.3" strokeLinecap="round"/>
+             <line x1="7" y1="10" x2="13" y2="10" stroke="rgba(255,255,255,0.2)" strokeWidth="1.3" strokeLinecap="round"/>
+             <line x1="7" y1="13" x2="11" y2="13" stroke="rgba(255,255,255,0.2)" strokeWidth="1.3" strokeLinecap="round"/>
+           </svg>);}},
+          {key:"more",label:"More",accent:"#ffffff",
+           icon:function(active:boolean){return(<svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+             <circle cx="6" cy="10" r="1.5" fill={active?"#ffffff":"rgba(255,255,255,0.25)"}/>
+             <circle cx="10" cy="10" r="1.5" fill={active?"#ffffff":"rgba(255,255,255,0.25)"}/>
+             <circle cx="14" cy="10" r="1.5" fill={active?"#ffffff":"rgba(255,255,255,0.25)"}/>
+           </svg>);}},
+        ].map(function(item:any){
+          var active=tab===item.key&&!item.disabled;
+          return <button key={item.key} className="tap"
+            onClick={function(){if(item.key==="more"){setNavOpen(true);}else if(!item.disabled){setTab(item.key);}}}
             style={{flex:1,background:"transparent",border:"none",padding:"8px 0 6px",
               display:"flex",flexDirection:"column",alignItems:"center",gap:3,
-              position:"relative",transition:"opacity 0.12s",minHeight:54}}>
+              position:"relative",minHeight:52,opacity:item.disabled?0.38:1}}>
             {active&&<div style={{position:"absolute",top:0,left:"22%",right:"22%",
-              height:2,background:ac,borderRadius:"0 0 2px 2px"}}/>}
-            <div style={{width:34,height:30,display:"flex",alignItems:"center",
-              justifyContent:"center",background:active?ac+"1a":"transparent",
-              borderRadius:8,transition:"background 0.12s"}}>
+              height:2,background:item.accent,borderRadius:"0 0 2px 2px"}}/>}
+            <div style={{width:32,height:26,display:"flex",alignItems:"center",justifyContent:"center"}}>
               {item.icon(active)}
             </div>
-            <span style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:9,
-              fontWeight:active?700:400,letterSpacing:".04em",
-              color:active?ac:C.txt3,transition:"color 0.12s"}}>
-              {item.label}
-            </span>
+            <div style={{display:"flex",alignItems:"center",gap:2}}>
+              <span style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:9,
+                fontWeight:active?700:400,color:active?item.accent:"rgba(255,255,255,0.3)",letterSpacing:".03em"}}>{item.label}</span>
+              {item.disabled&&<span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:5,color:"#4a9eff",background:"rgba(74,158,255,0.15)",padding:"0 3px",borderRadius:2}}>NEW</span>}
+            </div>
           </button>;
         })}
-      </div>
       </div>
     </div>
   );
