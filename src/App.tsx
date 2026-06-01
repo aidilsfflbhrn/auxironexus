@@ -956,9 +956,8 @@ export default function Auxiron(){
         @keyframes tk{0%{transform:translateX(0)}100%{transform:translateX(-50%)}} .tk{animation:tk 65s linear infinite;display:inline-block;white-space:nowrap;} .tk:hover{animation-play-state:paused;}
         .auxiron-root{display:flex;width:100%;min-height:100vh;min-height:100dvh;background:#080e14;font-family:'IBM Plex Sans',sans-serif;}
         .auxiron-main{flex:1;display:flex;flex-direction:column;width:100%;min-width:0;}
-        .auxiron-content{flex:1;overflow-y:auto;overflow-x:hidden;padding-bottom:calc(60px + env(safe-area-inset-bottom,0px));-webkit-overflow-scrolling:touch;}
+        .auxiron-content{flex:1;overflow-y:auto;overflow-x:hidden;padding-bottom:env(safe-area-inset-bottom,0px);-webkit-overflow-scrolling:touch;}
         .auxiron-inner{width:100%;padding:0;}
-        .auxiron-global-nav{display:flex;position:fixed;bottom:0;left:0;right:0;z-index:300;background:#0d1320;border-top:1px solid rgba(255,255,255,0.07);padding-bottom:env(safe-area-inset-bottom,0px);}
         @media(max-width:480px){.auxiron-inner{font-size:13px;}}
       `}</style>
 
@@ -1042,13 +1041,8 @@ export default function Auxiron(){
         <div style={{flex:1,background:"rgba(0,0,0,0.55)"}}/>
       </div>}
 
-      {/* DASHBOARD TAB — full screen, own header */}
-      {tab==="dashboard"&&<div className="auxiron-main" style={{position:"relative"}}>
-        <Dashboard mkt={mkt} sessionLbl={sessionLbl} roro={roro} roro_score={roro_score} stClr={stClr} tab={tab} setTab={setTab} onOpenNav={function(){setNavOpen(true);}}/>
-      </div>}
-
       {/* MAIN CONTENT AREA */}
-      <div className="auxiron-main" style={{display:tab==="dashboard"?"none":"flex",flexDirection:"column"}}>
+      <div className="auxiron-main" style={{display:"flex",flexDirection:"column"}}>
 
       {/* HEADER */}
       <div style={{background:C.bg1,borderBottom:"1px solid "+C.border,padding:"10px 14px",flexShrink:0}}>
@@ -1148,6 +1142,9 @@ export default function Auxiron(){
 
       <div className="auxiron-content">
         <div className="auxiron-inner">
+
+        {/* ── DASHBOARD ── */}
+        {tab==="dashboard"&&<Dashboard mkt={mkt} sessionLbl={sessionLbl} roro={roro} roro_score={roro_score} stClr={stClr} tab={tab} setTab={setTab} onOpenNav={function(){setNavOpen(true);}}/>}
 
         {/* ── MARKETS ── */}
         {tab==="markets"&&<div>
@@ -2618,37 +2615,29 @@ export default function Auxiron(){
           </div>
         </div>;
       }())}
+        {/* ── NEWS FEED ── */}
+        {tab==="news"&&<div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:"60vh",padding:"40px 24px",textAlign:"center",gap:16}}>
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#4a9eff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/>
+            <line x1="12" y1="7" x2="18" y2="7"/><line x1="12" y1="11" x2="18" y2="11"/><line x1="12" y1="15" x2="16" y2="15"/>
+          </svg>
+          <div style={{fontSize:20,fontWeight:500,color:"#ffffff",fontFamily:"'IBM Plex Sans',sans-serif"}}>News Feed</div>
+          <div style={{fontSize:14,color:"#7a9ab8",fontFamily:"'IBM Plex Sans',sans-serif",maxWidth:300,lineHeight:1.6}}>AI-tagged live news with BULL/BEAR sentiment. Requires Polygon.io API — coming in Pro tier.</div>
+          <div style={{fontSize:10,color:"#4a9eff",background:"rgba(74,158,255,0.12)",padding:"4px 12px",borderRadius:4,fontFamily:"'IBM Plex Mono',monospace",letterSpacing:".08em"}}>PRO FEATURE · COMING SOON</div>
+        </div>}
+
+        {/* ── ECONOMIC CALENDAR ── */}
+        {tab==="calendar"&&<div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:"60vh",padding:"40px 24px",textAlign:"center",gap:16}}>
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#4a9eff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+            <path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/>
+          </svg>
+          <div style={{fontSize:20,fontWeight:500,color:"#ffffff",fontFamily:"'IBM Plex Sans',sans-serif"}}>Economic Calendar</div>
+          <div style={{fontSize:14,color:"#7a9ab8",fontFamily:"'IBM Plex Sans',sans-serif",maxWidth:300,lineHeight:1.6}}>High, medium and low impact events with countdown timers. API integration coming soon.</div>
+          <div style={{fontSize:10,color:"#4a9eff",background:"rgba(74,158,255,0.12)",padding:"4px 12px",borderRadius:4,fontFamily:"'IBM Plex Mono',monospace",letterSpacing:".08em"}}>COMING SOON</div>
+        </div>}
+
       </div>
-      {/* GLOBAL FIXED BOTTOM NAV */}
-      <div className="auxiron-global-nav">
-        {GNAV.map(function(item:any){
-          var active=tab===item.key&&!item.disabled;
-          var ic=item.disabled?"#2a3a4a":active?"#e8d5a3":"#4a5568";
-          return <button key={item.key} className="tap"
-            onClick={function(){
-              if(item.key==="more"){setNavOpen(true);}
-              else if(item.disabled){setToast("Coming Soon");}
-              else{setTab(item.key);}
-            }}
-            style={{flex:1,background:"transparent",border:"none",padding:"8px 0 6px",
-              display:"flex",flexDirection:"column",alignItems:"center",gap:3,
-              position:"relative",minHeight:52}}>
-            {active&&<div style={{position:"absolute",top:0,left:"20%",right:"20%",
-              height:2,background:"#e8d5a3",borderRadius:"0 0 2px 2px"}}/>}
-            <div style={{width:32,height:26,display:"flex",alignItems:"center",justifyContent:"center"}}>
-              {item.icon(ic)}
-            </div>
-            <span style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:9,
-              fontWeight:active?700:400,color:ic,letterSpacing:".03em"}}>{item.label}</span>
-          </button>;
-        })}
-      </div>
-      {toast&&<div style={{position:"fixed",bottom:72,left:"50%",transform:"translateX(-50%)",
-        background:"#1a2535",border:"1px solid rgba(255,255,255,0.12)",borderRadius:8,
-        padding:"8px 18px",fontSize:11,color:"rgba(255,255,255,0.7)",
-        fontFamily:"'IBM Plex Sans',sans-serif",zIndex:400,
-        animation:"fu .2s ease forwards",pointerEvents:"none",whiteSpace:"nowrap"
-      }}>{toast}</div>}
     </div>
   );
 }

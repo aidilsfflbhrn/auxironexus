@@ -166,83 +166,8 @@ export default function Dashboard({ mkt, sessionLbl, roro, roro_score, stClr, ta
   return (
     <div style={{ background: C2.bg, minHeight: "100%", display: "flex", flexDirection: "column", position: "relative" }}>
 
-      {/* ── STICKY HEADER ── */}
-      <div style={{ position: "sticky", top: 0, zIndex: 50, background: C2.header, borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
-
-        {/* Layer 1: Top bar */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px 8px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <button onClick={onOpenNav} style={{ background: "none", border: "none", padding: "4px 2px", cursor: "pointer", display: "flex", flexDirection: "column", gap: 4.5, justifyContent: "center", flexShrink: 0 }}>
-              <span style={{ display: "block", width: 20, height: 2, background: C2.white, borderRadius: 1 }} />
-              <span style={{ display: "block", width: 20, height: 2, background: C2.white, borderRadius: 1 }} />
-              <span style={{ display: "block", width: 20, height: 2, background: C2.white, borderRadius: 1 }} />
-            </button>
-            <div style={{ display: "flex", alignItems: "baseline" }}>
-              <span style={{ fontFamily: "'Syne',sans-serif", fontSize: 16, fontWeight: 800, letterSpacing: "-.01em", color: C2.white }}>AUXIRO</span>
-              <span style={{ fontFamily: "'Syne',sans-serif", fontSize: 16, fontWeight: 800, letterSpacing: "-.01em", color: C2.gold }}>NEXUS</span>
-            </div>
-            <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 7, background: "rgba(74,158,255,0.14)", color: C2.blue, padding: "2px 5px", borderRadius: 3, letterSpacing: ".1em", border: "1px solid rgba(74,158,255,0.28)" }}>PRO</span>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-            {/* Session badge */}
-            <div style={{ background: sessionLbl.color + "18", border: "1px solid " + sessionLbl.color + "44", borderRadius: 4, padding: "2px 6px" }}>
-              <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 7, color: sessionLbl.color, fontWeight: 700, letterSpacing: ".04em" }}>{sessionShort}</span>
-            </div>
-            {/* AI usage ring */}
-            <div style={{ position: "relative", width: 26, height: 26, flexShrink: 0 }}>
-              <svg width="26" height="26" viewBox="0 0 26 26">
-                <circle cx="13" cy="13" r="10" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="3" />
-                <circle cx="13" cy="13" r="10" fill="none"
-                  stroke={aiPct > 30 ? C2.blue : "#f04545"} strokeWidth="3"
-                  strokeDasharray={`${(aiPct / 100) * 62.8} 62.8`}
-                  strokeLinecap="round" transform="rotate(-90 13 13)" />
-              </svg>
-              <span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'IBM Plex Mono',monospace", fontSize: 5.5, color: C2.white, fontWeight: 700 }}>{aiPct}%</span>
-            </div>
-            {/* Avatar */}
-            <div style={{ width: 26, height: 26, borderRadius: "50%", background: "linear-gradient(135deg,rgba(74,158,255,0.35),rgba(232,213,163,0.25))", border: "1px solid rgba(232,213,163,0.3)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, fontWeight: 700, color: C2.gold }}>A</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Layer 2: RORO bar */}
-        <div style={{ display: "flex", alignItems: "center", gap: 7, padding: "4px 14px", borderTop: "1px solid rgba(255,255,255,0.04)" }}>
-          <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 7, color: "rgba(255,255,255,0.35)", letterSpacing: ".1em", flexShrink: 0 }}>REGIME</span>
-          <div style={{ background: roro.color + "20", border: "1px solid " + roro.color + "50", borderRadius: 3, padding: "1px 6px", flexShrink: 0 }}>
-            <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 7, color: roro.color, fontWeight: 700 }}>{roro.label}</span>
-          </div>
-          <div style={{ flex: 1, height: 4, background: "rgba(255,255,255,0.05)", borderRadius: 2, overflow: "visible", position: "relative" }}>
-            <div style={{ position: "absolute", inset: 0, borderRadius: 2, background: "linear-gradient(90deg,#f04545 0%,#f0a020 40%,#1d9e75 100%)" }} />
-            <div style={{ position: "absolute", left: roro_score + "%", top: -2, width: 8, height: 8, borderRadius: "50%", background: roro.color, boxShadow: "0 0 6px " + roro.color, transform: "translateX(-50%)" }} />
-          </div>
-          <div style={{ overflow: "hidden", flexShrink: 0, maxWidth: 130 }}>
-            <span className="tk" style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 7, color: "rgba(255,255,255,0.3)" }}>{macroText}</span>
-          </div>
-        </div>
-
-        {/* Layer 3: Ticker strip */}
-        <div style={{ overflow: "hidden", height: 24, display: "flex", alignItems: "center", borderTop: "1px solid rgba(255,255,255,0.03)", background: "rgba(0,0,0,0.15)" }}>
-          <div className="tk" style={{ paddingLeft: 14 }}>
-            {tickerSyms.concat(tickerSyms).map((sym, i) => {
-              const m = mkt.find((x: any) => x.s === sym);
-              if (!m) return null;
-              const up = m.pct >= 0;
-              const label = sym === "DX" ? "DXY" : sym === "XAU/USD" ? "GOLD" : sym.replace("/", "");
-              return (
-                <span key={i} style={{ display: "inline-flex", alignItems: "center", gap: 4, marginRight: 16, fontFamily: "'IBM Plex Mono',monospace", fontSize: 8 }}>
-                  <span style={{ color: "rgba(255,255,255,0.4)", letterSpacing: ".04em" }}>{label}</span>
-                  <span style={{ color: up ? C2.up : C2.dn, fontWeight: 600 }}>{fmtP(m.cur, m.b)}</span>
-                  <span style={{ color: up ? C2.up : C2.dn }}>{up ? "+" : ""}{m.pct.toFixed(2)}%</span>
-                </span>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
       {/* ── SCROLLABLE CONTENT ── */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "14px 12px calc(60px + env(safe-area-inset-bottom,0px))" }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: "14px 12px" }}>
 
         {/* ── SECTION 1: TRADING PERFORMANCE ── */}
         <div style={{ marginBottom: 18 }}>
