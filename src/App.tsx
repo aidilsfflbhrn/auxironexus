@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine, AreaChart, Area, CartesianGrid } from "recharts";
 import { canSpend, recordSpend, getBudgetStatus } from "./lib/budgetGate";
 import { hasAccess } from "./lib/userTier";
+import Dashboard from "./Dashboard";
 
 const C={
   bg0:"#080e14",bg1:"#0d1520",bg2:"#121d2c",bg3:"#192538",
@@ -362,7 +363,8 @@ export default function Auxiron(){
     // PWA manifest name
     document.title="AuxiroNexus — Pro";
   },[]);
-  var [tab,setTab]=useState("markets");
+  var [tab,setTab]=useState("dashboard");
+  var [navOpen,setNavOpen]=useState(false);
   var [mkt,setMkt]=useState(initMkt);
   var [sel,setSel]=useState("XAU/USD");
   var [cv,setCv]=useState("single");
@@ -957,6 +959,86 @@ export default function Auxiron(){
         @media(min-width:1280px){.auxiron-sidebar{width:260px;}.auxiron-main{margin-left:260px;margin-right:280px;}.auxiron-inner{max-width:100%;padding:0 20px;}.auxiron-right-panel{display:flex;flex-direction:column;width:280px;position:fixed;right:0;top:0;bottom:0;z-index:200;background:#111820;border-left:1px solid #1e2d40;overflow-y:auto;overflow-x:hidden;}}
       `}</style>
 
+      {/* HAMBURGER SIDE NAV OVERLAY */}
+      {navOpen&&<div style={{position:"fixed",inset:0,zIndex:500,display:"flex"}} onClick={function(){setNavOpen(false);}}>
+        <div style={{width:280,height:"100%",background:"#0d1320",borderRight:"1px solid #1e2e42",display:"flex",flexDirection:"column",overflowY:"auto",animation:"slideUp .2s ease",flexShrink:0}} onClick={function(e){e.stopPropagation();}}>
+          {/* Nav header */}
+          <div style={{padding:"16px 14px",borderBottom:"1px solid #1e2e42",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <span style={{fontFamily:"'Syne',sans-serif",fontSize:18,fontWeight:800,color:"#ffffff"}}>AUXIRO</span>
+              <span style={{fontFamily:"'Syne',sans-serif",fontSize:18,fontWeight:800,color:"#e8d5a3"}}>NEXUS</span>
+              <span style={{fontSize:7,background:"rgba(74,158,255,0.12)",color:"#4a9eff",padding:"2px 5px",borderRadius:3,letterSpacing:".1em",border:"1px solid rgba(74,158,255,0.25)"}}>PRO</span>
+            </div>
+            <button onClick={function(){setNavOpen(false);}} style={{background:"none",border:"none",cursor:"pointer",padding:4,color:"rgba(255,255,255,0.4)",fontSize:18,lineHeight:1}}>✕</button>
+          </div>
+          {/* Nav items */}
+          <div style={{flex:1,padding:"10px 10px"}}>
+            {/* MAIN */}
+            <div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 6px 4px"}}>
+              <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,fontWeight:700,color:"#e8d5a3",letterSpacing:".12em"}}>MAIN</span>
+              <div style={{flex:1,height:1,background:"rgba(232,213,163,0.15)"}}/>
+            </div>
+            {[{key:"dashboard",label:"Dashboard"},{key:"charts",label:"Charts"}].map(function(item){
+              var active=tab===item.key;
+              return <button key={item.key} className="tap" onClick={function(){setTab(item.key);setNavOpen(false);}}
+                style={{display:"flex",alignItems:"center",gap:10,width:"100%",background:active?"rgba(232,213,163,0.08)":"transparent",border:"none",borderLeft:active?"3px solid #e8d5a3":"3px solid transparent",borderRadius:"0 8px 8px 0",padding:"9px 12px",marginBottom:2,textAlign:"left",cursor:"pointer"}}>
+                <span style={{fontSize:13,fontWeight:active?700:400,color:"#ffffff",letterSpacing:".01em"}}>{item.label}</span>
+              </button>;
+            })}
+            {/* INTELLIGENCE */}
+            <div style={{display:"flex",alignItems:"center",gap:8,padding:"10px 6px 4px"}}>
+              <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,fontWeight:700,color:"#4a9eff",letterSpacing:".12em"}}>INTELLIGENCE</span>
+              <div style={{flex:1,height:1,background:"rgba(74,158,255,0.2)"}}/>
+            </div>
+            {[{key:"intel",label:"Intel Report"},{key:"session",label:"Session Briefing"},{key:"news",label:"News Feed"},{key:"filter",label:"AI News Filter"},{key:"calendar",label:"Economic Calendar"}].map(function(item){
+              var active=tab===item.key;
+              return <button key={item.key} className="tap" onClick={function(){setTab(item.key);setNavOpen(false);}}
+                style={{display:"flex",alignItems:"center",gap:10,width:"100%",background:active?"rgba(74,158,255,0.08)":"transparent",border:"none",borderLeft:active?"3px solid #4a9eff":"3px solid transparent",borderRadius:"0 8px 8px 0",padding:"9px 12px",marginBottom:2,textAlign:"left",cursor:"pointer"}}>
+                <span style={{fontSize:13,fontWeight:active?700:400,color:"#ffffff"}}>{item.label}</span>
+              </button>;
+            })}
+            {/* TRADING TOOLS */}
+            <div style={{display:"flex",alignItems:"center",gap:8,padding:"10px 6px 4px"}}>
+              <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,fontWeight:700,color:"#1d9e75",letterSpacing:".12em"}}>TRADING TOOLS</span>
+              <div style={{flex:1,height:1,background:"rgba(29,158,117,0.2)"}}/>
+            </div>
+            {[{key:"axrisk",label:"AX Risk"},{key:"journal",label:"Trade Journal"},{key:"playbook",label:"Playbook AX"}].map(function(item){
+              return <button key={item.key} className="tap"
+                style={{display:"flex",alignItems:"center",justifyContent:"space-between",width:"100%",background:"transparent",border:"none",borderLeft:"3px solid transparent",borderRadius:"0 8px 8px 0",padding:"9px 12px",marginBottom:2,textAlign:"left",cursor:"default",opacity:0.42}}>
+                <span style={{fontSize:13,color:"#ffffff"}}>{item.label}</span>
+                <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:7,color:"#4a9eff",background:"rgba(74,158,255,0.14)",padding:"1px 5px",borderRadius:3}}>NEW</span>
+              </button>;
+            })}
+            {/* MARKETS */}
+            <div style={{display:"flex",alignItems:"center",gap:8,padding:"10px 6px 4px"}}>
+              <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,fontWeight:700,color:"#9b77e8",letterSpacing:".12em"}}>MARKETS</span>
+              <div style={{flex:1,height:1,background:"rgba(155,119,232,0.2)"}}/>
+            </div>
+            {[{key:"markets",label:"Markets Overview"},{key:"cot",label:"COT Data"}].map(function(item){
+              var active=tab===item.key;
+              return <button key={item.key} className="tap" onClick={function(){setTab(item.key);setNavOpen(false);}}
+                style={{display:"flex",alignItems:"center",gap:10,width:"100%",background:active?"rgba(155,119,232,0.08)":"transparent",border:"none",borderLeft:active?"3px solid #9b77e8":"3px solid transparent",borderRadius:"0 8px 8px 0",padding:"9px 12px",marginBottom:2,textAlign:"left",cursor:"pointer"}}>
+                <span style={{fontSize:13,fontWeight:active?700:400,color:"#ffffff"}}>{item.label}</span>
+              </button>;
+            })}
+            {/* ACCOUNT */}
+            <div style={{display:"flex",alignItems:"center",gap:8,padding:"10px 6px 4px"}}>
+              <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,fontWeight:700,color:"#7a9ab8",letterSpacing:".12em"}}>ACCOUNT</span>
+              <div style={{flex:1,height:1,background:"rgba(122,154,184,0.2)"}}/>
+            </div>
+            {["Profile","Settings","Help"].map(function(lbl){
+              return <button key={lbl} className="tap"
+                style={{display:"flex",alignItems:"center",gap:10,width:"100%",background:"transparent",border:"none",borderLeft:"3px solid transparent",borderRadius:"0 8px 8px 0",padding:"9px 12px",marginBottom:2,textAlign:"left",cursor:"pointer"}}>
+                <span style={{fontSize:13,color:"#ffffff"}}>{lbl}</span>
+              </button>;
+            })}
+          </div>
+          {/* Footer */}
+          <div style={{padding:"12px 14px",borderTop:"1px solid #1e2e42",fontSize:9,color:"#2a3a4a",letterSpacing:".06em",fontFamily:"'IBM Plex Mono',monospace"}}>AuxiroNexus v2.0 · Pro plan</div>
+        </div>
+        <div style={{flex:1,background:"rgba(0,0,0,0.55)"}}/>
+      </div>}
+
       {/* DESKTOP SIDEBAR */}
       <div className="auxiron-sidebar">
         <div style={{padding:"16px 14px",borderBottom:"1px solid "+C.border}}>
@@ -1102,14 +1184,24 @@ export default function Auxiron(){
         </div>
       </div>
 
+      {/* DASHBOARD TAB — full screen, own header */}
+      {tab==="dashboard"&&<div className="auxiron-main" style={{position:"relative"}}>
+        <Dashboard mkt={mkt} sessionLbl={sessionLbl} roro={roro} roro_score={roro_score} stClr={stClr} tab={tab} setTab={setTab} onOpenNav={function(){setNavOpen(true);}}/>
+      </div>}
+
       {/* MAIN CONTENT AREA */}
-      <div className="auxiron-main">
+      <div className="auxiron-main" style={{display:tab==="dashboard"?"none":"flex",flexDirection:"column"}}>
 
       {/* HEADER */}
       <div style={{background:C.bg1,borderBottom:"1px solid "+C.border,padding:"10px 14px",flexShrink:0}}>
         {/* Top row */}
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:7}}>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <button onClick={function(){setNavOpen(true);}} style={{background:"none",border:"none",padding:"4px 2px",cursor:"pointer",display:"flex",flexDirection:"column",gap:4,justifyContent:"center",flexShrink:0,WebkitTapHighlightColor:"transparent"}}>
+              <span style={{display:"block",width:20,height:2,background:"#ffffff",borderRadius:1}}/>
+              <span style={{display:"block",width:20,height:2,background:"#ffffff",borderRadius:1}}/>
+              <span style={{display:"block",width:20,height:2,background:"#ffffff",borderRadius:1}}/>
+            </button>
             <div style={{width:7,height:7,borderRadius:"50%",background:stClr,boxShadow:"0 0 8px "+stClr}} className="pd"/>
             <div style={{width:30,height:30,borderRadius:"50%",background:"linear-gradient(135deg,rgba(74,158,255,0.2),rgba(212,168,67,0.15))",border:"1px solid rgba(212,168,67,0.35)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
               <svg width="18" height="18" viewBox="0 0 18 18" fill="none">

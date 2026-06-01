@@ -1,7 +1,3 @@
-Work silently.
-
-Rewrite CLAUDE.md in the repo root with exactly this content, replacing everything:
-
 # AuxiroNexus — Claude Code Rules
 ## Last updated: June 2026
 
@@ -67,5 +63,3 @@ Never skip steps 2 or 3. Never commit before both pass.
 - Run: git log --oneline -10
 - Report the list and wait for instruction
 - Do not attempt auto-fix without confirmation
-
-After updating CLAUDE.md run npm run build then npm run dev. Report: "Done — build clean, dev tested" or exact error.
