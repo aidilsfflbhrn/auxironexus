@@ -365,6 +365,8 @@ export default function Auxiron(){
   },[]);
   var [tab,setTab]=useState("dashboard");
   var [navOpen,setNavOpen]=useState(false);
+  var [toast,setToast]=useState<string|null>(null);
+  useEffect(function(){if(toast){var t=setTimeout(function(){setToast(null);},1800);return function(){clearTimeout(t);};};},[toast]);
   var [mkt,setMkt]=useState(initMkt);
   var [sel,setSel]=useState("XAU/USD");
   var [cv,setCv]=useState("single");
@@ -923,6 +925,19 @@ export default function Auxiron(){
        <circle cx="13.5" cy="13.5" r="2.8" fill={active?C.vix:"none"} stroke={active?"none":"#3a5570"} strokeWidth="1.2"/>
        {active&&<path d="M12.3 13.5L13.2 14.4L14.8 12.6" stroke="#080e14" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>}
      </svg>);}},
+  ];
+
+  var GNAV=[
+    {key:"dashboard",label:"Home",
+     icon:function(c:string){return(<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>);}},
+    {key:"markets",label:"Markets",
+     icon:function(c:string){return(<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>);}},
+    {key:"axrisk",label:"AX Risk",disabled:true,
+     icon:function(c:string){return(<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12l2 2 4-4"/><path d="M12 2L3 7v5c0 5.25 3.75 10.15 9 11.25C17.25 22.15 21 17.25 21 12V7l-9-5z"/></svg>);}},
+    {key:"journal",label:"Journal",disabled:true,
+     icon:function(c:string){return(<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="8" y1="7" x2="15" y2="7"/><line x1="8" y1="11" x2="15" y2="11"/><line x1="8" y1="15" x2="12" y2="15"/></svg>);}},
+    {key:"more",label:"More",
+     icon:function(c:string){return(<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>);}},
   ];
 
   return(
@@ -2606,59 +2621,34 @@ export default function Auxiron(){
       </div>
       {/* GLOBAL FIXED BOTTOM NAV */}
       <div className="auxiron-global-nav">
-        {[
-          {key:"dashboard",label:"Home",accent:"#e8d5a3",
-           icon:function(active:boolean){return(<svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-             <rect x="3" y="3" width="6" height="6" rx="1.5" fill={active?"#e8d5a3":"rgba(255,255,255,0.25)"}/>
-             <rect x="11" y="3" width="6" height="6" rx="1.5" fill={active?"#e8d5a3":"rgba(255,255,255,0.25)"}/>
-             <rect x="3" y="11" width="6" height="6" rx="1.5" fill={active?"#e8d5a3":"rgba(255,255,255,0.25)"}/>
-             <rect x="11" y="11" width="6" height="6" rx="1.5" fill={active?"#e8d5a3":"rgba(255,255,255,0.25)"}/>
-           </svg>);}},
-          {key:"markets",label:"Markets",accent:"#f0cc5a",
-           icon:function(active:boolean){return(<svg width="20" height="20" viewBox="0 0 18 18" fill="none">
-             <rect x="2.5" y="6" width="3" height="8" rx="1" fill={active?"#f0cc5a":"rgba(255,255,255,0.25)"}/>
-             <rect x="7" y="4" width="3" height="6" rx="1" fill={active?"#22d46e":"rgba(255,255,255,0.25)"}/>
-             <rect x="11.5" y="7" width="3" height="7" rx="1" fill={active?"#f04545":"rgba(255,255,255,0.25)"}/>
-           </svg>);}},
-          {key:"axrisk",label:"AX Risk",accent:"#f0a020",disabled:true,
-           icon:function(){return(<svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-             <path d="M10 3L17 16H3L10 3Z" stroke="rgba(255,255,255,0.2)" strokeWidth="1.5" strokeLinejoin="round"/>
-             <line x1="10" y1="8" x2="10" y2="12" stroke="rgba(255,255,255,0.2)" strokeWidth="1.5" strokeLinecap="round"/>
-             <circle cx="10" cy="14" r="0.8" fill="rgba(255,255,255,0.2)"/>
-           </svg>);}},
-          {key:"journal",label:"Journal",accent:"#9b77e8",disabled:true,
-           icon:function(){return(<svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-             <rect x="4" y="3" width="12" height="14" rx="1.5" stroke="rgba(255,255,255,0.2)" strokeWidth="1.3"/>
-             <line x1="7" y1="7" x2="13" y2="7" stroke="rgba(255,255,255,0.2)" strokeWidth="1.3" strokeLinecap="round"/>
-             <line x1="7" y1="10" x2="13" y2="10" stroke="rgba(255,255,255,0.2)" strokeWidth="1.3" strokeLinecap="round"/>
-             <line x1="7" y1="13" x2="11" y2="13" stroke="rgba(255,255,255,0.2)" strokeWidth="1.3" strokeLinecap="round"/>
-           </svg>);}},
-          {key:"more",label:"More",accent:"#ffffff",
-           icon:function(active:boolean){return(<svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-             <circle cx="6" cy="10" r="1.5" fill={active?"#ffffff":"rgba(255,255,255,0.25)"}/>
-             <circle cx="10" cy="10" r="1.5" fill={active?"#ffffff":"rgba(255,255,255,0.25)"}/>
-             <circle cx="14" cy="10" r="1.5" fill={active?"#ffffff":"rgba(255,255,255,0.25)"}/>
-           </svg>);}},
-        ].map(function(item:any){
+        {GNAV.map(function(item:any){
           var active=tab===item.key&&!item.disabled;
+          var ic=item.disabled?"#2a3a4a":active?"#e8d5a3":"#4a5568";
           return <button key={item.key} className="tap"
-            onClick={function(){if(item.key==="more"){setNavOpen(true);}else if(!item.disabled){setTab(item.key);}}}
+            onClick={function(){
+              if(item.key==="more"){setNavOpen(true);}
+              else if(item.disabled){setToast("Coming Soon");}
+              else{setTab(item.key);}
+            }}
             style={{flex:1,background:"transparent",border:"none",padding:"8px 0 6px",
               display:"flex",flexDirection:"column",alignItems:"center",gap:3,
-              position:"relative",minHeight:52,opacity:item.disabled?0.38:1}}>
-            {active&&<div style={{position:"absolute",top:0,left:"22%",right:"22%",
-              height:2,background:item.accent,borderRadius:"0 0 2px 2px"}}/>}
+              position:"relative",minHeight:52}}>
+            {active&&<div style={{position:"absolute",top:0,left:"20%",right:"20%",
+              height:2,background:"#e8d5a3",borderRadius:"0 0 2px 2px"}}/>}
             <div style={{width:32,height:26,display:"flex",alignItems:"center",justifyContent:"center"}}>
-              {item.icon(active)}
+              {item.icon(ic)}
             </div>
-            <div style={{display:"flex",alignItems:"center",gap:2}}>
-              <span style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:9,
-                fontWeight:active?700:400,color:active?item.accent:"rgba(255,255,255,0.3)",letterSpacing:".03em"}}>{item.label}</span>
-              {item.disabled&&<span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:5,color:"#4a9eff",background:"rgba(74,158,255,0.15)",padding:"0 3px",borderRadius:2}}>NEW</span>}
-            </div>
+            <span style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:9,
+              fontWeight:active?700:400,color:ic,letterSpacing:".03em"}}>{item.label}</span>
           </button>;
         })}
       </div>
+      {toast&&<div style={{position:"fixed",bottom:72,left:"50%",transform:"translateX(-50%)",
+        background:"#1a2535",border:"1px solid rgba(255,255,255,0.12)",borderRadius:8,
+        padding:"8px 18px",fontSize:11,color:"rgba(255,255,255,0.7)",
+        fontFamily:"'IBM Plex Sans',sans-serif",zIndex:400,
+        animation:"fu .2s ease forwards",pointerEvents:"none",whiteSpace:"nowrap"
+      }}>{toast}</div>}
     </div>
   );
 }
