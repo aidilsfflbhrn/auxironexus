@@ -104,3 +104,27 @@ STOP. Report what needs changing. Wait for confirmation. Never fix silently.
 - Run: git log --oneline -10
 - Report the list and wait for instruction
 - Do not attempt auto-fix without confirmation
+
+## Null Safety Rules — Mandatory for All API Data
+
+Any component that fetches from an API endpoint MUST handle these three states:
+1. Loading state — data is being fetched
+2. Error state — API returned error:true or network failed  
+3. Empty state — API returned success but data fields are undefined/null
+
+For every value rendered from API data, use null safety:
+- Numbers: value?.toFixed(2) ?? '0.00'
+- Strings: value ?? '--'
+- Arrays: value ?? [] then .map() safely
+- Nested objects: value?.nested?.field ?? fallback
+
+NEVER call .toFixed(), .toLocaleString(), .map(), .length, or any method 
+directly on API data without a null check first.
+
+NEVER assume API data exists on first render — Redis/KV keys may be empty,
+API calls may fail, or data may not have been populated yet.
+
+Before committing any component that uses API data:
+- Mentally simulate what happens if the API returns { error: true }
+- Mentally simulate what happens if every data field is undefined
+- If the component would crash in either case — add null checks before committing
