@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { getBudgetStatus } from "./lib/budgetGate";
 
 const C2 = {
@@ -82,6 +82,25 @@ export default function Dashboard({ mkt, sessionLbl, roro, roro_score, stClr, ta
   });
   const [showSheet, setShowSheet] = useState(false);
   const [tempWL, setTempWL] = useState<string[]>([]);
+
+  const [acctTab, setAcctTab] = useState<"exness" | "fundednext">("exness");
+  const [acctData, setAcctData] = useState<any>(null);
+  const [acctLoading, setAcctLoading] = useState(false);
+  const [acctError, setAcctError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setAcctLoading(true);
+    setAcctData(null);
+    setAcctError(null);
+    fetch(`/api/accounts?account=${acctTab}`)
+      .then(r => r.json())
+      .then(d => {
+        if (d.error) { setAcctError(d.message || "Connection failed"); setAcctLoading(false); return; }
+        setAcctData(d);
+        setAcctLoading(false);
+      })
+      .catch(() => { setAcctError("Network error"); setAcctLoading(false); });
+  }, [acctTab]);
 
   const budget = getBudgetStatus();
   const aiPct = Math.max(0, Math.round(100 - budget.percentage));
@@ -172,43 +191,125 @@ export default function Dashboard({ mkt, sessionLbl, roro, roro_score, stClr, ta
         {/* ── SECTION 1: TRADING PERFORMANCE ── */}
         <div style={{ marginBottom: 18 }}>
           <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 8, color: C2.green, letterSpacing: ".14em", fontWeight: 700, marginBottom: 10 }}>TRADING PERFORMANCE</div>
-          <div style={{ background: C2.card, borderRadius: 12, padding: "14px", marginBottom: 8, border: "1px solid rgba(29,158,117,0.12)", borderLeft: "3px solid " + C2.green }}>
-            <div style={{ fontSize: 8, color: "rgba(255,255,255,0.35)", letterSpacing: ".08em", marginBottom: 4 }}>ACCOUNT BALANCE</div>
-            <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 30, fontWeight: 700, color: C2.white, lineHeight: 1, marginBottom: 12 }}>$12,450.00</div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
-              {[
-                { label: "TODAY P&L", value: "+$142.50", color: C2.up },
-                { label: "P&L %", value: "+1.16%", color: C2.up },
-                { label: "OPEN TRADES", value: "2", color: C2.white },
-              ].map(item => (
-                <div key={item.label} style={{ background: "rgba(255,255,255,0.03)", borderRadius: 7, padding: "8px 6px", textAlign: "center" }}>
-                  <div style={{ fontSize: 7, color: "rgba(255,255,255,0.35)", letterSpacing: ".06em", marginBottom: 4 }}>{item.label}</div>
-                  <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 13, fontWeight: 700, color: item.color }}>{item.value}</div>
-                </div>
-              ))}
-            </div>
+
+          {/* Account switcher */}
+          <div style={{ display: "flex", gap: 5, marginBottom: 10 }}>
+            {(["exness", "fundednext"] as const).map(key => {
+              const active = acctTab === key;
+              const label = key === "exness" ? "Exness Live" : "FundedNext";
+              return (
+                <button key={key} onClick={() => setAcctTab(key)}
+                  style={{ flex: 1, background: active ? "rgba(29,158,117,0.15)" : "rgba(255,255,255,0.04)", border: active ? "1px solid rgba(29,158,117,0.4)" : "1px solid rgba(255,255,255,0.08)", color: active ? C2.green : "rgba(255,255,255,0.4)", borderRadius: 8, padding: "7px 10px", fontSize: 10, fontFamily: "'IBM Plex Mono',monospace", fontWeight: active ? 700 : 400, cursor: "pointer", letterSpacing: ".04em", WebkitTapHighlightColor: "transparent" }}>
+                  {label}
+                </button>
+              );
+            })}
           </div>
-          {[
-            { sym: "XAU/USD", side: "BUY", pnl: "+$98.50", pnlPct: "+0.80%", lots: "0.50" },
-            { sym: "USD/JPY", side: "SELL", pnl: "+$44.00", pnlPct: "+0.36%", lots: "0.25" },
-          ].map((trade, i) => (
-            <div key={i} style={{ background: C2.card, borderRadius: 8, padding: "10px 12px", marginBottom: 6, border: "1px solid rgba(29,158,117,0.08)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-                <div style={{ width: 2, height: 34, borderRadius: 1, background: C2.green, flexShrink: 0 }} />
-                <div>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: C2.white }}>{trade.sym}</div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 3 }}>
-                    <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 8, fontWeight: 700, color: trade.side === "BUY" ? C2.up : C2.dn, background: (trade.side === "BUY" ? C2.up : C2.dn) + "18", padding: "1px 5px", borderRadius: 3 }}>{trade.side}</span>
-                    <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 8, color: "rgba(255,255,255,0.3)" }}>{trade.lots} lots</span>
+
+          {/* Loading */}
+          {acctLoading && (
+            <div style={{ background: C2.card, borderRadius: 12, padding: "20px 14px", marginBottom: 8, border: "1px solid rgba(29,158,117,0.12)", textAlign: "center" }}>
+              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", letterSpacing: ".06em" }}>Loading...</div>
+            </div>
+          )}
+
+          {/* Error */}
+          {acctError && !acctLoading && (
+            <div style={{ background: "rgba(240,69,69,0.07)", borderRadius: 12, padding: "14px", marginBottom: 8, border: "1px solid rgba(240,69,69,0.2)" }}>
+              <div style={{ fontSize: 11, color: C2.dn, lineHeight: 1.5 }}>⚠ {acctError}</div>
+            </div>
+          )}
+
+          {/* Live data */}
+          {acctData && !acctLoading && !acctError && (
+            <>
+              {/* Balance card */}
+              <div style={{ background: C2.card, borderRadius: 12, padding: "14px", marginBottom: 8, border: "1px solid rgba(29,158,117,0.12)", borderLeft: "3px solid " + C2.green }}>
+                <div style={{ fontSize: 8, color: "rgba(255,255,255,0.35)", letterSpacing: ".08em", marginBottom: 4 }}>ACCOUNT BALANCE</div>
+                <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 30, fontWeight: 700, color: C2.white, lineHeight: 1, marginBottom: 12 }}>
+                  ${acctData.balance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+                  {[
+                    { label: "TODAY P&L", value: (acctData.todayPnl >= 0 ? "+$" : "-$") + Math.abs(acctData.todayPnl).toFixed(2), color: acctData.todayPnl >= 0 ? C2.up : C2.dn },
+                    { label: "P&L %", value: (acctData.todayPnlPercent >= 0 ? "+" : "") + acctData.todayPnlPercent.toFixed(2) + "%", color: acctData.todayPnlPercent >= 0 ? C2.up : C2.dn },
+                    { label: "OPEN TRADES", value: String(acctData.openTrades.length), color: C2.white },
+                  ].map(item => (
+                    <div key={item.label} style={{ background: "rgba(255,255,255,0.03)", borderRadius: 7, padding: "8px 6px", textAlign: "center" }}>
+                      <div style={{ fontSize: 7, color: "rgba(255,255,255,0.35)", letterSpacing: ".06em", marginBottom: 4 }}>{item.label}</div>
+                      <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 13, fontWeight: 700, color: item.color }}>{item.value}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Open trades */}
+              {acctData.openTrades.length === 0 && (
+                <div style={{ background: C2.card, borderRadius: 8, padding: "10px 12px", marginBottom: 6, border: "1px solid rgba(29,158,117,0.08)", textAlign: "center" }}>
+                  <div style={{ fontSize: 10, color: "rgba(255,255,255,0.25)" }}>No open trades</div>
+                </div>
+              )}
+              {acctData.openTrades.map((trade: any, i: number) => (
+                <div key={i} style={{ background: C2.card, borderRadius: 8, padding: "10px 12px", marginBottom: 6, border: "1px solid rgba(29,158,117,0.08)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+                    <div style={{ width: 2, height: 34, borderRadius: 1, background: C2.green, flexShrink: 0 }} />
+                    <div>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: C2.white }}>{trade.symbol}</div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 3 }}>
+                        <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 8, fontWeight: 700, color: trade.type === "BUY" ? C2.up : C2.dn, background: (trade.type === "BUY" ? C2.up : C2.dn) + "18", padding: "1px 5px", borderRadius: 3 }}>{trade.type}</span>
+                        <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 8, color: "rgba(255,255,255,0.3)" }}>{trade.lots} lots</span>
+                        <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 8, color: "rgba(255,255,255,0.2)" }}>{trade.openPrice}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 14, fontWeight: 700, color: trade.profit >= 0 ? C2.up : C2.dn }}>
+                      {trade.profit >= 0 ? "+$" : "-$"}{Math.abs(trade.profit).toFixed(2)}
+                    </div>
+                    <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 9, color: "rgba(255,255,255,0.25)", marginTop: 2 }}>{trade.currentPrice}</div>
                   </div>
                 </div>
-              </div>
-              <div style={{ textAlign: "right" }}>
-                <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 14, fontWeight: 700, color: C2.up }}>{trade.pnl}</div>
-                <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 9, color: C2.up, marginTop: 2 }}>{trade.pnlPct}</div>
-              </div>
-            </div>
-          ))}
+              ))}
+
+              {/* FundedNext prop metrics panel */}
+              {acctTab === "fundednext" && acctData.propMetrics && (
+                <div style={{ background: C2.card, borderRadius: 12, padding: "14px", marginTop: 8, border: "1px solid rgba(155,119,232,0.15)" }}>
+                  <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 8, color: C2.purple, letterSpacing: ".12em", fontWeight: 700, marginBottom: 14 }}>PROP FIRM RISK PANEL</div>
+                  {[
+                    { label: "DAILY DRAWDOWN", used: acctData.propMetrics.dailyDrawdownUsed, limit: acctData.propMetrics.dailyDrawdownLimit, remaining: acctData.propMetrics.dailyDrawdownRemaining },
+                    { label: "TOTAL DRAWDOWN", used: acctData.propMetrics.totalDrawdownUsed, limit: acctData.propMetrics.totalDrawdownLimit, remaining: acctData.propMetrics.totalDrawdownRemaining },
+                  ].map(m => {
+                    const pct = m.limit > 0 ? Math.min(100, (m.used / m.limit) * 100) : 0;
+                    const color = pct >= 90 ? C2.dn : pct >= 80 ? "#f0a020" : C2.up;
+                    return (
+                      <div key={m.label} style={{ marginBottom: 14 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
+                          <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 8, color: "rgba(255,255,255,0.4)", letterSpacing: ".06em" }}>{m.label}</span>
+                          <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 8, color }}>${m.used.toFixed(2)} / ${m.limit.toFixed(2)}</span>
+                        </div>
+                        <div style={{ height: 5, background: "rgba(255,255,255,0.06)", borderRadius: 3, overflow: "hidden", marginBottom: 4 }}>
+                          <div style={{ height: "100%", width: pct + "%", background: color, borderRadius: 3, transition: "width .5s ease" }} />
+                        </div>
+                        <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 8, color: "rgba(255,255,255,0.3)" }}>${m.remaining.toFixed(2)} remaining</div>
+                      </div>
+                    );
+                  })}
+                  <div>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
+                      <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 8, color: "rgba(255,255,255,0.4)", letterSpacing: ".06em" }}>PROFIT TARGET</span>
+                      <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 8, color: acctData.propMetrics.profitProgress >= 100 ? C2.up : "rgba(255,255,255,0.4)" }}>
+                        ${acctData.propMetrics.profitCurrent.toFixed(2)} / ${acctData.propMetrics.profitTarget.toFixed(2)}
+                      </span>
+                    </div>
+                    <div style={{ height: 5, background: "rgba(255,255,255,0.06)", borderRadius: 3, overflow: "hidden", marginBottom: 4 }}>
+                      <div style={{ height: "100%", width: Math.min(100, acctData.propMetrics.profitProgress) + "%", background: acctData.propMetrics.profitProgress >= 100 ? C2.up : C2.green, borderRadius: 3, transition: "width .5s ease" }} />
+                    </div>
+                    <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 8, color: "rgba(255,255,255,0.3)" }}>{acctData.propMetrics.profitProgress.toFixed(1)}% toward target</div>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
         </div>
 
         {/* ── SECTION 2: WATCHLIST ── */}
