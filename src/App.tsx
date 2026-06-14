@@ -980,7 +980,7 @@ export default function Auxiron(){
               <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,fontWeight:700,color:"#e8d5a3",letterSpacing:".12em"}}>MAIN</span>
               <div style={{flex:1,height:1,background:"rgba(232,213,163,0.15)"}}/>
             </div>
-            {[{key:"dashboard",label:"Dashboard"},{key:"charts",label:"Charts"}].map(function(item){
+            {[{key:"dashboard",label:"Dashboard"}].map(function(item){
               var active=tab===item.key;
               return <button key={item.key} className="tap" onClick={function(){setTab(item.key);setNavOpen(false);}}
                 style={{display:"flex",alignItems:"center",gap:10,width:"100%",background:active?"rgba(232,213,163,0.08)":"transparent",border:"none",borderLeft:active?"3px solid #e8d5a3":"3px solid transparent",borderRadius:"0 8px 8px 0",padding:"9px 12px",marginBottom:2,textAlign:"left",cursor:"pointer"}}>
@@ -1251,131 +1251,6 @@ export default function Auxiron(){
               })}
             </div>
           </div>
-        </div>}
-
-        {/* ── CHARTS ── */}
-        {tab==="charts"&&<div className="fu">
-          <div style={{padding:"8px 12px",display:"flex",gap:5,borderBottom:"1px solid "+C.border,overflowX:"auto",alignItems:"center"}}>
-            {[["single","SINGLE"],["quad","QUAD"]].map(function(pair){
-              return <button key={pair[0]} className="tap" onClick={function(){setCv(pair[0]);}}
-                style={{background:cv===pair[0]?"rgba(200,168,64,0.12)":C.bg2,border:cv===pair[0]?"1px solid rgba(200,168,64,0.4)":"1px solid "+C.border,
-                  color:cv===pair[0]?C.goldL:C.txt2,borderRadius:20,padding:"4px 12px",fontSize:9,fontWeight:500,whiteSpace:"nowrap"}}>{pair[1]}</button>;
-            })}
-            {cv==="quad"&&<button className="tap" onClick={function(){setEditQ(!editQ);}}
-              style={{background:editQ?"rgba(72,144,248,0.12)":C.bg2,border:editQ?"1px solid rgba(72,144,248,0.4)":"1px solid "+C.border,
-                color:editQ?C.blue:C.txt2,borderRadius:20,padding:"4px 12px",fontSize:9,marginLeft:"auto"}}>✎ EDIT</button>}
-          </div>
-          {cv==="quad"&&editQ&&<div style={{padding:"10px 12px",background:C.bg2,borderBottom:"1px solid "+C.border}}>
-            <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:C.txt2,letterSpacing:".1em",marginBottom:7}}>PICK UP TO 4 — {quad.length}/4</div>
-            <div style={{display:"flex",flexWrap:"wrap",gap:4,maxHeight:160,overflowY:"auto"}}>
-              {mkt.map(function(m){
-                var isSel=quad.indexOf(m.s)>=0;
-                return <button key={m.s} className="tap" onClick={function(){toggleQuad(m.s);}}
-                  style={{background:isSel?"rgba(200,168,64,0.15)":C.bg1,border:isSel?"1px solid rgba(200,168,64,0.45)":"1px solid "+C.border,
-                    color:isSel?C.goldL:C.txt2,borderRadius:6,padding:"3px 8px",fontSize:9}}>{m.l}</button>;
-              })}
-            </div>
-          </div>}
-          {cv==="single"&&<div style={{padding:"7px 12px",display:"flex",gap:4,overflowX:"auto",borderBottom:"1px solid "+C.border}}>
-            {mkt.filter(function(m){return m.tier<=2;}).map(function(m){
-              var isSel=sel===m.s;
-              return <button key={m.s} className="tap" onClick={function(){setSel(m.s);fetchChart(m.s);}}
-                style={{background:isSel?"rgba(200,168,64,0.12)":C.bg2,border:isSel?"1px solid rgba(200,168,64,0.4)":"1px solid "+C.border,
-                  color:isSel?C.goldL:C.txt2,borderRadius:20,padding:"4px 10px",fontSize:8,fontWeight:isSel?500:400,whiteSpace:"nowrap"}}>{m.l}</button>;
-            })}
-          </div>}
-          {cv==="single"&&selI&&(function(){
-            var sTfPts=[48,168,360,720];
-            var sTfSeed=selI.s.split("").reduce(function(a:number,c:string){return a+c.charCodeAt(0);},0)+chartTf*1000;
-            var sChartData=samplePts(chartTf===0?selI.ch:genFB(selI.b,selI.v,sTfPts[chartTf],sTfSeed),30);
-            var sXint=Math.max(1,Math.floor(sChartData.length/6));
-            return <div style={{padding:"12px"}}>
-              <div style={{background:"#0a0e1a",border:"1px solid rgba(255,255,255,0.08)",borderRadius:12,padding:"14px"}}>
-                {/* TF buttons */}
-                <div style={{display:"flex",gap:4,marginBottom:12}}>
-                  {["1D","1W","1M","3M"].map(function(tf,i){
-                    return <button key={tf} className="tap" onClick={function(){setChartTf(i);}}
-                      style={{background:chartTf===i?"rgba(255,255,255,0.08)":"transparent",
-                        border:"1px solid "+(chartTf===i?"rgba(255,255,255,0.15)":"rgba(255,255,255,0.05)"),
-                        color:chartTf===i?"#ffffff":"#5a6478",borderRadius:6,padding:"4px 12px",
-                        fontSize:10,fontWeight:chartTf===i?600:400,cursor:"pointer",
-                        fontFamily:"'IBM Plex Mono',monospace",letterSpacing:".06em",transition:"all .12s"}}>{tf}</button>;
-                  })}
-                </div>
-                {/* Header */}
-                <div style={{marginBottom:12}}>
-                  <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:"#5a6478",letterSpacing:".12em",marginBottom:5}}>{selI.s} · {selI.cat.toUpperCase()} · {selI.live?"● LIVE":"SIM"}</div>
-                  <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:22,fontWeight:700,color:"#e8d5a3",fontVariantNumeric:"tabular-nums",lineHeight:1}}>{fmt(selI.cur,selI.b)}{selI.cat==="Bonds"?"%":""}</div>
-                  <div style={{display:"flex",gap:10,marginTop:5,alignItems:"center"}}>
-                    <span style={{fontSize:13,fontWeight:600,color:selI.pct>=0?"#00d084":"#ff4d4d"}}>{selI.pct>=0?"+":""}{selI.pct.toFixed(2)}%</span>
-                    <span style={{fontSize:10,color:"#5a6478"}}>Open {fmt(selI.open,selI.b)}</span>
-                  </div>
-                </div>
-                {/* Chart */}
-                <ResponsiveContainer width="100%" height={200}>
-                  <AreaChart data={sChartData} margin={{top:6,right:4,bottom:4,left:0}}>
-                    <defs>
-                      <linearGradient id="scg" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="rgba(232,213,163,0.22)"/>
-                        <stop offset="100%" stopColor="rgba(232,213,163,0)"/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid stroke="rgba(255,255,255,0.07)" vertical={true} horizontal={true} strokeDasharray=""/>
-                    <XAxis dataKey="t" tick={{fill:"#5a6478",fontSize:10}} tickLine={false} axisLine={false} interval={sXint}/>
-                    <YAxis orientation="right" domain={["auto","auto"]} padding={{top:10,bottom:10}} tick={{fill:"#5a6478",fontSize:10}} tickLine={false} axisLine={false} width={60} tickCount={8} tickFormatter={function(v){return fmt(v,selI.b);}}/>
-                    <Tooltip content={<ChartTip/>}/>
-                    <Area type="monotone" dataKey="p" stroke="#e8d5a3" strokeWidth={2} fill="url(#scg)" dot={false} activeDot={{r:4,fill:"#e8d5a3",strokeWidth:0}}/>
-                  </AreaChart>
-                </ResponsiveContainer>
-                {/* Stats */}
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:5,marginTop:12}}>
-                  {[
-                    ["HIGH",Math.max.apply(null,sChartData.map(function(d:any){return d.p;})),"#00d084"],
-                    ["LOW", Math.min.apply(null,sChartData.map(function(d:any){return d.p;})),"#ff4d4d"],
-                    ["OPEN",sChartData[0]?.p||selI.open,"#8892a4"],
-                    ["RANGE",((Math.max.apply(null,sChartData.map(function(d:any){return d.p;}))-Math.min.apply(null,sChartData.map(function(d:any){return d.p;})))/(sChartData[0]?.p||selI.open)*100).toFixed(2)+"%","#e8d5a3"],
-                  ].map(function(item){
-                    return <div key={item[0] as string} style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:7,padding:"7px 7px",textAlign:"center"}}>
-                      <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:"#5a6478",letterSpacing:".1em",marginBottom:2}}>{item[0] as string}</div>
-                      <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,fontWeight:600,color:item[2] as string,fontVariantNumeric:"tabular-nums"}}>{typeof item[1]==="string"?item[1]:fmt(item[1] as number,selI.b)}</div>
-                    </div>;
-                  })}
-                </div>
-              </div>
-            </div>;
-          })()}
-          {cv==="quad"&&<div style={{padding:"12px",display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-            {quad.map(function(sym){
-              var m=mkt.find(function(d){return d.s===sym;});if(!m)return null;
-              var isBond=m.cat==="Bonds";
-              var qgid="qg"+sym.replace(/[^a-z0-9]/gi,"_");
-              return <div key={sym} className="tap" onClick={function(){setSel(sym);setCv("single");setChartTf(0);fetchChart(sym);}}
-                style={{background:"#0a0e1a",border:"1px solid rgba(255,255,255,0.08)",borderRadius:12,padding:"11px"}}>
-                <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:"#5a6478",letterSpacing:".1em",marginBottom:3}}>{m.s.toUpperCase()}</div>
-                <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:14,fontWeight:700,color:"#e8d5a3",fontVariantNumeric:"tabular-nums",lineHeight:1}}>{fmt(m.cur,m.b)}{isBond?"%":""}</div>
-                <div style={{fontSize:10,fontWeight:600,color:m.pct>=0?"#00d084":"#ff4d4d",marginTop:3,marginBottom:7}}>{m.pct>=0?"+":""}{m.pct.toFixed(2)}%</div>
-                <ResponsiveContainer width="100%" height={72}>
-                  <AreaChart data={samplePts(m.ch,30)} margin={{top:2,right:2,bottom:2,left:2}}>
-                    <defs>
-                      <linearGradient id={qgid} x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="rgba(232,213,163,0.22)"/>
-                        <stop offset="100%" stopColor="rgba(232,213,163,0)"/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid stroke="rgba(255,255,255,0.07)" vertical={true} horizontal={true} strokeDasharray=""/>
-                    <YAxis domain={["auto","auto"]} hide/>
-                    <Area type="monotone" dataKey="p" stroke="#e8d5a3" strokeWidth={1.8} fill={"url(#"+qgid+")"} dot={false} activeDot={{r:3,fill:"#e8d5a3",strokeWidth:0}}/>
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>;
-            })}
-            {Array.from({length:Math.max(0,4-quad.length)}).map(function(_,i){
-              return <div key={"e"+i} className="tap" onClick={function(){setEditQ(true);}}
-                style={{background:"#0a0e1a",border:"1px dashed rgba(255,255,255,0.08)",borderRadius:12,padding:"11px",display:"flex",alignItems:"center",justifyContent:"center",minHeight:130}}>
-                <span style={{fontSize:11,color:"#5a6478"}}>+ ADD</span>
-              </div>;
-            })}
-          </div>}
         </div>}
 
         {/* ── SESSION BRIEFING ── */}
