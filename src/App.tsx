@@ -1005,8 +1005,8 @@ export default function Auxiron(){
               <div style={{flex:1,height:1,background:"rgba(29,158,117,0.2)"}}/>
             </div>
             {[{key:"axrisk",label:"AX Risk"},{key:"journal",label:"Trade Journal"},{key:"playbook",label:"Playbook AX"}].map(function(item){
-              return <button key={item.key} className="tap"
-                style={{display:"flex",alignItems:"center",justifyContent:"space-between",width:"100%",background:"transparent",border:"none",borderLeft:"3px solid transparent",borderRadius:"0 8px 8px 0",padding:"9px 12px",marginBottom:2,textAlign:"left",cursor:"default",opacity:0.42}}>
+              return <button key={item.key} className="tap" onClick={function(){setTab(item.key);setNavOpen(false);}}
+                style={{display:"flex",alignItems:"center",justifyContent:"space-between",width:"100%",background:"transparent",border:"none",borderLeft:"3px solid transparent",borderRadius:"0 8px 8px 0",padding:"9px 12px",marginBottom:2,textAlign:"left",cursor:"pointer"}}>
                 <span style={{fontSize:13,color:"#ffffff"}}>{item.label}</span>
                 <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:7,color:"#4a9eff",background:"rgba(74,158,255,0.14)",padding:"1px 5px",borderRadius:3}}>NEW</span>
               </button>;
@@ -2127,6 +2127,51 @@ export default function Auxiron(){
             <div style={{fontFamily:"'Syne',sans-serif",fontSize:22,color:C.txt3,marginBottom:6,opacity:0.28}}>◈</div>
             <div style={{fontSize:11,color:C.txt3,letterSpacing:".1em"}}>PASTE A HEADLINE TO BEGIN</div>
           </div>}
+        </div>}
+
+        {/* ── AX RISK ── */}
+        {tab==="axrisk"&&<div style={{padding:"12px"}} className="fu">
+          <div style={{textAlign:"center",padding:"40px 20px",background:C.bg1,border:"1px solid "+C.border,borderRadius:12}}>
+            <div style={{display:"flex",justifyContent:"center",marginBottom:16}}>
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke={C.txt3} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+            </div>
+            <div style={{fontFamily:"'Syne',sans-serif",fontSize:18,fontWeight:700,color:C.txt0,letterSpacing:".02em",marginBottom:8}}>AX Risk</div>
+            <div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:12,color:C.txt2,lineHeight:1.7,marginBottom:16}}>Intelligent position sizing and per-trade probability scoring</div>
+            <div style={{display:"inline-block",fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:"#4a9eff",background:"rgba(74,158,255,0.1)",border:"1px solid rgba(74,158,255,0.25)",borderRadius:4,padding:"3px 10px",letterSpacing:".1em"}}>IN DEVELOPMENT</div>
+          </div>
+        </div>}
+
+        {/* ── TRADE JOURNAL ── */}
+        {tab==="journal"&&<div style={{padding:"12px"}} className="fu">
+          <div style={{textAlign:"center",padding:"40px 20px",background:C.bg1,border:"1px solid "+C.border,borderRadius:12}}>
+            <div style={{display:"flex",justifyContent:"center",marginBottom:16}}>
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke={C.txt3} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+            </div>
+            <div style={{fontFamily:"'Syne',sans-serif",fontSize:18,fontWeight:700,color:C.txt0,letterSpacing:".02em",marginBottom:8}}>Trade Journal</div>
+            <div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:12,color:C.txt2,lineHeight:1.7,marginBottom:16}}>Log and review every trade with AI pattern analysis</div>
+            <div style={{display:"inline-block",fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:"#4a9eff",background:"rgba(74,158,255,0.1)",border:"1px solid rgba(74,158,255,0.25)",borderRadius:4,padding:"3px 10px",letterSpacing:".1em"}}>IN DEVELOPMENT</div>
+          </div>
+        </div>}
+
+        {/* ── PLAYBOOK AX ── */}
+        {tab==="playbook"&&<div style={{padding:"12px"}} className="fu">
+          <div style={{textAlign:"center",padding:"40px 20px",background:C.bg1,border:"1px solid "+C.border,borderRadius:12}}>
+            <div style={{display:"flex",justifyContent:"center",marginBottom:16}}>
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke={C.txt3} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+            </div>
+            <div style={{fontFamily:"'Syne',sans-serif",fontSize:18,fontWeight:700,color:C.txt0,letterSpacing:".02em",marginBottom:8}}>Playbook AX</div>
+            <div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:12,color:C.txt2,lineHeight:1.7,marginBottom:16}}>Your personal high-probability setup frameworks</div>
+            <div style={{display:"inline-block",fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:"#4a9eff",background:"rgba(74,158,255,0.1)",border:"1px solid rgba(74,158,255,0.25)",borderRadius:4,padding:"3px 10px",letterSpacing:".1em"}}>IN DEVELOPMENT</div>
+          </div>
         </div>}
 
         </div>
