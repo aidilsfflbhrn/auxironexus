@@ -248,13 +248,13 @@ export default function Dashboard({ mkt, sessionLbl, roro, roro_score, stClr, ta
               <div style={{ background: C2.card, borderRadius: 12, padding: "14px", marginBottom: 8, border: "1px solid rgba(29,158,117,0.12)", borderLeft: "3px solid " + C2.green }}>
                 <div style={{ fontSize: 8, color: "rgba(255,255,255,0.35)", letterSpacing: ".08em", marginBottom: 4 }}>ACCOUNT BALANCE</div>
                 <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 30, fontWeight: 700, color: C2.white, lineHeight: 1, marginBottom: 12 }}>
-                  ${acctData.balance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  ${(acctData.balance ?? 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
                   {[
-                    { label: "TODAY P&L", value: (acctData.todayPnl >= 0 ? "+$" : "-$") + Math.abs(acctData.todayPnl).toFixed(2), color: acctData.todayPnl >= 0 ? C2.up : C2.dn },
-                    { label: "P&L %", value: (acctData.todayPnlPercent >= 0 ? "+" : "") + acctData.todayPnlPercent.toFixed(2) + "%", color: acctData.todayPnlPercent >= 0 ? C2.up : C2.dn },
-                    { label: "OPEN TRADES", value: String(acctData.openTrades.length), color: C2.white },
+                    { label: "TODAY P&L", value: ((acctData.todayPnl ?? 0) >= 0 ? "+$" : "-$") + Math.abs(acctData.todayPnl ?? 0).toFixed(2), color: (acctData.todayPnl ?? 0) >= 0 ? C2.up : C2.dn },
+                    { label: "P&L %", value: ((acctData.todayPnlPercent ?? 0) >= 0 ? "+" : "") + (acctData.todayPnlPercent ?? 0).toFixed(2) + "%", color: (acctData.todayPnlPercent ?? 0) >= 0 ? C2.up : C2.dn },
+                    { label: "OPEN TRADES", value: String(acctData.openTrades?.length ?? 0), color: C2.white },
                   ].map(item => (
                     <div key={item.label} style={{ background: "rgba(255,255,255,0.03)", borderRadius: 7, padding: "8px 6px", textAlign: "center" }}>
                       <div style={{ fontSize: 7, color: "rgba(255,255,255,0.35)", letterSpacing: ".06em", marginBottom: 4 }}>{item.label}</div>
@@ -265,12 +265,12 @@ export default function Dashboard({ mkt, sessionLbl, roro, roro_score, stClr, ta
               </div>
 
               {/* Open trades */}
-              {acctData.openTrades.length === 0 && (
+              {(acctData.openTrades?.length ?? 0) === 0 && (
                 <div style={{ background: C2.card, borderRadius: 8, padding: "10px 12px", marginBottom: 6, border: "1px solid rgba(29,158,117,0.08)", textAlign: "center" }}>
                   <div style={{ fontSize: 10, color: "rgba(255,255,255,0.25)" }}>No open trades</div>
                 </div>
               )}
-              {acctData.openTrades.map((trade: any, i: number) => (
+              {(acctData.openTrades ?? []).map((trade: any, i: number) => (
                 <div key={i} style={{ background: C2.card, borderRadius: 8, padding: "10px 12px", marginBottom: 6, border: "1px solid rgba(29,158,117,0.08)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
                     <div style={{ width: 2, height: 34, borderRadius: 1, background: C2.green, flexShrink: 0 }} />
@@ -285,7 +285,7 @@ export default function Dashboard({ mkt, sessionLbl, roro, roro_score, stClr, ta
                   </div>
                   <div style={{ textAlign: "right" }}>
                     <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 14, fontWeight: 700, color: trade.profit >= 0 ? C2.up : C2.dn }}>
-                      {trade.profit >= 0 ? "+$" : "-$"}{Math.abs(trade.profit).toFixed(2)}
+                      {(trade.profit ?? 0) >= 0 ? "+$" : "-$"}{Math.abs(trade.profit ?? 0).toFixed(2)}
                     </div>
                     <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 9, color: "rgba(255,255,255,0.25)", marginTop: 2 }}>{trade.currentPrice}</div>
                   </div>
@@ -300,32 +300,32 @@ export default function Dashboard({ mkt, sessionLbl, roro, roro_score, stClr, ta
                     { label: "DAILY DRAWDOWN", used: acctData.propMetrics.dailyDrawdownUsed, limit: acctData.propMetrics.dailyDrawdownLimit, remaining: acctData.propMetrics.dailyDrawdownRemaining },
                     { label: "TOTAL DRAWDOWN", used: acctData.propMetrics.totalDrawdownUsed, limit: acctData.propMetrics.totalDrawdownLimit, remaining: acctData.propMetrics.totalDrawdownRemaining },
                   ].map(m => {
-                    const pct = m.limit > 0 ? Math.min(100, (m.used / m.limit) * 100) : 0;
+                    const pct = (m.limit ?? 0) > 0 ? Math.min(100, ((m.used ?? 0) / (m.limit ?? 1)) * 100) : 0;
                     const color = pct >= 90 ? C2.dn : pct >= 80 ? "#f0a020" : C2.up;
                     return (
                       <div key={m.label} style={{ marginBottom: 14 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
                           <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 8, color: "rgba(255,255,255,0.4)", letterSpacing: ".06em" }}>{m.label}</span>
-                          <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 8, color }}>${m.used.toFixed(2)} / ${m.limit.toFixed(2)}</span>
+                          <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 8, color }}>${(m.used ?? 0).toFixed(2)} / ${(m.limit ?? 0).toFixed(2)}</span>
                         </div>
                         <div style={{ height: 5, background: "rgba(255,255,255,0.06)", borderRadius: 3, overflow: "hidden", marginBottom: 4 }}>
                           <div style={{ height: "100%", width: pct + "%", background: color, borderRadius: 3, transition: "width .5s ease" }} />
                         </div>
-                        <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 8, color: "rgba(255,255,255,0.3)" }}>${m.remaining.toFixed(2)} remaining</div>
+                        <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 8, color: "rgba(255,255,255,0.3)" }}>${(m.remaining ?? 0).toFixed(2)} remaining</div>
                       </div>
                     );
                   })}
                   <div>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
                       <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 8, color: "rgba(255,255,255,0.4)", letterSpacing: ".06em" }}>PROFIT TARGET</span>
-                      <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 8, color: acctData.propMetrics.profitProgress >= 100 ? C2.up : "rgba(255,255,255,0.4)" }}>
-                        ${acctData.propMetrics.profitCurrent.toFixed(2)} / ${acctData.propMetrics.profitTarget.toFixed(2)}
+                      <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 8, color: (acctData.propMetrics.profitProgress ?? 0) >= 100 ? C2.up : "rgba(255,255,255,0.4)" }}>
+                        ${(acctData.propMetrics.profitCurrent ?? 0).toFixed(2)} / ${(acctData.propMetrics.profitTarget ?? 0).toFixed(2)}
                       </span>
                     </div>
                     <div style={{ height: 5, background: "rgba(255,255,255,0.06)", borderRadius: 3, overflow: "hidden", marginBottom: 4 }}>
-                      <div style={{ height: "100%", width: Math.min(100, acctData.propMetrics.profitProgress) + "%", background: acctData.propMetrics.profitProgress >= 100 ? C2.up : C2.green, borderRadius: 3, transition: "width .5s ease" }} />
+                      <div style={{ height: "100%", width: Math.min(100, acctData.propMetrics.profitProgress ?? 0) + "%", background: (acctData.propMetrics.profitProgress ?? 0) >= 100 ? C2.up : C2.green, borderRadius: 3, transition: "width .5s ease" }} />
                     </div>
-                    <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 8, color: "rgba(255,255,255,0.3)" }}>{acctData.propMetrics.profitProgress.toFixed(1)}% toward target</div>
+                    <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 8, color: "rgba(255,255,255,0.3)" }}>{(acctData.propMetrics.profitProgress ?? 0).toFixed(1)}% toward target</div>
                   </div>
                 </div>
               )}
