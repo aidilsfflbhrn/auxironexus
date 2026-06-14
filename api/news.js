@@ -2,7 +2,7 @@
 // Fetches relevant news headlines for a specific instrument
 // Uses GNews free API (100 requests/day free tier)
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -11,7 +11,7 @@ module.exports = async function handler(req, res) {
   const { q } = req.query;
   if (!q) return res.status(400).json({ error: "No query provided" });
 
-  const GNEWS_KEY = process.env.GNEWS_KEY;
+  const GNEWS_KEY = process.env.GNEWS_key;
 
   // If no GNews key, return empty gracefully
   if (!GNEWS_KEY || GNEWS_KEY === "YOUR_GNEWS_KEY") {

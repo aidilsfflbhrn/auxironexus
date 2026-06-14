@@ -12,13 +12,25 @@ React + TypeScript PWA · Single file: src/App.tsx · Deployed on Vercel via Git
 
 ## API Files
 - api/analyze.js — Anthropic proxy (NEVER modify)
+- api/stream.js — Anthropic streaming proxy (NEVER modify)
 - api/prices.js — TwelveData proxy
 - api/cot.js — CFTC COT proxy
+- api/news.js — GNews headlines proxy
 - vercel.json — maxDuration:60 (NEVER change)
 
-## Environment Variables
-- ANTHROPIC_KEY
-- TWELVE_KEY
+## Environment Variables — Exact Casing (must match Vercel exactly)
+- ANTHROPIC_key — api/analyze.js (Anthropic Claude non-streaming)
+- ANTHROPIC_API_key — api/stream.js (Anthropic Claude streaming)
+- TWELVE_key — api/prices.js (TwelveData market data)
+- GNEWS_key — api/news.js (GNews headlines)
+- FINNHUB_key — api/calendar.js (coming)
+- FRED_API_key — api/macro.js (coming)
+- MARKETAUX_key — api/newsfeed.js (coming)
+- KV_URL — Upstash Redis (auto-injected by Vercel)
+- KV_REST_API_URL — Upstash Redis (auto-injected by Vercel)
+- KV_REST_API_TOKEN — Upstash Redis (auto-injected by Vercel)
+- KV_REST_API_ONLY_TOKEN — Upstash Redis (auto-injected by Vercel)
+- REDIS_URL — Upstash Redis (auto-injected by Vercel)
 
 ## Response Rules
 - Work silently — no narration, no explanation before acting
@@ -42,6 +54,23 @@ Follow this exact order every time, no exceptions:
 5. Report: "Done — [summary]. Build clean. Dev tested."
 
 Never skip steps 2 or 3. Never commit before both pass.
+
+## Pre-Task Protocol — MANDATORY BEFORE ANY EDIT
+1. Read App.tsx in full before touching it
+2. Read every file that will be changed
+3. State exactly which lines will be touched
+4. State what will NOT be touched
+5. Only then execute
+
+## Post-Task Review Protocol — MANDATORY BEFORE REPORTING DONE
+1. Visually review changed section as a first-time user
+2. Confirm output matches what was asked — not just builds without errors
+3. Confirm nothing outside task scope changed
+4. Only then commit
+
+## Scope Boundary Rule
+If a fix requires touching something outside the defined task scope:
+STOP. Report what needs changing. Wait for confirmation. Never fix silently.
 
 ## Critical Rules — Never Break
 - NEVER modify api/analyze.js

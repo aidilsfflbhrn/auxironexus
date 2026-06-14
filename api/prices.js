@@ -9,7 +9,7 @@ export default async function handler(req, res) {
   res.setHeader("Access-Control-Max-Age", "86400");
   if (req.method === "OPTIONS") return res.status(200).end();
 
-  var TD_KEY = process.env.TWELVE_KEY;
+  var TD_KEY = process.env.TWELVE_key;
   var symbol = req.query.symbol;
   var endpoint = req.query.endpoint;
   var interval = req.query.interval || "30min";
