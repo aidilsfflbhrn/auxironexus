@@ -16,7 +16,8 @@ React + TypeScript PWA · Single file: src/App.tsx · Deployed on Vercel via Git
 - api/prices.js — TwelveData proxy
 - api/cot.js — CFTC COT proxy
 - api/news.js — GNews headlines proxy
-- api/accounts.js — MetaAPI MT5 account sync (Exness + FundedNext)
+- api/accounts.js — MT5 account read from Redis (Exness + FundedNext)
+- api/accounts/sync.js — MT5 EA bridge: receives POST from EA, stores to Redis
 - vercel.json — maxDuration:60 (NEVER change)
 
 ## Environment Variables — Exact Casing (must match Vercel exactly)
@@ -32,7 +33,6 @@ React + TypeScript PWA · Single file: src/App.tsx · Deployed on Vercel via Git
 - KV_REST_API_TOKEN — Upstash Redis (auto-injected by Vercel)
 - KV_REST_API_ONLY_TOKEN — Upstash Redis (auto-injected by Vercel)
 - REDIS_URL — Upstash Redis (auto-injected by Vercel)
-- METAAPI_key — MetaAPI cloud token (api/accounts.js)
 - EXNESS_LOGIN — Exness MT5 account login number
 - EXNESS_PASSWORD — Exness MT5 account password
 - EXNESS_SERVER — Exness MT5 server (default: Exness-MT5Real5)

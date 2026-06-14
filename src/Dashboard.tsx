@@ -128,6 +128,14 @@ export default function Dashboard({ mkt, sessionLbl, roro, roro_score, stClr, ta
     return mkt.find((m: any) => m.s === SYM_MAP[key]);
   }
 
+  function timeAgo(iso: string): string {
+    const secs = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+    if (secs < 60) return secs + "s ago";
+    const mins = Math.floor(secs / 60);
+    if (mins < 60) return mins + "m ago";
+    return Math.floor(mins / 60) + "h ago";
+  }
+
   const TABS = [
     {
       key: "dashboard", label: "Home", accent: C2.gold, disabled: false,
@@ -197,10 +205,23 @@ export default function Dashboard({ mkt, sessionLbl, roro, roro_score, stClr, ta
             {(["exness", "fundednext"] as const).map(key => {
               const active = acctTab === key;
               const label = key === "exness" ? "Exness Live" : "FundedNext";
+              let dotColor = "#3a5570";
+              let statusText = "";
+              if (active && !acctLoading) {
+                if (acctError) { dotColor = "#3a5570"; statusText = "Waiting for MT5"; }
+                else if (acctData && acctData.isLive) { dotColor = C2.up; statusText = "Live"; }
+                else if (acctData && !acctData.isLive && acctData.updatedAt) { dotColor = "#f0a020"; statusText = "Cached · " + timeAgo(acctData.updatedAt); }
+              }
               return (
                 <button key={key} onClick={() => setAcctTab(key)}
-                  style={{ flex: 1, background: active ? "rgba(29,158,117,0.15)" : "rgba(255,255,255,0.04)", border: active ? "1px solid rgba(29,158,117,0.4)" : "1px solid rgba(255,255,255,0.08)", color: active ? C2.green : "rgba(255,255,255,0.4)", borderRadius: 8, padding: "7px 10px", fontSize: 10, fontFamily: "'IBM Plex Mono',monospace", fontWeight: active ? 700 : 400, cursor: "pointer", letterSpacing: ".04em", WebkitTapHighlightColor: "transparent" }}>
-                  {label}
+                  style={{ flex: 1, background: active ? "rgba(29,158,117,0.15)" : "rgba(255,255,255,0.04)", border: active ? "1px solid rgba(29,158,117,0.4)" : "1px solid rgba(255,255,255,0.08)", color: active ? C2.green : "rgba(255,255,255,0.4)", borderRadius: 8, padding: "7px 10px", fontSize: 10, fontFamily: "'IBM Plex Mono',monospace", fontWeight: active ? 700 : 400, cursor: "pointer", letterSpacing: ".04em", WebkitTapHighlightColor: "transparent", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                  <span>{label}</span>
+                  {active && !acctLoading && statusText && (
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>
+                      <span style={{ width: 5, height: 5, borderRadius: "50%", background: dotColor, flexShrink: 0, display: "inline-block" }} />
+                      <span style={{ fontSize: 8, color: dotColor, fontWeight: 400 }}>{statusText}</span>
+                    </span>
+                  )}
                 </button>
               );
             })}
