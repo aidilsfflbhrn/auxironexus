@@ -128,3 +128,18 @@ Before committing any component that uses API data:
 - Mentally simulate what happens if the API returns { error: true }
 - Mentally simulate what happens if every data field is undefined
 - If the component would crash in either case — add null checks before committing
+
+## Vercel Serverless Rules — Mandatory for All api/ Files
+- NEVER use new URL(req.url) — req.url in Vercel is a path only like
+  '/api/brief?session=daily', not a full URL. new URL() will crash.
+- To extract query params always use:
+  const urlParams = new URLSearchParams(req.url.split('?')[1] ?? '')
+  const param = urlParams.get('paramName') ?? 'default'
+- To read request body use: await req.json()
+- Always use Response.json() for responses — never res.json()
+- Always use export default — never module.exports
+- Always wrap Redis calls in their own try/catch separate from the
+  main try/catch so Redis failures do not crash the entire function
+- Always validate environment variables exist before using them:
+  if (!process.env.SOME_KEY) return Response.json({ error: true }, { status: 500 })
+- Never construct URLs from environment variables without null checking first
