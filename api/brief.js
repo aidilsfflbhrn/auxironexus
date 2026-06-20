@@ -1,8 +1,8 @@
 export const config = { maxDuration: 120 }
 
 export default async function handler(req) {
-  const url = new URL(req.url)
-  const session = url.searchParams.get('session') ?? 'daily'
+  const urlParams = new URLSearchParams(req.url.split('?')[1] ?? '')
+  const session = urlParams.get('session') ?? 'daily'
 
   const kvUrl = process.env.KV_REST_API_URL
   const kvToken = process.env.KV_REST_API_TOKEN
