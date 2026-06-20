@@ -10,6 +10,17 @@
     "api/analyze.js": {
       "memory": 1024,
       "maxDuration": 60
+    },
+    "api/brief.js": { "maxDuration": 120 }
+  },
+  "crons": [
+    {
+      "path": "/api/brief?session=monday",
+      "schedule": "0 21 * * 6"
+    },
+    {
+      "path": "/api/brief?session=daily",
+      "schedule": "0 12 * * 2-6"
     }
-  }
+  ]
 }
