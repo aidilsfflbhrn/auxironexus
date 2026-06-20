@@ -4,22 +4,39 @@ export default async function handler(req) {
   const url = new URL(req.url)
   const session = url.searchParams.get('session') ?? 'daily'
 
+  const kvUrl = process.env.KV_REST_API_URL
+  const kvToken = process.env.KV_REST_API_TOKEN
+
+  if (!kvUrl || !kvToken) {
+    return Response.json({
+      error: true,
+      message: 'Redis not configured — KV_REST_API_URL or KV_REST_API_TOKEN missing'
+    }, { status: 500 })
+  }
+
   try {
     // Step 2: Check cache
-    const cacheRes = await fetch(
-      `${process.env.KV_REST_API_URL}/get/brief:${session}`,
-      { headers: { Authorization: `Bearer ${process.env.KV_REST_API_TOKEN}` } }
-    )
-    const cacheJson = await cacheRes.json()
-    if (cacheJson?.result) {
-      let cached
-      try { cached = JSON.parse(cacheJson.result) } catch { cached = null }
-      if (cached?.generatedAt) {
-        const age = (Date.now() - new Date(cached.generatedAt).getTime()) / 1000
-        if (age < 28800) {
-          return Response.json({ ...cached, cached: true })
+    let cachedBrief = null
+    try {
+      const cacheRes = await fetch(`${kvUrl}/get/brief:${session}`, {
+        headers: { Authorization: `Bearer ${kvToken}` }
+      })
+      if (cacheRes.ok) {
+        const cacheData = await cacheRes.json()
+        if (cacheData?.result) {
+          const parsed = JSON.parse(cacheData.result)
+          const age = (Date.now() - new Date(parsed.generatedAt).getTime()) / 1000
+          if (age < 28800) {
+            cachedBrief = parsed
+          }
         }
       }
+    } catch (cacheError) {
+      console.log('Cache check failed, generating fresh brief:', cacheError.message)
+    }
+
+    if (cachedBrief) {
+      return Response.json({ ...cachedBrief, cached: true })
     }
 
     // Step 3: Fetch all data in parallel
@@ -320,28 +337,31 @@ Stand aside if: [the one specific thing that would invalidate this entire setup]
     const generatedAt = new Date().toISOString()
 
     // Step 7: Store in Upstash Redis
-    await fetch(`${process.env.KV_REST_API_URL}/set/brief:${session}`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${process.env.KV_REST_API_TOKEN}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        content: briefContent,
-        generatedAt,
-        session,
-        goldPrice: currentPrice
+    try {
+      await fetch(`${kvUrl}/set/brief:${session}`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${kvToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          content: briefContent,
+          generatedAt: new Date().toISOString(),
+          session,
+          goldPrice: currentPrice
+        })
       })
-    })
-
-    await fetch(`${process.env.KV_REST_API_URL}/expire/brief:${session}`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${process.env.KV_REST_API_TOKEN}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(28800)
-    })
+      await fetch(`${kvUrl}/expire/brief:${session}`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${kvToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(28800)
+      })
+    } catch (storeError) {
+      console.log('Cache store failed:', storeError.message)
+    }
 
     // Step 8: Return response
     return Response.json({
