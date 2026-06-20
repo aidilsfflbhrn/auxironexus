@@ -435,6 +435,9 @@ export default function Auxiron(){
   var [instEtfFlow,setInstEtfFlow]=useState<any>(null);
   var [instEtfLoading,setInstEtfLoading]=useState(false);
   var screenW=useScreenWidth();
+  var [briefData,setBriefData]=useState<any>(null);
+  var [briefLoading,setBriefLoading]=useState(false);
+  var [briefErr,setBriefErr]=useState<string|null>(null);
 
   useEffect(function(){
     var id=setInterval(function(){setNowStr(new Date().toUTCString().slice(0,25));},1000);
@@ -1392,7 +1395,7 @@ export default function Auxiron(){
           <div style={{padding:"12px"}} className="fu">
             {/* Session selector */}
             <div style={{marginBottom:12}}>
-              <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:C.txt2,letterSpacing:".12em",fontWeight:600,marginBottom:8}}>⬟ INTEL REPORT</div>
+              <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:C.txt2,letterSpacing:".12em",fontWeight:600,marginBottom:8}}>⬟ AUXIRON BRIEF</div>
               <div style={{display:"grid",gap:5}}>
                 {[
                   {key:"asia",icon:"🌏",label:"ASIA OPEN",time:"6am–3pm SGT",color:C.bond},
@@ -1412,7 +1415,16 @@ export default function Auxiron(){
                     <button className="tap"
                       onClick={function(){
                         setIntelSession(s.key);
-                        if(cached&&isValidP1(intelCache[s.key]?.p1)){
+                        if(s.key==="ny"){
+                          var isMonday=new Date().getDay()===1;
+                          var briefSession=isMonday?"monday":"daily";
+                          setIntelPhase("idle");setIntelP1(null);setIntelP2(null);setIntelErr(null);
+                          setBriefLoading(true);setBriefData(null);setBriefErr(null);
+                          fetch("/api/brief?session="+briefSession)
+                            .then(function(r){return r.json();})
+                            .then(function(d){setBriefData(d);setBriefLoading(false);})
+                            .catch(function(e:any){setBriefErr(e?.message||"Fetch failed");setBriefLoading(false);});
+                        } else if(cached&&isValidP1(intelCache[s.key]?.p1)){
                           var entry=intelCache[s.key];
                           setIntelP1(entry.p1);
                           setIntelP2(entry.p2||null);
@@ -1448,7 +1460,7 @@ export default function Auxiron(){
                       </div>
                     </button>
                     {/* VIEW SAVED REPORT button — only when cached and not currently active/showing */}
-                    {cached&&isValidP1(intelCache[s.key]?.p1)&&!(active&&intelPhase==="complete")&&!isLoading&&(
+                    {s.key!=="ny"&&cached&&isValidP1(intelCache[s.key]?.p1)&&!(active&&intelPhase==="complete")&&!isLoading&&(
                       <button className="tap"
                         onClick={function(){
                           var entry=intelCache[s.key];
@@ -1485,6 +1497,73 @@ export default function Auxiron(){
               </div>
             </div>
 
+            {/* ── AUXIRON BRIEF DISPLAY (NY SESSION) ── */}
+            {intelSession==="ny"&&(
+              <div>
+                {briefLoading&&<div style={{padding:"20px 0",fontSize:12,color:C.txt2,textAlign:"center"}}>Generating brief...</div>}
+                {!briefLoading&&(briefErr||(briefData?.error))&&(
+                  <div style={{background:"rgba(240,64,64,0.07)",border:"1px solid rgba(240,64,64,0.2)",borderRadius:8,padding:"10px 12px",color:C.dn,fontSize:12,marginBottom:10}}>
+                    {"Brief unavailable — "+(briefErr||(briefData?.message)||"Unknown error")}
+                  </div>
+                )}
+                {!briefLoading&&briefData&&!briefData.error&&(
+                  <div className="fu">
+                    <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:C.amber,marginBottom:10,letterSpacing:".06em"}}>
+                      {briefData?.cached
+                        ?"Cached brief — generated "+Math.round((Date.now()-new Date(briefData?.generatedAt??"").getTime())/3600000)+" hours ago"
+                        :"Generated at "+new Date(briefData?.generatedAt??"").toLocaleString("en-SG",{timeZone:"Asia/Singapore",hour:"2-digit",minute:"2-digit",day:"numeric",month:"short"})}
+                    </div>
+                    <div style={{fontSize:11,color:C.txt2,marginBottom:8,fontFamily:"'IBM Plex Mono',monospace",letterSpacing:".06em"}}>
+                      {"XAU/USD: "+(briefData?.goldPrice??"--")}
+                    </div>
+                    <div>
+                      {(briefData?.content??"Brief not available").split("\n").map(function(line:string,i:number){
+                        if(line.startsWith("## ")){
+                          return <div key={i} style={{borderLeft:"2px solid "+C.amber,paddingLeft:8,marginTop:16,marginBottom:6,fontSize:10,fontFamily:"'IBM Plex Mono',monospace",color:C.amber,textTransform:"uppercase",letterSpacing:".1em",fontWeight:700}}>{line.slice(3)}</div>;
+                        }
+                        if(line.startsWith("BIAS: ")){
+                          const biasVal=line.slice(6).trim();
+                          const biasClr=biasVal==="LONG"?C.up:biasVal==="SHORT"?C.dn:C.amber;
+                          return <div key={i} style={{display:"flex",alignItems:"center",gap:6,marginBottom:3}}>
+                            <span style={{fontSize:11,color:C.txt1}}>{"BIAS: "}</span>
+                            <span style={{fontSize:11,fontWeight:700,color:biasClr,background:biasClr+"22",border:"1px solid "+biasClr+"55",borderRadius:4,padding:"1px 8px"}}>{biasVal}</span>
+                          </div>;
+                        }
+                        if(line.startsWith("GRADE: ")){
+                          const gradeVal=line.slice(7).trim();
+                          const gradeClr=gradeVal==="A+"?C.gold:gradeVal==="A"?C.up:gradeVal==="B"?C.amber:C.txt2;
+                          return <div key={i} style={{display:"flex",alignItems:"center",gap:6,marginBottom:3}}>
+                            <span style={{fontSize:11,color:C.txt1}}>{"GRADE: "}</span>
+                            <span style={{fontSize:11,fontWeight:700,color:gradeClr,background:gradeClr+"22",border:"1px solid "+gradeClr+"55",borderRadius:4,padding:"1px 8px"}}>{gradeVal}</span>
+                          </div>;
+                        }
+                        if(line.startsWith("CONFIDENCE: ")){
+                          const confVal=line.slice(12).trim();
+                          const confClr=confVal==="HIGH"?C.up:confVal==="MEDIUM"?C.amber:C.dn;
+                          return <div key={i} style={{display:"flex",alignItems:"center",gap:6,marginBottom:3}}>
+                            <span style={{fontSize:11,color:C.txt1}}>{"CONFIDENCE: "}</span>
+                            <span style={{fontSize:11,fontWeight:700,color:confClr}}>{confVal}</span>
+                          </div>;
+                        }
+                        if(line.startsWith("DOMINANT REGIME: ")){
+                          const regVal=line.slice(17).trim();
+                          return <div key={i} style={{display:"flex",alignItems:"center",gap:6,marginBottom:3,flexWrap:"wrap"}}>
+                            <span style={{fontSize:11,color:C.txt1}}>{"DOMINANT REGIME: "}</span>
+                            <span style={{fontSize:10,fontWeight:700,color:C.blue,background:"rgba(74,158,255,0.12)",border:"1px solid rgba(74,158,255,0.3)",borderRadius:20,padding:"2px 10px"}}>{regVal}</span>
+                          </div>;
+                        }
+                        if(line.startsWith("MACRO SCORE: ")){
+                          return <div key={i} style={{fontSize:12,fontWeight:700,color:C.txt0,marginBottom:3}}>{line}</div>;
+                        }
+                        if(!line.trim()){return <div key={i} style={{height:4}}/>;}
+                        return <div key={i} style={{fontSize:11,color:C.txt0,lineHeight:1.7,fontFamily:"'IBM Plex Sans',sans-serif",marginBottom:2}}>{line}</div>;
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* No-content fallback: complete but nothing to show (corrupted cache) */}
             {intelPhase==="complete"&&intelP1&&!intelP1.headline&&!intelP1.executiveSummary&&!intelP1.marketRegime&&(
               <div style={{background:"rgba(240,160,32,0.07)",border:"1px solid rgba(240,160,32,0.2)",
@@ -1514,7 +1593,7 @@ export default function Auxiron(){
               </div>
             )}
             {/* Error state */}
-            {intelErr&&<div style={{
+            {intelErr&&intelSession!=="ny"&&<div style={{
               background:intelErr.startsWith("🔒")?"rgba(58,85,112,0.15)":"rgba(240,69,69,0.07)",
               border:"1px solid "+(intelErr.startsWith("🔒")?C.border:"rgba(240,69,69,0.2)"),
               borderRadius:10,padding:"12px 14px",marginBottom:10,
@@ -1525,7 +1604,7 @@ export default function Auxiron(){
             </div>}
 
             {/* Idle state */}
-            {intelPhase==="idle"&&!intelErr&&(
+            {intelPhase==="idle"&&!intelErr&&intelSession!=="ny"&&(
               <div style={{textAlign:"center",padding:"36px 20px",background:C.bg1,border:"1px solid "+C.border,borderRadius:12}}>
                 <div style={{fontFamily:"'Syne',sans-serif",fontSize:28,marginBottom:8,opacity:0.15}}>⬟</div>
                 <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:11,color:C.txt3,letterSpacing:".1em",marginBottom:4}}>SELECT SESSION ABOVE</div>
