@@ -1,5 +1,22 @@
 export const config = { maxDuration: 120 }
 
+const fetchWithTimeout = async (url, options = {}, timeoutMs = 8000) => {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
+  try {
+    const res = await fetch(url, { ...options, signal: controller.signal })
+    clearTimeout(timer)
+    return res
+  } catch (err) {
+    clearTimeout(timer)
+    if (err.name === 'AbortError') {
+      console.log('Fetch timeout:', url)
+      return null
+    }
+    throw err
+  }
+}
+
 export default async function handler(req) {
   const urlParams = new URLSearchParams(req.url.split('?')[1] ?? '')
   const session = urlParams.get('session') ?? 'daily'
@@ -40,24 +57,30 @@ export default async function handler(req) {
     }
 
     // Step 3: Fetch all data in parallel
-    const safeGet = async (fetchUrl) => {
-      try {
-        const r = await fetch(fetchUrl)
-        return await r.json()
-      } catch { return null }
+    const safeJson = async (res) => {
+      if (!res || !res.ok) return null
+      try { return await res.json() } catch { return null }
     }
 
-    const [h4Data, dailyData, weeklyData, dxyData, oilData, spxData, cotData, newsData] =
-      await Promise.all([
-        safeGet(`https://api.twelvedata.com/time_series?symbol=XAU%2FUSD&interval=4h&outputsize=100&apikey=${process.env.TWELVE_key}`),
-        safeGet(`https://api.twelvedata.com/time_series?symbol=XAU%2FUSD&interval=1day&outputsize=60&apikey=${process.env.TWELVE_key}`),
-        safeGet(`https://api.twelvedata.com/time_series?symbol=XAU%2FUSD&interval=1week&outputsize=52&apikey=${process.env.TWELVE_key}`),
-        safeGet(`https://api.twelvedata.com/time_series?symbol=DXY&interval=1day&outputsize=10&apikey=${process.env.TWELVE_key}`),
-        safeGet(`https://api.twelvedata.com/time_series?symbol=WTI%2FUSD&interval=1day&outputsize=10&apikey=${process.env.TWELVE_key}`),
-        safeGet(`https://api.twelvedata.com/time_series?symbol=SPX&interval=1day&outputsize=10&apikey=${process.env.TWELVE_key}`),
-        safeGet(`https://publicreporting.cftc.gov/resource/jun7-fc8e.json?$where=market_and_exchange_names=%27GOLD%20-%20COMMODITY%20EXCHANGE%20INC.%27&$order=report_date_as_yyyy_mm_dd%20DESC&$limit=2`),
-        safeGet(`https://gnews.io/api/v4/search?q=gold+OR+iran+OR+federal+reserve+OR+oil&lang=en&max=5&token=${process.env.GNEWS_key}`)
-      ])
+    const results = await Promise.all([
+      fetchWithTimeout(`https://api.twelvedata.com/time_series?symbol=XAU%2FUSD&interval=4h&outputsize=100&apikey=${process.env.TWELVE_key}`),
+      fetchWithTimeout(`https://api.twelvedata.com/time_series?symbol=XAU%2FUSD&interval=1day&outputsize=60&apikey=${process.env.TWELVE_key}`),
+      fetchWithTimeout(`https://api.twelvedata.com/time_series?symbol=XAU%2FUSD&interval=1week&outputsize=52&apikey=${process.env.TWELVE_key}`),
+      fetchWithTimeout(`https://api.twelvedata.com/time_series?symbol=DXY&interval=1day&outputsize=10&apikey=${process.env.TWELVE_key}`),
+      fetchWithTimeout(`https://api.twelvedata.com/time_series?symbol=WTI%2FUSD&interval=1day&outputsize=10&apikey=${process.env.TWELVE_key}`),
+      fetchWithTimeout(`https://api.twelvedata.com/time_series?symbol=SPX&interval=1day&outputsize=10&apikey=${process.env.TWELVE_key}`),
+      fetchWithTimeout(`https://publicreporting.cftc.gov/resource/jun7-fc8e.json?$where=market_and_exchange_names=%27GOLD%20-%20COMMODITY%20EXCHANGE%20INC.%27&$order=report_date_as_yyyy_mm_dd%20DESC&$limit=2`),
+      fetchWithTimeout(`https://gnews.io/api/v4/search?q=gold+OR+iran+OR+federal+reserve+OR+oil&lang=en&max=5&token=${process.env.GNEWS_key}`)
+    ])
+
+    const h4Data = await safeJson(results[0])
+    const dailyData = await safeJson(results[1])
+    const weeklyData = await safeJson(results[2])
+    const dxyData = await safeJson(results[3])
+    const oilData = await safeJson(results[4])
+    const spxData = await safeJson(results[5])
+    const cotData = await safeJson(results[6])
+    const newsData = await safeJson(results[7])
 
     // Step 4: Process data
     const h4Values = h4Data?.values ?? []
