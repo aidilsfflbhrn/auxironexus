@@ -995,7 +995,7 @@ export default function Auxiron(){
               <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,fontWeight:700,color:"#4a9eff",letterSpacing:".12em"}}>INTELLIGENCE</span>
               <div style={{flex:1,height:1,background:"rgba(74,158,255,0.2)"}}/>
             </div>
-            {[{key:"intel",label:"Intel Report"},{key:"session",label:"Session Briefing"},{key:"news",label:"News Feed"},{key:"filter",label:"AI News Filter"},{key:"calendar",label:"Economic Calendar"}].map(function(item){
+            {[{key:"intel",label:"Auxiron Brief"},{key:"session",label:"Scenario Desk"},{key:"news",label:"News Feed"},{key:"filter",label:"News Filter"},{key:"calendar",label:"Economic Calendar"}].map(function(item){
               var active=tab===item.key;
               return <button key={item.key} className="tap" onClick={function(){setTab(item.key);setNavOpen(false);}}
                 style={{display:"flex",alignItems:"center",gap:10,width:"100%",background:active?"rgba(74,158,255,0.08)":"transparent",border:"none",borderLeft:active?"3px solid #4a9eff":"3px solid transparent",borderRadius:"0 8px 8px 0",padding:"9px 12px",marginBottom:2,textAlign:"left",cursor:"pointer"}}>
