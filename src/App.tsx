@@ -336,14 +336,12 @@ function getSessionLabel2(key:string):string{
   return"NY Session";
 }
 function getDefaultBriefSession():string{
-  var now=new Date(Date.now()+8*60*60*1000);
-  var day=now.getUTCDay();
-  var h=now.getUTCHours();
-  var m=now.getUTCMinutes();
-  var afterNYOpen=h>21||(h===21&&m>=35);
-  if(day===0||day===6)return"monday_week";
-  if(day===1)return afterNYOpen?"monday_nyopen":"monday_week";
-  return afterNYOpen?"nyopen":"presession";
+  var sgtHour=parseInt(new Date().toLocaleString("en-US",{timeZone:"Asia/Singapore",hour:"numeric",hour12:false}));
+  var sgtMinute=parseInt(new Date().toLocaleString("en-US",{timeZone:"Asia/Singapore",minute:"numeric"}));
+  var timeNum=sgtHour*100+sgtMinute;
+  if(timeNum>=2135)return"nyopen";
+  if(timeNum>=2000)return"presession";
+  return"monday_week";
 }
 
 const INST_NEWS_SYS_STREAM=`You are a concise market analyst. Based on your knowledge of current macro conditions (May 2026), provide a news brief. Respond ONLY with valid JSON starting with {, no markdown:
@@ -1425,13 +1423,53 @@ export default function Auxiron(){
         {/* ── INTELLIGENCE ── */}
         {tab==="intel"&&(
           <div style={{padding:"12px"}} className="fu">
-            {/* Session selector — 4-card 2x2 grid */}
+            {/* Session selector — 3-card layout */}
             <div style={{marginBottom:12}}>
               <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:C.txt2,letterSpacing:".12em",fontWeight:600,marginBottom:8}}>⬟ AUXIRON BRIEF</div>
+              {/* Card 1 — Full width */}
+              {(function(){
+                var s={key:"monday_week",label:"Week Ahead Brief",sub:"Mon 5:45 AM SGT · Full week analysis"};
+                var isActive=briefCardSession===s.key;
+                var status=briefStatuses[s.key];
+                var isReady=!!(status&&status.ready);
+                var isScheduled=!!(status&&!status.ready);
+                var isLoadingCard=isActive&&briefLoading;
+                return <button className="tap"
+                  onClick={function(){fetchBriefForCard(s.key);}}
+                  style={{
+                    background:isActive?"rgba(240,160,32,0.07)":C.bg1,
+                    border:"1px solid "+(isReady?"rgba(34,212,110,0.3)":C.border),
+                    borderLeft:"3px solid "+(isActive?C.amber:isReady?"rgba(34,212,110,0.6)":C.border),
+                    borderRadius:10,padding:"11px 12px",textAlign:"left",
+                    width:"100%",cursor:"pointer",display:"block",marginBottom:6
+                  }}>
+                  <div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:12,fontWeight:700,
+                    color:isActive?C.amber:C.txt0,marginBottom:3,lineHeight:1.3}}>{s.label}</div>
+                  <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:C.txt3,marginBottom:6}}>{s.sub}</div>
+                  {isLoadingCard&&<div style={{display:"flex",alignItems:"center",gap:4}}>
+                    <div className="sp" style={{width:7,height:7,border:"1.5px solid "+C.border2,borderTopColor:C.amber,borderRadius:"50%"}}/>
+                    <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.amber}}>Loading…</span>
+                  </div>}
+                  {!isLoadingCard&&isReady&&<div style={{display:"flex",alignItems:"center",gap:5}}>
+                    <div style={{width:6,height:6,borderRadius:"50%",background:C.up,flexShrink:0}}/>
+                    <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.up,fontWeight:700}}>READY</span>
+                    {status?.generatedAt&&<span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.txt3}}>
+                      · {new Date(status.generatedAt).toLocaleString("en-SG",{timeZone:"Asia/Singapore",hour:"2-digit",minute:"2-digit",month:"short",day:"numeric"})} SGT
+                    </span>}
+                  </div>}
+                  {!isLoadingCard&&isScheduled&&<div style={{display:"flex",alignItems:"center",gap:5}}>
+                    <div style={{width:6,height:6,borderRadius:"50%",background:C.txt3,flexShrink:0}}/>
+                    <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.txt3,fontWeight:700}}>SCHEDULED</span>
+                  </div>}
+                  {!isLoadingCard&&!status&&<div style={{display:"flex",alignItems:"center",gap:5}}>
+                    <div style={{width:6,height:6,borderRadius:"50%",background:C.txt3+"60",flexShrink:0}}/>
+                    <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.txt3}}>Tap to check</span>
+                  </div>}
+                </button>;
+              })()}
+              {/* Cards 2 & 3 — Side by side */}
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
                 {[
-                  {key:"monday_week",label:"Week Ahead Brief",sub:"Sun 5:00 AM SGT · Full week"},
-                  {key:"monday_nyopen",label:"Monday NY Open",sub:"Mon 9:35 PM SGT · Volume confirmation"},
                   {key:"presession",label:"Pre-Session Brief",sub:"8:00 PM SGT · 1hr before NY open"},
                   {key:"nyopen",label:"NY Open Brief",sub:"9:35 PM SGT · Volume confirmed"},
                 ].map(function(s){
@@ -1477,7 +1515,7 @@ export default function Auxiron(){
             </div>
 
             {/* ── BRIEF DISPLAY ── */}
-            {briefCardSession&&(
+            {briefCardSession?(
               <div>
                 {briefLoading&&<div style={{textAlign:"center",padding:"20px 0"}}>
                   <div className="sp" style={{width:14,height:14,border:"2px solid "+C.border2,borderTopColor:C.amber,borderRadius:"50%",display:"inline-block",marginBottom:6}}/>
@@ -1547,6 +1585,11 @@ export default function Auxiron(){
                     </div>
                   </div>
                 )}
+              </div>
+            ):(
+              <div style={{textAlign:"center",padding:"32px 20px",background:C.bg1,border:"1px solid "+C.border,borderRadius:10,marginBottom:12}}>
+                <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:11,color:C.txt3,letterSpacing:".1em"}}>SELECT A BRIEF ABOVE</div>
+                <div style={{fontSize:10,color:C.txt3,marginTop:4,opacity:0.6}}>Tap a brief card to load the latest report</div>
               </div>
             )}
 
