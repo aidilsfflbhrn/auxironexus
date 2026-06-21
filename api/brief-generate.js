@@ -17,7 +17,7 @@ const fetchWithTimeout = async (url, options = {}, timeoutMs = 8000) => {
   }
 }
 
-export default async function handler(req) {
+export default async function handler(req, res) {
   try {
     const urlParams = new URLSearchParams(req.url.split('?')[1] ?? '')
     const session = urlParams.get('session') ?? 'presession'
@@ -37,10 +37,10 @@ export default async function handler(req) {
     const kvToken = process.env.KV_REST_API_TOKEN
 
     if (!kvUrl || !kvToken) {
-      return Response.json({
+      return res.status(500).json({
         error: true,
         message: 'Redis not configured — KV_REST_API_URL or KV_REST_API_TOKEN missing'
-      }, { status: 500 })
+      })
     }
 
     // Check cache
@@ -64,7 +64,7 @@ export default async function handler(req) {
     }
 
     if (cachedBrief) {
-      return Response.json({ ...cachedBrief, cached: true })
+      return res.json({ ...cachedBrief, cached: true })
     }
 
     // No cache — generate now
@@ -517,7 +517,7 @@ STAND ASIDE IF: [single condition that invalidates the setup]` : ''}
       console.log('Cache store failed:', storeError.message)
     }
 
-    return Response.json({
+    return res.json({
       content: briefContent,
       generatedAt,
       session,
@@ -526,10 +526,10 @@ STAND ASIDE IF: [single condition that invalidates the setup]` : ''}
     })
 
   } catch (error) {
-    return Response.json({
+    return res.status(500).json({
       error: true,
       message: error.message,
       session
-    }, { status: 500 })
+    })
   }
 }
