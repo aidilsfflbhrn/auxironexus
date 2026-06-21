@@ -335,6 +335,16 @@ function getSessionLabel2(key:string):string{
   if(key==="london")return"London Open";
   return"NY Session";
 }
+function getDefaultBriefSession():string{
+  var now=new Date(Date.now()+8*60*60*1000);
+  var day=now.getUTCDay();
+  var h=now.getUTCHours();
+  var m=now.getUTCMinutes();
+  var afterNYOpen=h>21||(h===21&&m>=35);
+  if(day===0||day===6)return"monday_week";
+  if(day===1)return afterNYOpen?"monday_nyopen":"monday_week";
+  return afterNYOpen?"nyopen":"presession";
+}
 
 const INST_NEWS_SYS_STREAM=`You are a concise market analyst. Based on your knowledge of current macro conditions (May 2026), provide a news brief. Respond ONLY with valid JSON starting with {, no markdown:
 {"brief":"<2-3 sentence market summary>","items":[{"time":"<e.g. Today>","src":"<source>","headline":"<headline>","sentiment":"<BULLISH|BEARISH|NEUTRAL>","sentColor":"<#22d46e|#f04545|#f0a020>","body":"<2 sentences>"}],"keyLevel":{"support":<n>,"resistance":<n>,"note":"<1 sentence>"}}
@@ -438,6 +448,8 @@ export default function Auxiron(){
   var [briefData,setBriefData]=useState<any>(null);
   var [briefLoading,setBriefLoading]=useState(false);
   var [briefErr,setBriefErr]=useState<string|null>(null);
+  var [briefCardSession,setBriefCardSession]=useState<string>('');
+  var [briefStatuses,setBriefStatuses]=useState<{[k:string]:{ready:boolean,generatedAt?:string,message?:string}}>({});
 
   useEffect(function(){
     var id=setInterval(function(){setNowStr(new Date().toUTCString().slice(0,25));},1000);
@@ -450,7 +462,11 @@ export default function Auxiron(){
     return function(){clearInterval(id);};
   },[]);
 
-
+  useEffect(function(){
+    if(tab!=="intel")return;
+    var def=getDefaultBriefSession();
+    fetchBriefForCard(def);
+  },[tab]);
 
   function applyPrices(combined:any){
     if(!combined||Object.keys(combined).length===0)return;
@@ -578,6 +594,22 @@ export default function Auxiron(){
       function(res:any){setResult(res);setLoading(false);},
       function(e:string){setErr("Failed: "+e);setLoading(false);}
     );
+  }
+
+  function fetchBriefForCard(session:string){
+    setBriefCardSession(session);
+    setBriefLoading(true);setBriefData(null);setBriefErr(null);
+    fetch("/api/brief?session="+session)
+      .then(function(r){return r.json();})
+      .then(function(d:any){
+        setBriefData(d);setBriefLoading(false);
+        setBriefStatuses(function(prev:{[k:string]:{ready:boolean,generatedAt?:string,message?:string}}){
+          var n={...prev};
+          n[session]=d.notReady?{ready:false,message:d.message??''}:{ready:true,generatedAt:d.generatedAt??''};
+          return n;
+        });
+      })
+      .catch(function(e:any){setBriefErr(e?.message||"Fetch failed");setBriefLoading(false);});
   }
 
   function fetchCtx(){
@@ -1393,131 +1425,85 @@ export default function Auxiron(){
         {/* ── INTELLIGENCE ── */}
         {tab==="intel"&&(
           <div style={{padding:"12px"}} className="fu">
-            {/* Session selector */}
+            {/* Session selector — 4-card 2x2 grid */}
             <div style={{marginBottom:12}}>
               <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:C.txt2,letterSpacing:".12em",fontWeight:600,marginBottom:8}}>⬟ AUXIRON BRIEF</div>
-              <div style={{display:"grid",gap:5}}>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
                 {[
-                  {key:"asia",icon:"🌏",label:"ASIA OPEN",time:"6am–3pm SGT",color:C.bond},
-                  {key:"london",icon:"🌍",label:"LONDON OPEN",time:"4pm–1am SGT",color:C.blue},
-                  {key:"ny",icon:"🗽",label:"NY SESSION",time:"9pm–6am SGT",color:C.goldL},
+                  {key:"monday_week",label:"Week Ahead Brief",sub:"Sun 5:00 AM SGT · Full week"},
+                  {key:"monday_nyopen",label:"Monday NY Open",sub:"Mon 9:35 PM SGT · Volume confirmation"},
+                  {key:"presession",label:"Pre-Session Brief",sub:"8:00 PM SGT · 1hr before NY open"},
+                  {key:"nyopen",label:"NY Open Brief",sub:"9:35 PM SGT · Volume confirmed"},
                 ].map(function(s){
-                  var active=intelSession===s.key;
-                  var cached=!!(intelCache[s.key]&&intelCache[s.key].p1&&(intelCache[s.key].p1.headline||intelCache[s.key].p1.executiveSummary||intelCache[s.key].p1.marketRegime));
-                  var cacheEntry=intelCache[s.key];
-                  var sessionActive=isSessionActive(s.key);
-                  var isLoading=active&&(intelPhase==="p1loading"||intelPhase==="p2loading");
-                  var isLocked=!sessionActive&&!cached;
-                  var generatedAt=cacheEntry?.generatedAt?new Date(cacheEntry.generatedAt).toLocaleString("en-SG",{timeZone:"Asia/Singapore",hour:"2-digit",minute:"2-digit",day:"numeric",month:"short"}):null;
-                  return <div key={s.key} style={{borderRadius:10,overflow:"hidden",
-                    border:"1px solid "+(active?s.color+"55":cached?"rgba(34,212,110,0.28)":isLocked?C.txt3+"18":C.border)}}>
-                    {/* Main card row */}
-                    <button className="tap"
-                      onClick={function(){
-                        setIntelSession(s.key);
-                        if(s.key==="ny"){
-                          var isMonday=new Date().getDay()===1;
-                          var briefSession=isMonday?"monday":"daily";
-                          setIntelPhase("idle");setIntelP1(null);setIntelP2(null);setIntelErr(null);
-                          setBriefLoading(true);setBriefData(null);setBriefErr(null);
-                          fetch("/api/brief?session="+briefSession)
-                            .then(function(r){return r.json();})
-                            .then(function(d){setBriefData(d);setBriefLoading(false);})
-                            .catch(function(e:any){setBriefErr(e?.message||"Fetch failed");setBriefLoading(false);});
-                        } else if(cached&&isValidP1(intelCache[s.key]?.p1)){
-                          var entry=intelCache[s.key];
-                          setIntelP1(entry.p1);
-                          setIntelP2(entry.p2||null);
-                          setIntelPhase("complete");
-                          setIntelErr(null);
-                        } else if(!isLocked){
-                          fetchIntel(s.key);
-                        }
-                      }}
-                      style={{background:active?"rgba(0,0,0,0.25)":cached?"rgba(34,212,110,0.05)":isLocked?"rgba(0,0,0,0.06)":C.bg1,
-                        border:"none",padding:"10px 14px",textAlign:"left",width:"100%",
-                        opacity:isLocked?0.4:1,cursor:isLocked?"default":"pointer"}}>
-                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                        <div style={{display:"flex",alignItems:"center",gap:9}}>
-                          <span style={{fontSize:17}}>{s.icon}</span>
-                          <div>
-                            <div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:13,fontWeight:700,
-                              color:active?s.color:cached?C.up:C.txt0}}>{s.label}</div>
-                            <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,
-                              color:active?s.color:isLocked?C.txt3:sessionActive?C.up:cached?C.txt2:C.txt2}}>
-                              {isLocked?"🔒 Unlocks at "+getSessionUnlockSGT(s.key)
-                                :cached?"✓ Saved · "+s.time
-                                :sessionActive?"● LIVE NOW · "+s.time
-                                :s.time}
-                            </div>
-                          </div>
-                        </div>
-                        <div style={{display:"flex",alignItems:"center",gap:6}}>
-                          {sessionActive&&!cached&&!isLoading&&<span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:s.color,background:s.color+"12",padding:"2px 8px",borderRadius:4,border:"1px solid "+s.color+"30"}}>Generate ▸</span>}
-                          {isLoading&&<div className="sp" style={{width:10,height:10,border:"2px solid "+C.border2,borderTopColor:s.color,borderRadius:"50%"}}/>}
-                          {active&&!isLoading&&intelPhase==="complete"&&<span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.up}}>✓</span>}
-                        </div>
-                      </div>
-                    </button>
-                    {/* VIEW SAVED REPORT button — only when cached and not currently active/showing */}
-                    {s.key!=="ny"&&cached&&isValidP1(intelCache[s.key]?.p1)&&!(active&&intelPhase==="complete")&&!isLoading&&(
-                      <button className="tap"
-                        onClick={function(){
-                          var entry=intelCache[s.key];
-                          setIntelSession(s.key);
-                          if(entry&&(entry.p1||entry.p2)){
-                            setIntelP1(entry.p1||null);
-                            setIntelP2(entry.p2||null);
-                            setIntelPhase("complete");
-                            setIntelErr(null);
-                          } else {
-                            setIntelPhase("idle");
-                            setIntelP1(null);setIntelP2(null);
-                            setIntelErr("⚠ Saved report data is incomplete or corrupted. Please generate a fresh report.");
-                          }
-                        }}
-                        style={{width:"100%",background:"rgba(34,212,110,0.07)",
-                          border:"none",borderTop:"1px solid rgba(34,212,110,0.15)",
-                          padding:"8px 14px",cursor:"pointer",
-                          display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
-                        <div style={{display:"flex",alignItems:"center",gap:7}}>
-                          <span style={{fontSize:11}}>📋</span>
-                          <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,fontWeight:700,
-                            color:C.up,letterSpacing:".06em"}}>VIEW SAVED REPORT</span>
-                        </div>
-                        <div style={{textAlign:"right"}}>
-                          {generatedAt&&<div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.txt3}}>
-                            Generated {generatedAt}
-                          </div>}
-                        </div>
-                      </button>
-                    )}
-                  </div>;
+                  var isActive=briefCardSession===s.key;
+                  var status=briefStatuses[s.key];
+                  var isReady=!!(status&&status.ready);
+                  var isScheduled=!!(status&&!status.ready);
+                  var isLoadingCard=isActive&&briefLoading;
+                  return <button key={s.key} className="tap"
+                    onClick={function(){fetchBriefForCard(s.key);}}
+                    style={{
+                      background:isActive?"rgba(240,160,32,0.07)":C.bg1,
+                      border:"1px solid "+(isReady?"rgba(34,212,110,0.3)":C.border),
+                      borderLeft:"3px solid "+(isActive?C.amber:isReady?"rgba(34,212,110,0.6)":C.border),
+                      borderRadius:10,padding:"11px 12px",textAlign:"left",
+                      width:"100%",cursor:"pointer"
+                    }}>
+                    <div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:12,fontWeight:700,
+                      color:isActive?C.amber:C.txt0,marginBottom:3,lineHeight:1.3}}>{s.label}</div>
+                    <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:C.txt3,marginBottom:6}}>{s.sub}</div>
+                    {isLoadingCard&&<div style={{display:"flex",alignItems:"center",gap:4}}>
+                      <div className="sp" style={{width:7,height:7,border:"1.5px solid "+C.border2,borderTopColor:C.amber,borderRadius:"50%"}}/>
+                      <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.amber}}>Loading…</span>
+                    </div>}
+                    {!isLoadingCard&&isReady&&<div style={{display:"flex",alignItems:"center",gap:5}}>
+                      <div style={{width:6,height:6,borderRadius:"50%",background:C.up,flexShrink:0}}/>
+                      <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.up,fontWeight:700}}>READY</span>
+                      {status?.generatedAt&&<span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.txt3}}>
+                        · {new Date(status.generatedAt).toLocaleString("en-SG",{timeZone:"Asia/Singapore",hour:"2-digit",minute:"2-digit",month:"short",day:"numeric"})} SGT
+                      </span>}
+                    </div>}
+                    {!isLoadingCard&&isScheduled&&<div style={{display:"flex",alignItems:"center",gap:5}}>
+                      <div style={{width:6,height:6,borderRadius:"50%",background:C.txt3,flexShrink:0}}/>
+                      <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.txt3,fontWeight:700}}>SCHEDULED</span>
+                    </div>}
+                    {!isLoadingCard&&!status&&<div style={{display:"flex",alignItems:"center",gap:5}}>
+                      <div style={{width:6,height:6,borderRadius:"50%",background:C.txt3+"60",flexShrink:0}}/>
+                      <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.txt3}}>Tap to check</span>
+                    </div>}
+                  </button>;
                 })}
               </div>
             </div>
 
-            {/* ── AUXIRON BRIEF DISPLAY (NY SESSION) ── */}
-            {intelSession==="ny"&&(
+            {/* ── BRIEF DISPLAY ── */}
+            {briefCardSession&&(
               <div>
-                {briefLoading&&<div style={{padding:"20px 0",fontSize:12,color:C.txt2,textAlign:"center"}}>Generating brief...</div>}
-                {!briefLoading&&(briefErr||(briefData?.error))&&(
-                  <div style={{background:"rgba(240,64,64,0.07)",border:"1px solid rgba(240,64,64,0.2)",borderRadius:8,padding:"10px 12px",color:C.dn,fontSize:12,marginBottom:10}}>
-                    {"Brief unavailable — "+(briefErr||(briefData?.message)||"Unknown error")}
+                {briefLoading&&<div style={{textAlign:"center",padding:"20px 0"}}>
+                  <div className="sp" style={{width:14,height:14,border:"2px solid "+C.border2,borderTopColor:C.amber,borderRadius:"50%",display:"inline-block",marginBottom:6}}/>
+                  <div style={{fontSize:12,color:C.txt2}}>Loading brief…</div>
+                </div>}
+                {!briefLoading&&briefData?.notReady&&(
+                  <div style={{background:"rgba(58,85,112,0.12)",border:"1px solid "+C.border,borderRadius:8,padding:"14px",textAlign:"center"}}>
+                    <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.txt3,letterSpacing:".1em",marginBottom:6}}>SCHEDULED</div>
+                    <div style={{fontSize:12,color:C.txt1,lineHeight:1.65}}>{briefData.message??"Brief not yet generated."}</div>
                   </div>
                 )}
-                {!briefLoading&&briefData&&!briefData.error&&(
+                {!briefLoading&&(briefErr||(briefData?.error&&!briefData?.notReady))&&(
+                  <div style={{background:"rgba(240,64,64,0.07)",border:"1px solid rgba(240,64,64,0.2)",borderRadius:8,padding:"10px 12px",color:C.dn,fontSize:12,marginBottom:10}}>
+                    {"Brief unavailable — "+(briefErr||(briefData?.message??"Unknown error"))}
+                  </div>
+                )}
+                {!briefLoading&&briefData&&!briefData.error&&!briefData.notReady&&(
                   <div className="fu">
-                    <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:C.amber,marginBottom:10,letterSpacing:".06em"}}>
-                      {briefData?.cached
-                        ?"Cached brief — generated "+Math.round((Date.now()-new Date(briefData?.generatedAt??"").getTime())/3600000)+" hours ago"
-                        :"Generated at "+new Date(briefData?.generatedAt??"").toLocaleString("en-SG",{timeZone:"Asia/Singapore",hour:"2-digit",minute:"2-digit",day:"numeric",month:"short"})}
-                    </div>
-                    <div style={{fontSize:11,color:C.txt2,marginBottom:8,fontFamily:"'IBM Plex Mono',monospace",letterSpacing:".06em"}}>
-                      {"XAU/USD: "+(briefData?.goldPrice??"--")}
+                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8,flexWrap:"wrap"}}>
+                      <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:C.amber,letterSpacing:".06em"}}>
+                        {"Generated "+new Date(briefData.generatedAt??"").toLocaleString("en-SG",{timeZone:"Asia/Singapore",hour:"2-digit",minute:"2-digit",day:"numeric",month:"short"})} SGT
+                      </div>
+                      {briefData.goldPrice&&<div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:C.txt2}}>XAU/USD: {briefData.goldPrice}</div>}
                     </div>
                     <div>
-                      {(briefData?.content??"Brief not available").split("\n").map(function(line:string,i:number){
+                      {(briefData.content??"Brief not available").split("\n").map(function(line:string,i:number){
                         if(line.startsWith("## ")){
                           return <div key={i} style={{borderLeft:"2px solid "+C.amber,paddingLeft:8,marginTop:16,marginBottom:6,fontSize:10,fontFamily:"'IBM Plex Mono',monospace",color:C.amber,textTransform:"uppercase",letterSpacing:".1em",fontWeight:700}}>{line.slice(3)}</div>;
                         }
