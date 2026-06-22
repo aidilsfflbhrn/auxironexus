@@ -1,21 +1,63 @@
-// Auxiron News Proxy
-// Fetches relevant news headlines for a specific instrument
-// Uses GNews free API (100 requests/day free tier)
-
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   if (req.method === "OPTIONS") return res.status(200).end();
 
-  const { q } = req.query;
-  if (!q) return res.status(400).json({ error: "No query provided" });
+  const urlParams = new URLSearchParams(req.url.split('?')[1] ?? '');
+  const q = urlParams.get('q') ?? '';
+  const symbols = urlParams.get('symbols') ?? '';
 
+  const MARKETAUX_KEY = process.env.MARKETAUX_key;
   const GNEWS_KEY = process.env.GNEWS_key;
 
-  // If no GNews key, return empty gracefully
+  // Try Marketaux first
+  if (MARKETAUX_KEY) {
+    try {
+      const params = new URLSearchParams({
+        api_token: MARKETAUX_KEY,
+        language: 'en',
+        limit: '10',
+        sort: 'published_desc',
+        filter_entities: 'true',
+      });
+      if (symbols) {
+        params.set('symbols', symbols);
+      } else if (q) {
+        params.set('search', q);
+      }
+
+      const url = 'https://api.marketaux.com/v1/news/all?' + params.toString();
+      const r = await fetch(url);
+      const data = await r.json();
+
+      if (!data.error && Array.isArray(data.data) && data.data.length > 0) {
+        const articles = data.data.map(function(article) {
+          return {
+            title: article.title,
+            description: article.description,
+            url: article.url,
+            publishedAt: article.published_at,
+            source: { name: article.source },
+            image: article.image_url || null,
+            sentiment: article.entities?.[0]?.sentiment_score ?? null,
+            relevanceScore: article.relevance_score || null,
+          };
+        });
+        return res.status(200).json({ articles, source: 'marketaux' });
+      }
+    } catch (e) {
+      // fall through to GNews
+    }
+  }
+
+  // GNews fallback
   if (!GNEWS_KEY || GNEWS_KEY === "YOUR_GNEWS_KEY") {
-    return res.status(200).json({ articles: [] });
+    return res.status(200).json({ articles: [], source: 'gnews' });
+  }
+
+  if (!q) {
+    return res.status(200).json({ articles: [], source: 'gnews' });
   }
 
   try {
@@ -27,10 +69,9 @@ export default async function handler(req, res) {
     const data = await r.json();
 
     if (data.errors) {
-      return res.status(200).json({ articles: [] });
+      return res.status(200).json({ articles: [], source: 'gnews' });
     }
 
-    // Format articles for frontend
     const articles = (data.articles || []).map(function(a) {
       return {
         title: a.title,
@@ -42,8 +83,8 @@ export default async function handler(req, res) {
       };
     });
 
-    return res.status(200).json({ articles: articles });
-  } catch(e) {
-    return res.status(200).json({ articles: [], error: e.message });
+    return res.status(200).json({ articles, source: 'gnews' });
+  } catch (e) {
+    return res.status(200).json({ articles: [], source: 'gnews', error: e.message });
   }
-};
+}

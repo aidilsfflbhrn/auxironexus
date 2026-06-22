@@ -109,7 +109,7 @@ export default async function handler(req, res) {
     // C) News via GNews
     (async () => {
       if (!gnewsKey) return null;
-      const url = `https://gnews.io/api/v4/search?q=gold+forex+market&lang=en&max=3&sortby=publishedAt&apikey=${gnewsKey}`;
+      const url = `https://gnews.io/api/v4/search?q=gold+forex+oil+market&lang=en&max=3&sortby=publishedAt&apikey=${gnewsKey}`;
       const r = await fetch(url);
       if (!r.ok) throw new Error('GNews HTTP ' + r.status);
       return await r.json();

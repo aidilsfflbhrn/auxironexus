@@ -14,13 +14,13 @@ const C = {
 };
 
 const FILTERS = [
-  { label: "ALL",     q: "financial markets forex gold oil" },
-  { label: "GOLD",    q: "gold price" },
-  { label: "OIL",     q: "crude oil price" },
-  { label: "EUR/USD", q: "eurusd forex" },
-  { label: "GBP/USD", q: "gbpusd forex" },
-  { label: "S&P 500", q: "S&P 500 stock market" },
-  { label: "BTC",     q: "bitcoin crypto" },
+  { label: "ALL",     q: "gold forex oil market",   symbols: null },
+  { label: "GOLD",    q: "gold price",               symbols: "XAUUSD" },
+  { label: "OIL",     q: "crude oil price",          symbols: "USOIL" },
+  { label: "EUR/USD", q: "eurusd forex",             symbols: "EURUSD" },
+  { label: "GBP/USD", q: "gbpusd forex",             symbols: "GBPUSD" },
+  { label: "S&P 500", q: "S&P 500 stock market",    symbols: "SPX" },
+  { label: "BTC",     q: "bitcoin crypto",           symbols: "BTCUSD" },
 ];
 
 const BULL_WORDS = ["rally","surge","rise","gain","high","strong","beat","above","optimism","boost","jump","soar"];
@@ -32,6 +32,12 @@ function getSentiment(title: string, desc: string): "BULL" | "BEAR" | "NEUTRAL" 
   const bear = BEAR_WORDS.some(w => text.includes(w));
   if (bull && !bear) return "BULL";
   if (bear && !bull) return "BEAR";
+  return "NEUTRAL";
+}
+
+function getSentimentFromScore(score: number): "BULL" | "BEAR" | "NEUTRAL" {
+  if (score > 0.15) return "BULL";
+  if (score < -0.15) return "BEAR";
   return "NEUTRAL";
 }
 
@@ -51,6 +57,16 @@ interface Article {
   url?: string;
   publishedAt?: string;
   source?: { name?: string };
+  image?: string | null;
+  sentiment?: number | null;
+  relevanceScore?: number | null;
+}
+
+interface AgentAlert {
+  severity: string;
+  title: string;
+  body: string;
+  timestamp: number;
 }
 
 const mono = "'IBM Plex Mono',monospace";
@@ -63,17 +79,26 @@ export default function News() {
   const [err, setErr] = useState(false);
   const [lastFetch, setLastFetch] = useState<Date | null>(null);
   const [updatedLbl, setUpdatedLbl] = useState("–");
+  const [newsSource, setNewsSource] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [agentAlert, setAgentAlert] = useState<AgentAlert | null>(null);
+  const [alertDismissed, setAlertDismissed] = useState(false);
   const filterRef = useRef(0);
   filterRef.current = filter;
 
-  async function fetchNews(filterIdx: number) {
-    setLoading(true);
+  async function fetchNews(filterIdx: number, isAutoRefresh = false) {
+    if (isAutoRefresh) setRefreshing(true);
+    else setLoading(true);
     setErr(false);
     try {
-      const r = await fetch("/api/news?q=" + encodeURIComponent(FILTERS[filterIdx]?.q ?? ""));
+      const f = FILTERS[filterIdx];
+      let url = "/api/news?q=" + encodeURIComponent(f?.q ?? "");
+      if (f?.symbols) url += "&symbols=" + encodeURIComponent(f.symbols);
+      const r = await fetch(url);
       const data = await r.json();
       const arts: Article[] = data?.articles ?? [];
       setArticles(arts);
+      setNewsSource(data?.source ?? null);
       setErr(arts.length === 0);
       setLastFetch(new Date());
     } catch {
@@ -81,13 +106,34 @@ export default function News() {
       setErr(true);
     } finally {
       setLoading(false);
+      if (isAutoRefresh) setTimeout(() => setRefreshing(false), 1000);
     }
   }
+
+  // Fetch agent alert on mount
+  useEffect(() => {
+    async function fetchAlert() {
+      try {
+        const r = await fetch("/api/agent");
+        const data = await r.json();
+        const alert = data?.action?.latest_alert;
+        if (alert && alert.timestamp) {
+          const ageMs = Date.now() - Number(alert.timestamp);
+          if (ageMs < 2 * 60 * 60 * 1000) {
+            setAgentAlert(alert as AgentAlert);
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+    fetchAlert();
+  }, []);
 
   // Fetch on filter change + auto-refresh every 5 min
   useEffect(() => {
     fetchNews(filter);
-    const id = setInterval(() => fetchNews(filterRef.current), 5 * 60_000);
+    const id = setInterval(() => fetchNews(filterRef.current, true), 5 * 60_000);
     return () => clearInterval(id);
   }, [filter]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -104,6 +150,7 @@ export default function News() {
   }, [lastFetch]);
 
   const sentColor = (s: string) => s === "BULL" ? C.up : s === "BEAR" ? C.dn : C.amber;
+  const alertSeverityColor = (sev: string) => sev === "CRITICAL" ? "#f04545" : "#f0a020";
 
   return (
     <div style={{ fontFamily: sans, color: C.txt0, background: C.bg0, minHeight: "100%" }}>
@@ -112,10 +159,43 @@ export default function News() {
       <div style={{ padding: "12px 12px 8px", borderBottom: "1px solid " + C.border, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div>
           <div style={{ fontSize: 12, fontWeight: 700, color: C.gold, fontFamily: mono, letterSpacing: ".1em" }}>NEWS HEADLINES</div>
-          <div style={{ fontSize: 8, color: C.txt3, fontFamily: mono, letterSpacing: ".08em", marginTop: 2 }}>LIVE · GNEWS</div>
+          <div style={{ fontSize: 8, color: C.txt3, fontFamily: mono, letterSpacing: ".08em", marginTop: 2 }}>
+            LIVE · {newsSource === "marketaux" ? "MARKETAUX" : "GNEWS"}
+          </div>
         </div>
-        <div style={{ fontSize: 9, color: C.txt3, fontFamily: mono }}>Updated {updatedLbl}</div>
+        <div style={{ fontSize: 9, color: C.txt3, fontFamily: mono }}>
+          {refreshing ? "↻ Refreshing..." : "Updated " + updatedLbl}
+        </div>
       </div>
+
+      {/* Agent alert banner */}
+      {agentAlert && !alertDismissed && (
+        <div style={{
+          margin: "8px 12px 0",
+          background: alertSeverityColor(agentAlert.severity) + "14",
+          borderLeft: "3px solid " + alertSeverityColor(agentAlert.severity),
+          borderRadius: 6,
+          padding: "8px 12px 8px 10px",
+          position: "relative" as const,
+        }}>
+          <div style={{ fontSize: 8, color: alertSeverityColor(agentAlert.severity), fontFamily: mono, letterSpacing: ".1em", marginBottom: 4 }}>
+            ⬟ AGENT ALERT · {agentAlert.severity}
+          </div>
+          <div style={{ fontSize: 13, color: "#e8edf5", fontWeight: 500, marginBottom: 3, paddingRight: 20 }}>
+            {agentAlert.title ?? "–"}
+          </div>
+          <div style={{ fontSize: 11, color: "#7a9ab8", lineHeight: 1.5 }}>
+            {agentAlert.body ?? ""}
+          </div>
+          <button
+            className="tap"
+            onClick={() => setAlertDismissed(true)}
+            style={{ position: "absolute", top: 6, right: 8, background: "none", border: "none", color: "#3a5570", fontSize: 16, cursor: "pointer", padding: "0 4px", lineHeight: 1 }}
+          >
+            ×
+          </button>
+        </div>
+      )}
 
       {/* Filter pills */}
       <div style={{ overflowX: "auto", display: "flex", gap: 5, padding: "8px 12px", borderBottom: "1px solid " + C.border, flexWrap: "nowrap" as const }}>
@@ -166,7 +246,9 @@ export default function News() {
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {articles.map((art, i) => {
-              const sent = getSentiment(art.title ?? "", art.description ?? "");
+              const sent = art.sentiment != null
+                ? getSentimentFromScore(art.sentiment)
+                : getSentiment(art.title ?? "", art.description ?? "");
               const sc = sentColor(sent);
               return (
                 <div key={i} className="tap" onClick={() => { if (art.url) window.open(art.url, "_blank"); }} style={{
@@ -177,7 +259,7 @@ export default function News() {
                   padding: "10px 12px",
                   cursor: "pointer",
                 }}>
-                  {/* Source · time · pill */}
+                  {/* Source · time · relevance badge · sentiment pill */}
                   <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6, flexWrap: "nowrap" as const }}>
                     <span style={{ fontSize: 9, color: C.txt3, fontFamily: mono, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const, maxWidth: 120 }}>
                       {art.source?.name ?? "–"}
@@ -186,6 +268,13 @@ export default function News() {
                     <span style={{ fontSize: 9, color: C.txt3, fontFamily: mono, flexShrink: 0 }}>
                       {timeAgo(art.publishedAt ?? "")}
                     </span>
+                    {art.relevanceScore != null && art.relevanceScore > 0.7 && (
+                      <div style={{ background: "#9b77e822", border: "1px solid #9b77e855", borderRadius: 3, padding: "2px 6px", flexShrink: 0 }}>
+                        <span style={{ fontSize: 7, fontWeight: 700, color: "#9b77e8", fontFamily: mono, letterSpacing: ".06em" }}>
+                          {(art.relevanceScore ?? 0) > 0.9 ? "TOP STORY" : "HIGH RELEVANCE"}
+                        </span>
+                      </div>
+                    )}
                     <div style={{ marginLeft: "auto", background: sc + "22", border: "1px solid " + sc + "55", borderRadius: 3, padding: "2px 6px", flexShrink: 0 }}>
                       <span style={{ fontSize: 7, fontWeight: 700, color: sc, fontFamily: mono, letterSpacing: ".06em" }}>{sent}</span>
                     </div>
@@ -212,6 +301,13 @@ export default function News() {
           </div>
         )}
       </div>
+
+      {/* Source indicator */}
+      {newsSource && (
+        <div style={{ padding: "6px 12px 12px", textAlign: "center" as const, fontSize: 8, color: "#2a4055", fontFamily: mono, letterSpacing: ".06em" }}>
+          Powered by {newsSource === "marketaux" ? "Marketaux" : "GNews"}
+        </div>
+      )}
     </div>
   );
 }
