@@ -4,6 +4,7 @@ import { canSpend, recordSpend, getBudgetStatus } from "./lib/budgetGate";
 import { hasAccess } from "./lib/userTier";
 import Dashboard from "./Dashboard";
 import COT from "./COT";
+import News from "./News";
 
 const C={
   bg0:"#080e14",bg1:"#0d1520",bg2:"#121d2c",bg3:"#192538",
@@ -2645,15 +2646,7 @@ export default function Auxiron(){
         </div>;
       }())}
         {/* ── NEWS FEED ── */}
-        {tab==="news"&&<div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:"60vh",padding:"40px 24px",textAlign:"center",gap:16}}>
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#4a9eff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/>
-            <line x1="12" y1="7" x2="18" y2="7"/><line x1="12" y1="11" x2="18" y2="11"/><line x1="12" y1="15" x2="16" y2="15"/>
-          </svg>
-          <div style={{fontSize:20,fontWeight:500,color:"#ffffff",fontFamily:"'IBM Plex Sans',sans-serif"}}>News Feed</div>
-          <div style={{fontSize:14,color:"#7a9ab8",fontFamily:"'IBM Plex Sans',sans-serif",maxWidth:300,lineHeight:1.6}}>AI-tagged live news with BULL/BEAR sentiment. Requires Polygon.io API — coming in Pro tier.</div>
-          <div style={{fontSize:10,color:"#4a9eff",background:"rgba(74,158,255,0.12)",padding:"4px 12px",borderRadius:4,fontFamily:"'IBM Plex Mono',monospace",letterSpacing:".08em"}}>PRO FEATURE · COMING SOON</div>
-        </div>}
+        {tab==="news"&&<News/>}
 
         {/* ── COT DATA MATRIX ── */}
         {tab==="cot"&&<COT/>}

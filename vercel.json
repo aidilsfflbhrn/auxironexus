@@ -9,10 +9,12 @@
   "functions": {
     "api/analyze.js": {
       "memory": 1024,
-      "maxDuration": 60
+      "maxDuration": 800
     },
     "api/brief.js": { "maxDuration": 10 },
-    "api/brief-generate.js": { "maxDuration": 300 }
+    "api/brief-generate.js": { "maxDuration": 300 },
+    "api/cot.js": { "maxDuration": 800 },
+    "api/news.js": { "maxDuration": 800 }
   },
   "crons": [
     {
