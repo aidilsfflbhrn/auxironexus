@@ -3,6 +3,7 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceL
 import { canSpend, recordSpend, getBudgetStatus } from "./lib/budgetGate";
 import { hasAccess } from "./lib/userTier";
 import Dashboard from "./Dashboard";
+import COT from "./COT";
 
 const C={
   bg0:"#080e14",bg1:"#0d1520",bg2:"#121d2c",bg3:"#192538",
@@ -2653,6 +2654,9 @@ export default function Auxiron(){
           <div style={{fontSize:14,color:"#7a9ab8",fontFamily:"'IBM Plex Sans',sans-serif",maxWidth:300,lineHeight:1.6}}>AI-tagged live news with BULL/BEAR sentiment. Requires Polygon.io API — coming in Pro tier.</div>
           <div style={{fontSize:10,color:"#4a9eff",background:"rgba(74,158,255,0.12)",padding:"4px 12px",borderRadius:4,fontFamily:"'IBM Plex Mono',monospace",letterSpacing:".08em"}}>PRO FEATURE · COMING SOON</div>
         </div>}
+
+        {/* ── COT DATA MATRIX ── */}
+        {tab==="cot"&&<COT/>}
 
         {/* ── ECONOMIC CALENDAR ── */}
         {tab==="calendar"&&<div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:"60vh",padding:"40px 24px",textAlign:"center",gap:16}}>

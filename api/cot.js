@@ -54,6 +54,8 @@ export default async function handler(req, res) {
     var pLongs  = parseInt(prev.noncomm_positions_long_all  || 0);
     var pShorts = parseInt(prev.noncomm_positions_short_all || 0);
     var oi      = parseInt(curr.open_interest_all || 0);
+    var oiPrev  = parseInt(prev.open_interest_all || 0);
+    var oiChg   = oi - oiPrev;
 
     var net     = longs - shorts;
     var netChg  = net - (pLongs - pShorts);
@@ -79,7 +81,7 @@ export default async function handler(req, res) {
     return res.status(200).json({
       date: curr.report_date_as_yyyy_mm_dd,
       instrument: name.split(" - ")[0],
-      longs, shorts, net, netChg, oi, longPct, shortPct,
+      longs, shorts, net, netChg, oi, oiChg, longPct, shortPct,
       bias, biasColor, reading,
     });
   } catch(e) {
