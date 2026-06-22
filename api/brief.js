@@ -31,13 +31,22 @@ export default async function handler(req) {
       if (cacheRes.ok) {
         const cacheData = await cacheRes.json()
         const raw = cacheData?.result
-        if (raw) {
+        if (raw !== null && raw !== undefined) {
+          let parsed = null
           try {
-            const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw
-            return Response.json({ ...parsed, cached: true })
+            parsed = typeof raw === 'string' ? JSON.parse(raw) : raw
           } catch (e) {
-            return Response.json({ notReady: true, error: 'cache_corrupted' })
+            // Corrupted — delete so next cron regenerates
+            await fetch(`${kvUrl}/del/${briefKey}`, {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${kvToken}` }
+            }).catch(() => {})
+            return Response.json({ notReady: true, error: 'cache_corrupted_cleared' })
           }
+          if (!parsed || typeof parsed !== 'object') {
+            return Response.json({ notReady: true, error: 'invalid_cache_shape' })
+          }
+          return Response.json({ ...parsed, cached: true })
         }
       }
     } catch (redisError) {

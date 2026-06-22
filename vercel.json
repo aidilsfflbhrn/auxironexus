@@ -12,6 +12,7 @@
       "maxDuration": 800
     },
     "api/brief.js": { "maxDuration": 10 },
+    "api/brief-flush.js": { "maxDuration": 10 },
     "api/brief-generate.js": { "maxDuration": 300 },
     "api/cot.js": { "maxDuration": 800 },
     "api/news.js": { "maxDuration": 800 },

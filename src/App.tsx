@@ -691,6 +691,17 @@ export default function Auxiron(){
       .catch(function(e:any){setBriefErr(e?.message||"Fetch failed");setBriefLoading(false);});
   }
 
+  function generateBrief(session:string){
+    setBriefLoading(true);setBriefErr(null);
+    fetch("/api/brief-generate?session="+session)
+      .then(function(r){return r.json();})
+      .then(function(d:any){
+        if(d.error){setBriefErr("Generate failed: "+(d.message??"Unknown error"));setBriefLoading(false);}
+        else{fetchBriefForCard(session);}
+      })
+      .catch(function(e:any){setBriefErr("Generate failed: "+(e?.message??"Network error"));setBriefLoading(false);});
+  }
+
   function fetchCtx(){
     var today=new Date().toDateString();
     var newCount=ctxSessionKey===today?ctxCount+1:1;
@@ -1627,8 +1638,18 @@ export default function Auxiron(){
                 </div>}
                 {!briefLoading&&briefData?.notReady&&(
                   <div style={{background:"rgba(58,85,112,0.12)",border:"1px solid "+C.border,borderRadius:8,padding:"14px",textAlign:"center"}}>
-                    <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.txt3,letterSpacing:".1em",marginBottom:6}}>SCHEDULED</div>
-                    <div style={{fontSize:12,color:C.txt1,lineHeight:1.65}}>{briefData.message??"Brief not yet generated."}</div>
+                    <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.txt3,letterSpacing:".1em",marginBottom:6}}>
+                      {briefData.error?"CACHE ERROR":"SCHEDULED"}
+                    </div>
+                    <div style={{fontSize:12,color:C.txt1,lineHeight:1.65,marginBottom:10}}>
+                      {briefData.error
+                        ?"Brief cache error: "+briefData.error+" — tap to regenerate"
+                        :"Brief not yet generated — tap to generate now"}
+                    </div>
+                    <button className="tap" onClick={function(){generateBrief(briefCardSession);}}
+                      style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:C.amber,background:"rgba(240,160,32,0.08)",border:"1px solid rgba(240,160,32,0.3)",borderRadius:6,padding:"6px 16px",cursor:"pointer"}}>
+                      {briefData.error?"Regenerate Brief":"Generate Brief"}
+                    </button>
                   </div>
                 )}
                 {!briefLoading&&(briefErr||(briefData?.error&&!briefData?.notReady))&&(
