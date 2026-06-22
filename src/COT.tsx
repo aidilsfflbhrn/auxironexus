@@ -84,7 +84,7 @@ function conviction(d: CotData): { label: string; color: string; bg: string } {
 const mono = "'IBM Plex Mono',monospace";
 const sans = "'IBM Plex Sans',sans-serif";
 
-export default function COT() {
+export default function COT({ agentStatus }: { agentStatus?: any }) {
   const [data, setData] = useState<Record<string, CotData>>({});
   const [loading, setLoading] = useState(true);
 
@@ -120,8 +120,41 @@ export default function COT() {
     );
   }
 
+  const latestDate = Object.values(data)
+    .filter((d: CotData) => !!(d.date && !d.error))
+    .map((d: CotData) => d.date || '')
+    .sort((a: string, b: string) => b.localeCompare(a))[0] || null;
+
+  const isDelayed = !!(agentStatus?.flags?.COT_RETRY);
+  const isFresh = latestDate
+    ? (Date.now() - new Date(latestDate + 'T00:00:00Z').getTime()) < 7 * 24 * 60 * 60 * 1000
+    : false;
+  const releaseDate = latestDate ? (() => {
+    const d = new Date(latestDate + 'T00:00:00Z');
+    d.setUTCDate(d.getUTCDate() + 3);
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  })() : null;
+
   return (
     <div style={{ fontFamily:sans, color:C.txt0 }}>
+      {/* Header with COT timestamp */}
+      <div style={{ padding:"8px 12px", borderBottom:"1px solid "+C.border, display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:4 }}>
+        <div style={{ fontFamily:mono, fontSize:10, fontWeight:700, color:C.txt2, letterSpacing:".1em" }}>COT POSITIONING MATRIX</div>
+        {isDelayed ? (
+          <div style={{ fontFamily:mono, fontSize:8, color:C.amber }}>⚠ CFTC DATA DELAYED — RETRYING</div>
+        ) : (
+          <div style={{ display:"flex", alignItems:"center", gap:5 }}>
+            <div style={{ width:5, height:5, borderRadius:"50%", background: isFresh ? C.up : C.amber, flexShrink:0 }} />
+            <span style={{ fontFamily:mono, fontSize:8, color:"#2a4055" }}>
+              {!isFresh
+                ? "DATA MAY BE STALE"
+                : latestDate
+                  ? "DATA: WK OF "+latestDate+(releaseDate?" · CFTC RELEASE "+releaseDate:"")+" · NEXT UPDATE FRI 20:30 UTC"
+                  : "NEXT UPDATE FRI 20:30 UTC"}
+            </span>
+          </div>
+        )}
+      </div>
       <Zone1 data={data} />
       <Zone2 data={data} />
       <Zone3 data={data} />

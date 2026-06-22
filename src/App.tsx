@@ -462,6 +462,7 @@ export default function Auxiron(){
   var [briefStatuses,setBriefStatuses]=useState<{[k:string]:{ready:boolean,generatedAt?:string,message?:string}}>({});
   var [calEvents,setCalEvents]=useState<any[]>([]);
   var [calLoading,setCalLoading]=useState(false);
+  var [calViewMonth,setCalViewMonth]=useState(function(){var n=new Date();return{year:n.getFullYear(),month:n.getMonth()};});
   var [agentStatus,setAgentStatus]=useState<any>(null);
   var [agentLastRun,setAgentLastRun]=useState<Date|null>(null);
   var [agentAlert,setAgentAlert]=useState<any>(null);
@@ -477,12 +478,6 @@ export default function Auxiron(){
     var id=setInterval(function(){setSessionLbl(getSessionLabel());},60000);
     return function(){clearInterval(id);};
   },[]);
-
-  useEffect(function(){
-    if(tab!=="intel")return;
-    var def=getDefaultBriefSession();
-    fetchBriefForCard(def);
-  },[tab]);
 
   useEffect(function(){
     function fetchCal(){
@@ -2783,10 +2778,13 @@ export default function Auxiron(){
         {tab==="news"&&<News/>}
 
         {/* ── COT DATA MATRIX ── */}
-        {tab==="cot"&&<COT/>}
+        {tab==="cot"&&<COT agentStatus={agentStatus}/>}
 
         {/* ── ECONOMIC CALENDAR ── */}
         {tab==="calendar"&&(function(){
+          var MONTHS=["JANUARY","FEBRUARY","MARCH","APRIL","MAY","JUNE","JULY","AUGUST","SEPTEMBER","OCTOBER","NOVEMBER","DECEMBER"];
+          var MONTH_SHORT=["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+          var DAY_SHORT=["SUN","MON","TUE","WED","THU","FRI","SAT"];
           var FLAG:any={
             US:"🇺🇸",EU:"🇪🇺",GB:"🇬🇧",JP:"🇯🇵",AU:"🇦🇺",CA:"🇨🇦",
             CH:"🇨🇭",NZ:"🇳🇿",CN:"🇨🇳",DE:"🇩🇪",FR:"🇫🇷",IT:"🇮🇹",
@@ -2794,41 +2792,76 @@ export default function Auxiron(){
             SE:"🇸🇪",DK:"🇩🇰",NL:"🇳🇱",ES:"🇪🇸",PL:"🇵🇱",HU:"🇭🇺",
             CZ:"🇨🇿",ZA:"🇿🇦",TR:"🇹🇷",IL:"🇮🇱",
           };
+          var nowMs=Date.now();
+          var todayYMD=new Date().toLocaleDateString("en-CA",{timeZone:"Asia/Singapore"});
+          function evYMD(ev:any):string{if(!ev.time)return"";return ev.time.slice(0,10);}
           function toSGTTime(iso:string){
             var d=new Date(iso);
             if(isNaN(d.getTime()))return"—";
             return d.toLocaleString("en-SG",{timeZone:"Asia/Singapore",hour:"2-digit",minute:"2-digit",hour12:false});
           }
-          function toSGTDate(iso:string){
-            var d=new Date(iso);
-            if(isNaN(d.getTime()))return"";
-            return d.toLocaleDateString("en-SG",{timeZone:"Asia/Singapore",weekday:"short",month:"short",day:"numeric"});
+          function datHeader(ymd:string):string{
+            var d=new Date(ymd+"T12:00:00Z");
+            if(isNaN(d.getTime()))return ymd;
+            return DAY_SHORT[d.getUTCDay()]+" "+d.getUTCDate()+" "+MONTH_SHORT[d.getUTCMonth()];
           }
+          function countdown(evMs:number):string|null{
+            var diff=evMs-nowMs;
+            if(diff<=0||diff>48*3600000)return null;
+            var totalH=Math.floor(diff/3600000);
+            var days=Math.floor(totalH/24);
+            var hours=totalH%24;
+            return days>0?"in "+days+"d "+hours+"h":"in "+hours+"h";
+          }
+          var ym=calViewMonth.year+"-"+String(calViewMonth.month+1).padStart(2,"0");
+          var monthEvents=calEvents.filter(function(ev:any){return evYMD(ev).startsWith(ym);});
           var groups:{[k:string]:any[]}={};
           var order:string[]=[];
-          calEvents.forEach(function(ev:any){
-            var dk=toSGTDate(ev.time||"");
+          monthEvents.forEach(function(ev:any){
+            var dk=evYMD(ev);
             if(!groups[dk]){groups[dk]=[];order.push(dk);}
             groups[dk].push(ev);
           });
+          function prevMo(){setCalViewMonth(function(p:any){if(p.month===0)return{year:p.year-1,month:11};return{year:p.year,month:p.month-1};});}
+          function nextMo(){setCalViewMonth(function(p:any){if(p.month===11)return{year:p.year+1,month:0};return{year:p.year,month:p.month+1};});}
           return <div style={{padding:"12px"}} className="fu">
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-              <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:C.txt2,letterSpacing:".12em",fontWeight:600}}>📅 ECONOMIC CALENDAR</div>
-              {calLoading&&calEvents.length>0&&<div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.txt3}}>Refreshing…</div>}
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
+              <button className="tap" onClick={prevMo}
+                style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:14,color:C.txt2,background:C.bg1,border:"1px solid "+C.border,borderRadius:6,padding:"4px 12px",cursor:"pointer",lineHeight:1}}>‹</button>
+              <div style={{textAlign:"center"}}>
+                <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:11,color:C.gold,letterSpacing:".15em",fontWeight:700}}>
+                  {MONTHS[calViewMonth.month]} {calViewMonth.year}
+                </div>
+                {calLoading&&<div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.txt3,marginTop:2}}>Refreshing…</div>}
+              </div>
+              <button className="tap" onClick={nextMo}
+                style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:14,color:C.txt2,background:C.bg1,border:"1px solid "+C.border,borderRadius:6,padding:"4px 12px",cursor:"pointer",lineHeight:1}}>›</button>
             </div>
             {calLoading&&calEvents.length===0&&<div>
               {[90,80,90].map(function(h:number,i:number){
                 return <div key={i} style={{height:h,background:"linear-gradient(90deg,#121d2c 25%,#1a2840 50%,#121d2c 75%)",backgroundSize:"200% 100%",borderRadius:9,marginBottom:7,animation:"shimmer 1.4s infinite"}}/>;
               })}
             </div>}
-            {!calLoading&&calEvents.length===0&&<div style={{textAlign:"center",padding:"40px 20px",background:C.bg1,border:"1px solid "+C.border,borderRadius:10}}>
-              <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:C.txt3,letterSpacing:".1em"}}>NO HIGH IMPACT EVENTS SCHEDULED</div>
+            {!calLoading&&monthEvents.length===0&&<div style={{textAlign:"center",padding:"40px 20px",background:C.bg1,border:"1px solid "+C.border,borderRadius:10}}>
+              <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:C.txt3,letterSpacing:".1em"}}>NO EVENTS THIS MONTH</div>
             </div>}
             {order.map(function(dk:string){
               var evs=groups[dk];
-              return <div key={dk} style={{marginBottom:14}}>
-                <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:C.txt3,letterSpacing:".1em",fontWeight:600,padding:"4px 0 6px",borderBottom:"1px solid "+C.border,marginBottom:6}}>{dk}</div>
+              var isPast=dk<todayYMD;
+              var isToday=dk===todayYMD;
+              var hasHigh=evs.some(function(ev:any){return ev.impact==="high";});
+              return <div key={dk} style={{marginBottom:14,opacity:isPast?0.4:1}}>
+                <div style={{
+                  fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:C.gold,letterSpacing:".1em",fontWeight:600,
+                  padding:"4px 0 4px 8px",
+                  borderBottom:"1px solid "+(hasHigh?"rgba(240,69,69,0.4)":C.border),
+                  borderLeft:"3px solid "+(hasHigh?"#f04545":C.txt3+"40"),
+                  marginBottom:6,
+                  ...(isToday?{background:"rgba(212,168,67,0.06)",borderRadius:"0 4px 0 0"}:{})
+                }}>{datHeader(dk)}{isToday?" · TODAY":""}</div>
                 {evs.map(function(ev:any,i:number){
+                  var evMs=new Date(ev.time||"").getTime();
+                  var cntd=countdown(evMs);
                   var isHigh=ev.impact==="high";
                   var ic=isHigh?"#f04545":"#f0a020";
                   return <div key={i} style={{background:C.bg1,border:"1px solid "+C.border,borderLeft:"3px solid "+ic,borderRadius:8,padding:"10px 12px",marginBottom:5}}>
@@ -2838,7 +2871,10 @@ export default function Auxiron(){
                         <span style={{fontSize:14,flexShrink:0}}>{FLAG[ev.country]||"🌐"}</span>
                         <span style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:12,fontWeight:600,color:C.txt0,lineHeight:1.35}}>{ev.event}</span>
                       </div>
-                      <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,fontWeight:700,padding:"2px 7px",borderRadius:3,color:ic,background:ic+"18",border:"1px solid "+ic+"33",flexShrink:0,marginLeft:8}}>{(ev.impact||"").toUpperCase()}</span>
+                      <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:3,flexShrink:0,marginLeft:8}}>
+                        <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,fontWeight:700,padding:"2px 7px",borderRadius:3,color:ic,background:ic+"18",border:"1px solid "+ic+"33"}}>{(ev.impact||"").toUpperCase()}</span>
+                        {cntd&&<span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.amber,fontWeight:600}}>{cntd}</span>}
+                      </div>
                     </div>
                     {(ev.forecast!=null||ev.previous!=null)&&<div style={{display:"flex",gap:14,marginTop:2}}>
                       {ev.forecast!=null&&<span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:C.txt2}}>Exp: <span style={{color:C.txt0,fontWeight:600}}>{ev.forecast}{ev.unit?" "+ev.unit:""}</span></span>}
