@@ -14,7 +14,9 @@
     "api/brief.js": { "maxDuration": 10 },
     "api/brief-generate.js": { "maxDuration": 300 },
     "api/cot.js": { "maxDuration": 800 },
-    "api/news.js": { "maxDuration": 800 }
+    "api/news.js": { "maxDuration": 800 },
+    "api/calendar.js": { "maxDuration": 30 },
+    "api/agent.js": { "maxDuration": 30 }
   },
   "crons": [
     {
@@ -32,6 +34,10 @@
     {
       "path": "/api/cot",
       "schedule": "30 20 * * 5"
+    },
+    {
+      "path": "/api/agent",
+      "schedule": "*/5 * * * *"
     }
   ]
 }

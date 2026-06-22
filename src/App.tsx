@@ -450,6 +450,12 @@ export default function Auxiron(){
   var [briefErr,setBriefErr]=useState<string|null>(null);
   var [briefCardSession,setBriefCardSession]=useState<string>('');
   var [briefStatuses,setBriefStatuses]=useState<{[k:string]:{ready:boolean,generatedAt?:string,message?:string}}>({});
+  var [calEvents,setCalEvents]=useState<any[]>([]);
+  var [calLoading,setCalLoading]=useState(false);
+  var [agentStatus,setAgentStatus]=useState<any>(null);
+  var [agentLastRun,setAgentLastRun]=useState<Date|null>(null);
+  var [agentAlert,setAgentAlert]=useState<any>(null);
+  var [agentAlertDismissed,setAgentAlertDismissed]=useState(false);
 
   useEffect(function(){
     var id=setInterval(function(){setNowStr(new Date().toUTCString().slice(0,25));},1000);
@@ -467,6 +473,38 @@ export default function Auxiron(){
     var def=getDefaultBriefSession();
     fetchBriefForCard(def);
   },[tab]);
+
+  useEffect(function(){
+    function fetchCal(){
+      setCalLoading(true);
+      fetch("/api/calendar")
+        .then(function(r){return r.json();})
+        .then(function(d:any){setCalEvents(d.events||[]);setCalLoading(false);})
+        .catch(function(){setCalLoading(false);});
+    }
+    fetchCal();
+    var id=setInterval(fetchCal,1800000);
+    return function(){clearInterval(id);};
+  },[]);
+
+  useEffect(function(){
+    function fetchAgent(){
+      fetch("/api/agent")
+        .then(function(r){return r.json();})
+        .then(function(d:any){
+          setAgentStatus(d);
+          setAgentLastRun(new Date());
+          if(d.action&&d.action.severity==="CRITICAL"){
+            var al=d.action.alert||d.action.latest_alert;
+            if(al){setAgentAlert(al);setAgentAlertDismissed(false);}
+          }
+        })
+        .catch(function(){});
+    }
+    fetchAgent();
+    var id=setInterval(fetchAgent,300000);
+    return function(){clearInterval(id);};
+  },[]);
 
   function applyPrices(combined:any){
     if(!combined||Object.keys(combined).length===0)return;
@@ -1179,7 +1217,30 @@ export default function Auxiron(){
         <div className="auxiron-inner">
 
         {/* ── DASHBOARD ── */}
-        {tab==="dashboard"&&<Dashboard mkt={mkt} sessionLbl={sessionLbl} roro={roro} roro_score={roro_score} stClr={stClr} tab={tab} setTab={setTab} onOpenNav={function(){setNavOpen(true);}}/>}
+        {tab==="dashboard"&&<div>
+          {(function(){
+            var minAgo=agentLastRun!==null?Math.round((Date.now()-agentLastRun.getTime())/60000):null;
+            var latestTitle=(agentStatus?.action?.alert?.title)||(agentStatus?.action?.latest_alert?.title)||null;
+            var sev=agentStatus?.action?.severity;
+            return <div style={{background:"rgba(232,213,163,0.03)",borderBottom:"1px solid #1a2535",padding:"5px 14px",display:"flex",alignItems:"center",gap:8}}>
+              <div style={{width:5,height:5,borderRadius:"50%",background:agentStatus?"#e8d5a3":"#3a5570",flexShrink:0,boxShadow:agentStatus?"0 0 4px #e8d5a388":undefined}}/>
+              <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:"#e8d5a3",letterSpacing:".06em"}}>
+                {agentStatus?"⬟ AGENT ACTIVE":"⬟ AGENT INITIALISING"}
+              </span>
+              {minAgo!==null&&<span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:"#3a5570"}}>· {minAgo===0?"just now":minAgo+"m ago"}</span>}
+              {latestTitle&&<span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:sev==="CRITICAL"?"#f04545":"#f0a020",marginLeft:4}}>· {latestTitle}</span>}
+            </div>;
+          })()}
+          {agentAlert&&!agentAlertDismissed&&<div style={{background:"rgba(240,69,69,0.07)",borderBottom:"1px solid rgba(240,69,69,0.18)",padding:"10px 14px",display:"flex",gap:10,alignItems:"flex-start"}}>
+            <div style={{flex:1}}>
+              <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,fontWeight:700,color:"#f04545",letterSpacing:".08em",marginBottom:3}}>⚡ CRITICAL ALERT</div>
+              <div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:12,fontWeight:600,color:"#f0f5ff",marginBottom:3}}>{agentAlert.title??""}</div>
+              <div style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:11,color:"#c2d4e8",lineHeight:1.6}}>{agentAlert.body??""}</div>
+            </div>
+            <button onClick={function(){setAgentAlertDismissed(true);}} style={{background:"none",border:"none",color:"#3a5570",fontSize:14,cursor:"pointer",padding:"2px 4px",flexShrink:0,lineHeight:1}}>✕</button>
+          </div>}
+          <Dashboard mkt={mkt} sessionLbl={sessionLbl} roro={roro} roro_score={roro_score} stClr={stClr} tab={tab} setTab={setTab} onOpenNav={function(){setNavOpen(true);}}/>
+        </div>}
 
         {/* ── MARKETS ── */}
         {tab==="markets"&&<div>
@@ -2652,15 +2713,70 @@ export default function Auxiron(){
         {tab==="cot"&&<COT/>}
 
         {/* ── ECONOMIC CALENDAR ── */}
-        {tab==="calendar"&&<div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:"60vh",padding:"40px 24px",textAlign:"center",gap:16}}>
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#4a9eff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-            <path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/>
-          </svg>
-          <div style={{fontSize:20,fontWeight:500,color:"#ffffff",fontFamily:"'IBM Plex Sans',sans-serif"}}>Economic Calendar</div>
-          <div style={{fontSize:14,color:"#7a9ab8",fontFamily:"'IBM Plex Sans',sans-serif",maxWidth:300,lineHeight:1.6}}>High, medium and low impact events with countdown timers. API integration coming soon.</div>
-          <div style={{fontSize:10,color:"#4a9eff",background:"rgba(74,158,255,0.12)",padding:"4px 12px",borderRadius:4,fontFamily:"'IBM Plex Mono',monospace",letterSpacing:".08em"}}>COMING SOON</div>
-        </div>}
+        {tab==="calendar"&&(function(){
+          var FLAG:any={
+            US:"🇺🇸",EU:"🇪🇺",GB:"🇬🇧",JP:"🇯🇵",AU:"🇦🇺",CA:"🇨🇦",
+            CH:"🇨🇭",NZ:"🇳🇿",CN:"🇨🇳",DE:"🇩🇪",FR:"🇫🇷",IT:"🇮🇹",
+            KR:"🇰🇷",SG:"🇸🇬",IN:"🇮🇳",BR:"🇧🇷",MX:"🇲🇽",NO:"🇳🇴",
+            SE:"🇸🇪",DK:"🇩🇰",NL:"🇳🇱",ES:"🇪🇸",PL:"🇵🇱",HU:"🇭🇺",
+            CZ:"🇨🇿",ZA:"🇿🇦",TR:"🇹🇷",IL:"🇮🇱",
+          };
+          function toSGTTime(iso:string){
+            var d=new Date(iso);
+            if(isNaN(d.getTime()))return"—";
+            return d.toLocaleString("en-SG",{timeZone:"Asia/Singapore",hour:"2-digit",minute:"2-digit",hour12:false});
+          }
+          function toSGTDate(iso:string){
+            var d=new Date(iso);
+            if(isNaN(d.getTime()))return"";
+            return d.toLocaleDateString("en-SG",{timeZone:"Asia/Singapore",weekday:"short",month:"short",day:"numeric"});
+          }
+          var groups:{[k:string]:any[]}={};
+          var order:string[]=[];
+          calEvents.forEach(function(ev:any){
+            var dk=toSGTDate(ev.time||"");
+            if(!groups[dk]){groups[dk]=[];order.push(dk);}
+            groups[dk].push(ev);
+          });
+          return <div style={{padding:"12px"}} className="fu">
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+              <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:C.txt2,letterSpacing:".12em",fontWeight:600}}>📅 ECONOMIC CALENDAR</div>
+              {calLoading&&calEvents.length>0&&<div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.txt3}}>Refreshing…</div>}
+            </div>
+            {calLoading&&calEvents.length===0&&<div>
+              {[90,80,90].map(function(h:number,i:number){
+                return <div key={i} style={{height:h,background:"linear-gradient(90deg,#121d2c 25%,#1a2840 50%,#121d2c 75%)",backgroundSize:"200% 100%",borderRadius:9,marginBottom:7,animation:"shimmer 1.4s infinite"}}/>;
+              })}
+            </div>}
+            {!calLoading&&calEvents.length===0&&<div style={{textAlign:"center",padding:"40px 20px",background:C.bg1,border:"1px solid "+C.border,borderRadius:10}}>
+              <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:C.txt3,letterSpacing:".1em"}}>NO HIGH IMPACT EVENTS SCHEDULED</div>
+            </div>}
+            {order.map(function(dk:string){
+              var evs=groups[dk];
+              return <div key={dk} style={{marginBottom:14}}>
+                <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:C.txt3,letterSpacing:".1em",fontWeight:600,padding:"4px 0 6px",borderBottom:"1px solid "+C.border,marginBottom:6}}>{dk}</div>
+                {evs.map(function(ev:any,i:number){
+                  var isHigh=ev.impact==="high";
+                  var ic=isHigh?"#f04545":"#f0a020";
+                  return <div key={i} style={{background:C.bg1,border:"1px solid "+C.border,borderLeft:"3px solid "+ic,borderRadius:8,padding:"10px 12px",marginBottom:5}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:4}}>
+                      <div style={{display:"flex",alignItems:"center",gap:7,flex:1,minWidth:0}}>
+                        <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:11,fontWeight:700,color:C.gold,flexShrink:0,minWidth:42}}>{toSGTTime(ev.time||"")}</span>
+                        <span style={{fontSize:14,flexShrink:0}}>{FLAG[ev.country]||"🌐"}</span>
+                        <span style={{fontFamily:"'IBM Plex Sans',sans-serif",fontSize:12,fontWeight:600,color:C.txt0,lineHeight:1.35}}>{ev.event}</span>
+                      </div>
+                      <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,fontWeight:700,padding:"2px 7px",borderRadius:3,color:ic,background:ic+"18",border:"1px solid "+ic+"33",flexShrink:0,marginLeft:8}}>{(ev.impact||"").toUpperCase()}</span>
+                    </div>
+                    {(ev.forecast!=null||ev.previous!=null)&&<div style={{display:"flex",gap:14,marginTop:2}}>
+                      {ev.forecast!=null&&<span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:C.txt2}}>Exp: <span style={{color:C.txt0,fontWeight:600}}>{ev.forecast}{ev.unit?" "+ev.unit:""}</span></span>}
+                      {ev.previous!=null&&<span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:C.txt2}}>Prev: <span style={{color:C.txt0}}>{ev.previous}{ev.unit?" "+ev.unit:""}</span></span>}
+                    </div>}
+                  </div>;
+                })}
+              </div>;
+            })}
+          </div>;
+        }())}
 
       </div>
     </div>
