@@ -30,9 +30,14 @@ export default async function handler(req) {
 
       if (cacheRes.ok) {
         const cacheData = await cacheRes.json()
-        if (cacheData?.result) {
-          const parsed = JSON.parse(cacheData.result)
-          return Response.json({ ...parsed, cached: true })
+        const raw = cacheData?.result
+        if (raw) {
+          try {
+            const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw
+            return Response.json({ ...parsed, cached: true })
+          } catch (e) {
+            return Response.json({ notReady: true, error: 'cache_corrupted' })
+          }
         }
       }
     } catch (redisError) {

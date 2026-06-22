@@ -157,6 +157,13 @@ function samplePts(data:any[],max:number){
   for(var i=0;i<max;i++)out.push(data[Math.round(i*step)]);
   return out;
 }
+function formatTfLabel(datetime:string,tf:number):string{
+  var d=new Date(datetime);
+  if(tf===0)return d.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
+  if(tf===1)return d.toLocaleDateString([],{month:"short",day:"numeric"})+" "+d.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
+  if(tf===2||tf===3)return d.toLocaleDateString([],{month:"short",day:"numeric"});
+  return d.toLocaleDateString([],{month:"short",year:"2-digit"});
+}
 
 // ── EXPANDED VIEW HELPERS ─────────────────────────────────────────────────
 function calcFearGreed(mkt:any[]):number{
@@ -402,6 +409,7 @@ export default function Auxiron(){
   var [edgeImages,setEdgeImages]=useState<{name:string;base64:string;mediaType:string}[]>([]);
   var [sessionLbl,setSessionLbl]=useState(getSessionLabel());
   var cycleRef=useRef(0);
+  var tfFetchedRef=useRef<{[k:string]:boolean}>({});
   var [intelCache,setIntelCache]=useState<{[k:string]:any}>(function(){
     try{
       var saved=localStorage.getItem("auxiron_intel_cache");
@@ -433,6 +441,8 @@ export default function Auxiron(){
   var [instNews,setInstNews]=useState<{[k:string]:any}>({});
   var [instNewsLoading,setInstNewsLoading]=useState(false);
   var [instTf,setInstTf]=useState(1);
+  var [tfChartCache,setTfChartCache]=useState<{[k:string]:any[]}>({});
+  var [tfChartLoading,setTfChartLoading]=useState(false);
   var [chartTf,setChartTf]=useState(0);
   var [instNewsPhase,setInstNewsPhase]=useState<string>("idle");
   var [instNewsProgress,setInstNewsProgress]=useState(0);
@@ -568,6 +578,37 @@ export default function Auxiron(){
   },[fetchBatch]);
 
   useEffect(function(){fetchChart(sel);},[sel,fetchChart]);
+
+  useEffect(function(){
+    if(!instDetail||instTf===2)return;
+    var sym=instDetail.s;
+    var tfCfg=[
+      {interval:"1h",outputsize:72},
+      {interval:"4h",outputsize:90},
+      null,
+      {interval:"1week",outputsize:52},
+      {interval:"1month",outputsize:24},
+      {interval:"1month",outputsize:36},
+    ];
+    var cfg=tfCfg[instTf];
+    if(!cfg)return;
+    var cacheKey=sym+"_"+instTf;
+    if(tfFetchedRef.current[cacheKey])return;
+    tfFetchedRef.current[cacheKey]=true;
+    setTfChartLoading(true);
+    fetch("/api/prices?symbol="+encodeURIComponent(sym)+"&endpoint=timeseries&interval="+cfg.interval+"&outputsize="+cfg.outputsize)
+      .then(function(r){return r.json();})
+      .then(function(d){
+        if(d.status==="error"||!d.values||!d.values.length){tfFetchedRef.current[cacheKey]=false;return;}
+        var ch=d.values.slice().reverse().map(function(v:any){
+          return{t:formatTfLabel(v.datetime,instTf),p:parseFloat(v.close),
+            o:parseFloat(v.open),h:parseFloat(v.high),l:parseFloat(v.low),c:parseFloat(v.close)};
+        });
+        setTfChartCache(function(prev){var next=Object.assign({},prev);next[cacheKey]=ch;return next;});
+      })
+      .catch(function(){tfFetchedRef.current[cacheKey]=false;})
+      .finally(function(){setTfChartLoading(false);});
+  },[instDetail,instTf]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(function(){
     var id=setInterval(function(){
@@ -2356,7 +2397,18 @@ export default function Auxiron(){
         var tfs=["1H","4H","1D","1W","1M","3M"];
         var tPts=[24,60,48,168,360,720];
         var tfSeed=m.s.split("").reduce(function(a:number,cv:string){return a+cv.charCodeAt(0);},0)+instTf*1000;
-        var chartData=samplePts(instTf===2?m.ch:genFB(m.b,m.v,tPts[instTf],tfSeed),30);
+        var tfCacheKey=m.s+"_"+instTf;
+        var rawTfData=instTf===2?m.ch:(tfChartCache[tfCacheKey]||null);
+        var sampledData=samplePts(rawTfData||genFB(m.b,m.v,tPts[instTf],tfSeed),30);
+        var chartData:any[]=sampledData;
+        if(rawTfData&&sampledData.length>0){
+          var lcpy=Object.assign({},sampledData[sampledData.length-1]);
+          lcpy.p=m.cur;lcpy.c=m.cur;
+          if(lcpy.h!==undefined)lcpy.h=Math.max(lcpy.h,m.cur);
+          if(lcpy.l!==undefined)lcpy.l=Math.min(lcpy.l,m.cur);
+          chartData=sampledData.slice(0,-1).concat([lcpy]);
+        }
+        var lastCandle=chartData.length>0?chartData[chartData.length-1]:null;
         var nd=instNewsData, ad=instAnalysisData;
         // Computed indicators
         var roroScoreV=calcROROScore(mkt);
@@ -2476,8 +2528,8 @@ export default function Auxiron(){
               })}
             </div>
             <div style={{display:"flex",gap:3}}>
-              {([["O",chartData[0]?.p],["H",Math.max.apply(null,chartData.map(function(d:any){return d.p;}))],
-                ["L",Math.min.apply(null,chartData.map(function(d:any){return d.p;}))],["C",m.cur]] as any[]).map(function(row:any){
+              {([["O",lastCandle?.o??chartData[0]?.p],["H",lastCandle?.h??Math.max.apply(null,chartData.map(function(d:any){return d.p;}))],
+                ["L",lastCandle?.l??Math.min.apply(null,chartData.map(function(d:any){return d.p;}))],["C",m.cur]] as any[]).map(function(row:any){
                 return <div key={row[0]} style={{flex:1,background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.06)",borderRadius:5,padding:"4px 5px",textAlign:"center"}}>
                   <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:7,color:"#5a6478",marginBottom:1}}>{row[0]}</div>
                   <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,fontWeight:600,color:"#ffffff",fontVariantNumeric:"tabular-nums"}}>{fmt(row[1],m.b)}</div>
