@@ -37,13 +37,30 @@ export default async function handler(req, res) {
 
   const kvUrl = process.env.KV_REST_API_URL;
   const kvToken = process.env.KV_REST_API_TOKEN;
-  const tdKey = process.env.TWELVE_key;
-  const gnewsKey = process.env.GNEWS_key;
-  const anthropicKey = process.env.ANTHROPIC_key;
 
   if (!kvUrl || !kvToken) {
     return res.status(500).json({ error: 'Redis not configured' });
   }
+
+  const timeout = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error('agent_timeout')), 25000)
+  );
+
+  try {
+    const result = await Promise.race([runAgent(kvUrl, kvToken), timeout]);
+    return res.status(200).json(result);
+  } catch (e) {
+    return res.status(200).json({
+      error: e.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+}
+
+async function runAgent(kvUrl, kvToken) {
+  const tdKey = process.env.TWELVE_key;
+  const gnewsKey = process.env.GNEWS_key;
+  const anthropicKey = process.env.ANTHROPIC_key;
 
   // ── STEP 1: READ STATE FROM REDIS ─────────────────────────────
   const [
@@ -298,7 +315,7 @@ export default async function handler(req, res) {
   await Promise.allSettled(stateWrites);
 
   // ── STEP 7: RETURN ────────────────────────────────────────────
-  return res.status(200).json({
+  return {
     timestamp: new Date().toISOString(),
     prices: { gold: currentGold, dxy: currentDxy, vix: currentVix },
     flags: { PRICE_ALERT, NEWS_UPDATED, COT_UPDATED, COT_RETRY },
@@ -312,5 +329,5 @@ export default async function handler(req, res) {
     },
     ...(cotError ? { cot_error: cotError } : {}),
     ...(newsFetchError ? { news_error: newsFetchError } : {}),
-  });
+  };
 }
