@@ -19,15 +19,19 @@ export default async function handler(req) {
     "brief:monday_presession"
   ];
 
-  const results = await Promise.all(keys.map(async (key) => {
+  const results = (await Promise.allSettled(keys.map(async (key) => {
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), 5000);
     try {
-      const r = await fetch(`${base}/del/${key}`, { method: "POST", headers });
+      const r = await fetch(`${base}/del/${key}`, { method: "POST", headers, signal: ctrl.signal });
+      clearTimeout(tid);
       const j = await r.json();
       return { key, deleted: j.result };
     } catch (e) {
+      clearTimeout(tid);
       return { key, deleted: false, error: e.message };
     }
-  }));
+  }))).map(r => r.status === 'fulfilled' ? r.value : { key: '?', deleted: false, error: 'settled_rejected' });
 
   return Response.json({
     flushed: true,

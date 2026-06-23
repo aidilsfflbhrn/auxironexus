@@ -21,7 +21,14 @@ export default async function handler(req) {
   if (!key) return Response.json({ events: FALLBACK });
 
   try {
-    const r = await fetch(`https://finnhub.io/api/v1/calendar/economic?from=${from}&to=${to}&token=${key}`);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
+    let r;
+    try {
+      r = await fetch(`https://finnhub.io/api/v1/calendar/economic?from=${from}&to=${to}&token=${key}`, { signal: controller.signal });
+    } finally {
+      clearTimeout(timeoutId);
+    }
     if (!r.ok) return Response.json({ events: FALLBACK });
 
     const data = await r.json();

@@ -91,9 +91,18 @@ export default async function handler(req, res) {
       if (!tdKey) return null;
       const syms = ['XAU/USD', 'DX', 'VIX'];
       const url = `https://api.twelvedata.com/price?symbol=${encodeURIComponent(syms.join(','))}&apikey=${tdKey}`;
-      const r = await fetch(url);
-      if (!r.ok) throw new Error('TwelveData HTTP ' + r.status);
-      return await r.json();
+      const ctrl = new AbortController();
+      const tid = setTimeout(() => ctrl.abort(), 8000);
+      try {
+        const r = await fetch(url, { signal: ctrl.signal });
+        clearTimeout(tid);
+        if (!r.ok) throw new Error('TwelveData HTTP ' + r.status);
+        return await r.json();
+      } catch (e) {
+        clearTimeout(tid);
+        if (e.name === 'AbortError') return null;
+        throw e;
+      }
     })(),
 
     // B) COT via CFTC (Gold)
@@ -101,18 +110,36 @@ export default async function handler(req, res) {
       const url = 'https://publicreporting.cftc.gov/resource/jun7-fc8e.json' +
         '?$where=' + encodeURIComponent("market_and_exchange_names='GOLD - COMMODITY EXCHANGE INC.'") +
         '&$order=report_date_as_yyyy_mm_dd+DESC&$limit=1';
-      const r = await fetch(url, { headers: { Accept: 'application/json' } });
-      if (!r.ok) throw new Error('CFTC HTTP ' + r.status);
-      return await r.json();
+      const ctrl = new AbortController();
+      const tid = setTimeout(() => ctrl.abort(), 8000);
+      try {
+        const r = await fetch(url, { headers: { Accept: 'application/json' }, signal: ctrl.signal });
+        clearTimeout(tid);
+        if (!r.ok) throw new Error('CFTC HTTP ' + r.status);
+        return await r.json();
+      } catch (e) {
+        clearTimeout(tid);
+        if (e.name === 'AbortError') return null;
+        throw e;
+      }
     })(),
 
     // C) News via GNews
     (async () => {
       if (!gnewsKey) return null;
       const url = `https://gnews.io/api/v4/search?q=gold+forex+oil+market&lang=en&max=3&sortby=publishedAt&apikey=${gnewsKey}`;
-      const r = await fetch(url);
-      if (!r.ok) throw new Error('GNews HTTP ' + r.status);
-      return await r.json();
+      const ctrl = new AbortController();
+      const tid = setTimeout(() => ctrl.abort(), 8000);
+      try {
+        const r = await fetch(url, { signal: ctrl.signal });
+        clearTimeout(tid);
+        if (!r.ok) throw new Error('GNews HTTP ' + r.status);
+        return await r.json();
+      } catch (e) {
+        clearTimeout(tid);
+        if (e.name === 'AbortError') return null;
+        throw e;
+      }
     })(),
   ]);
 

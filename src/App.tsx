@@ -676,6 +676,7 @@ export default function Auxiron(){
     fetch("/api/brief?session="+session)
       .then(function(r){return r.json();})
       .then(function(d:any){
+        if(!d||typeof d!=='object'){setBriefErr('Brief not available — tap Generate');setBriefLoading(false);return;}
         setBriefData(d);setBriefLoading(false);
         setBriefStatuses(function(prev:{[k:string]:{ready:boolean,generatedAt?:string,message?:string}}){
           var n={...prev};
@@ -697,7 +698,7 @@ export default function Auxiron(){
       .catch(function(e:any){setBriefErr("Generate failed: "+(e?.message??"Network error"));setBriefLoading(false);});
   }
 
-  function fetchCtx(){
+  async function fetchCtx(){
     var today=new Date().toDateString();
     var newCount=ctxSessionKey===today?ctxCount+1:1;
     if(newCount>10){setCtxErr("Daily limit reached — max 10 briefings per day.");return;}
@@ -715,13 +716,23 @@ export default function Auxiron(){
       timeZone:"Asia/Singapore",hour:"2-digit",minute:"2-digit",hour12:false
     });
     var msg="LIVE MARKET SNAPSHOT:\n"+getSnap()+"\n\nEXACT CURRENT TIME (SGT): "+nowSGT+"\n\nSEARCH WINDOW: Only news and events from "+oneHourAgo+" SGT to "+hourSGT+":"+String(minSGT).padStart(2,"0")+" SGT (last 60 minutes only).\n\nInstructions: Search specifically for what has happened in the last 60 minutes from the timestamp above. Report only genuinely new developments not ongoing background context. If Iran/geopolitical situation is ongoing but nothing NEW happened in the last hour, say so explicitly and provide current price levels instead.\n\nWhat specific events, data prints, speeches, or price moves occurred between "+oneHourAgo+" SGT and now?";
-    callProxy(
-      {model:"claude-haiku-4-5",max_tokens:3000,system:CTX_SYS,
-       messages:[{role:"user",content:msg}],
-       useWebSearch:true},
-      function(res:any){setCtx(res);setLastRefresh(new Date());setCtxLoading(false);setCtxErr(null);},
-      function(e:string){setCtxErr("Failed: "+e);setCtxLoading(false);}
-    );
+    try{
+      var acc=await _streamPhase("/api/stream",
+        {model:"claude-haiku-4-5",max_tokens:3000,system:CTX_SYS,
+         messages:[{role:"user",content:msg}],
+         useWebSearch:true},
+        function(t:string){
+          var partial=_parseCtx(t);
+          if(Object.keys(partial).length>0)setCtx(partial);
+        }
+      );
+      var fin:any=null;
+      try{var si=acc.indexOf("{"),ei=acc.lastIndexOf("}");if(si!==-1&&ei>si)fin=JSON.parse(acc.slice(si,ei+1));}catch(ex){}
+      fin=fin||_parseCtx(acc);
+      setCtx(fin);setLastRefresh(new Date());setCtxLoading(false);setCtxErr(null);
+    }catch(e:any){
+      setCtxErr("Failed: "+(e as any).message);setCtxLoading(false);
+    }
   }
     
   
@@ -858,6 +869,12 @@ export default function Auxiron(){
     ["session","generatedAt","validFor","marketRegime","regimeDrivers","headline","executiveSummary"].forEach(function(f){var v=_exStr(text,f);if(v)d[f]=v;});
     ["alerts","calendar"].forEach(function(f){var v=_exBkt(text,f,"[");if(v)d[f]=v;});
     ["overnightRecap","vixSnapshot"].forEach(function(f){var v=_exBkt(text,f,"{");if(v)d[f]=v;});
+    return d;
+  }
+  function _parseCtx(text:string):any{
+    var d:any={};
+    ["sessionBias","goldBias","nothingNew","regimeUpdate","sessionSummary"].forEach(function(f){var v=_exStr(text,f);if(v)d[f]=v;});
+    ["breaking","marketMoves","nextUp"].forEach(function(f){var v=_exBkt(text,f,"[");if(v)d[f]=v;});
     return d;
   }
   function _parseP2(text:string):any{
@@ -1656,7 +1673,7 @@ export default function Auxiron(){
                   <div className="fu">
                     <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8,flexWrap:"wrap"}}>
                       <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:C.amber,letterSpacing:".06em"}}>
-                        {"Generated "+new Date(briefData.generatedAt??"").toLocaleString("en-SG",{timeZone:"Asia/Singapore",hour:"2-digit",minute:"2-digit",day:"numeric",month:"short"})} SGT
+                        {briefData.generatedAt?("Generated "+new Date(briefData.generatedAt).toLocaleString("en-SG",{timeZone:"Asia/Singapore",hour:"2-digit",minute:"2-digit",day:"numeric",month:"short"})+" SGT"):"Generated"}
                       </div>
                       {briefData.goldPrice&&<div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:C.txt2}}>XAU/USD: {briefData.goldPrice}</div>}
                     </div>
