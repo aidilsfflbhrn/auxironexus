@@ -1657,7 +1657,7 @@ export default function Auxiron(){
                   <div className="sp" style={{width:14,height:14,border:"2px solid "+C.border2,borderTopColor:C.amber,borderRadius:"50%",display:"inline-block",marginBottom:6}}/>
                   <div style={{fontSize:12,color:C.txt2}}>Loading brief…</div>
                 </div>}
-                {!briefLoading&&briefData?.notReady&&(
+                {!briefLoading&&briefData?.notReady&&!briefData?.content&&(
                   <div style={{background:"rgba(58,85,112,0.12)",border:"1px solid "+C.border,borderRadius:8,padding:"14px",textAlign:"center"}}>
                     <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.txt3,letterSpacing:".1em",marginBottom:6}}>
                       {briefData.error?"CACHE ERROR":"SCHEDULED"}
@@ -1678,57 +1678,38 @@ export default function Auxiron(){
                     {"Brief unavailable — tap to regenerate"}
                   </div>
                 )}
-                {!briefLoading&&briefData&&!briefData.error&&!briefData.notReady&&(
+                {!briefLoading&&briefData?.content&&(
                   <div className="fu">
-                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8,flexWrap:"wrap"}}>
-                      <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:C.amber,letterSpacing:".06em"}}>
-                        {(function(){try{return briefData.generatedAt?("Generated "+new Date(briefData.generatedAt).toLocaleString("en-SG",{timeZone:"Asia/Singapore",hour:"2-digit",minute:"2-digit",day:"numeric",month:"short"})+" SGT"):"Generated";}catch(e){return "Generated";}})()}
+                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10,flexWrap:"wrap"}}>
+                      <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:C.txt3,letterSpacing:".06em"}}>
+                        {(function(){
+                          var label=briefData.session?(briefData.session+"").replace(/_/g," ").toUpperCase():"BRIEF";
+                          var ts=(function(){try{return briefData.generatedAt?new Date(briefData.generatedAt).toLocaleString("en-SG",{timeZone:"Asia/Singapore",hour:"2-digit",minute:"2-digit",day:"numeric",month:"short"}):"--";}catch(e){return (briefData.generatedAt+"").slice(0,10);}})();
+                          return "GENERATED "+ts+" · "+label;
+                        })()}
                       </div>
                       {briefData.goldPrice&&<div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:C.txt2}}>XAU/USD: {briefData.goldPrice}</div>}
                     </div>
-                    <div>
-                      {(briefData.content??"Brief not available").split("\n").map(function(line:string,i:number){
-                        if(line.startsWith("## ")){
-                          return <div key={i} style={{borderLeft:"2px solid "+C.amber,paddingLeft:8,marginTop:16,marginBottom:6,fontSize:10,fontFamily:"'IBM Plex Mono',monospace",color:C.amber,textTransform:"uppercase",letterSpacing:".1em",fontWeight:700}}>{line.slice(3)}</div>;
-                        }
-                        if(line.startsWith("BIAS: ")){
-                          const biasVal=line.slice(6).trim();
-                          const biasClr=biasVal==="LONG"?C.up:biasVal==="SHORT"?C.dn:C.amber;
-                          return <div key={i} style={{display:"flex",alignItems:"center",gap:6,marginBottom:3}}>
-                            <span style={{fontSize:11,color:C.txt1}}>{"BIAS: "}</span>
-                            <span style={{fontSize:11,fontWeight:700,color:biasClr,background:biasClr+"22",border:"1px solid "+biasClr+"55",borderRadius:4,padding:"1px 8px"}}>{biasVal}</span>
-                          </div>;
-                        }
-                        if(line.startsWith("GRADE: ")){
-                          const gradeVal=line.slice(7).trim();
-                          const gradeClr=gradeVal==="A+"?C.gold:gradeVal==="A"?C.up:gradeVal==="B"?C.amber:C.txt2;
-                          return <div key={i} style={{display:"flex",alignItems:"center",gap:6,marginBottom:3}}>
-                            <span style={{fontSize:11,color:C.txt1}}>{"GRADE: "}</span>
-                            <span style={{fontSize:11,fontWeight:700,color:gradeClr,background:gradeClr+"22",border:"1px solid "+gradeClr+"55",borderRadius:4,padding:"1px 8px"}}>{gradeVal}</span>
-                          </div>;
-                        }
-                        if(line.startsWith("CONFIDENCE: ")){
-                          const confVal=line.slice(12).trim();
-                          const confClr=confVal==="HIGH"?C.up:confVal==="MEDIUM"?C.amber:C.dn;
-                          return <div key={i} style={{display:"flex",alignItems:"center",gap:6,marginBottom:3}}>
-                            <span style={{fontSize:11,color:C.txt1}}>{"CONFIDENCE: "}</span>
-                            <span style={{fontSize:11,fontWeight:700,color:confClr}}>{confVal}</span>
-                          </div>;
-                        }
-                        if(line.startsWith("DOMINANT REGIME: ")){
-                          const regVal=line.slice(17).trim();
-                          return <div key={i} style={{display:"flex",alignItems:"center",gap:6,marginBottom:3,flexWrap:"wrap"}}>
-                            <span style={{fontSize:11,color:C.txt1}}>{"DOMINANT REGIME: "}</span>
-                            <span style={{fontSize:10,fontWeight:700,color:C.blue,background:"rgba(74,158,255,0.12)",border:"1px solid rgba(74,158,255,0.3)",borderRadius:20,padding:"2px 10px"}}>{regVal}</span>
-                          </div>;
-                        }
-                        if(line.startsWith("MACRO SCORE: ")){
-                          return <div key={i} style={{fontSize:12,fontWeight:700,color:C.txt0,marginBottom:3}}>{line}</div>;
-                        }
-                        if(!line.trim()){return <div key={i} style={{height:4}}/>;}
-                        return <div key={i} style={{fontSize:11,color:C.txt0,lineHeight:1.7,fontFamily:"'IBM Plex Sans',sans-serif",marginBottom:2}}>{line}</div>;
-                      })}
-                    </div>
+                    {(briefData.content||"").split(/\n(?=## )/).map(function(sec:string,sIdx:number){
+                      var slines=sec.split("\n");
+                      var isH=!!(slines[0]&&slines[0].startsWith("## "));
+                      var title=isH?slines[0].slice(3).trim():"";
+                      var body=isH?slines.slice(1):slines;
+                      return <div key={sIdx} style={isH?{background:"#0d1320",border:"1px solid #1a2535",borderRadius:10,padding:"12px",marginBottom:8}:{marginBottom:4}}>
+                        {isH&&<div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:10,color:"#9b77e8",fontWeight:700,letterSpacing:".08em",marginBottom:8,textTransform:"uppercase"}}>{title}</div>}
+                        {body.map(function(line:string,li:number){
+                          if(line.startsWith("BIAS: ")){const bv=line.slice(6).trim();const bc=bv==="LONG"?C.up:bv==="SHORT"?C.dn:C.amber;return <div key={li} style={{display:"flex",alignItems:"center",gap:6,marginBottom:3}}><span style={{fontSize:11,color:C.txt1}}>{"BIAS: "}</span><span style={{fontSize:11,fontWeight:700,color:bc,background:bc+"22",border:"1px solid "+bc+"55",borderRadius:4,padding:"1px 8px"}}>{bv}</span></div>;}
+                          if(line.startsWith("GRADE: ")){const gv=line.slice(7).trim();const gc=gv==="A+"?C.gold:gv==="A"?C.up:gv==="B"?C.amber:C.txt2;return <div key={li} style={{display:"flex",alignItems:"center",gap:6,marginBottom:3}}><span style={{fontSize:11,color:C.txt1}}>{"GRADE: "}</span><span style={{fontSize:11,fontWeight:700,color:gc,background:gc+"22",border:"1px solid "+gc+"55",borderRadius:4,padding:"1px 8px"}}>{gv}</span></div>;}
+                          if(line.startsWith("CONFIDENCE: ")){const cv=line.slice(12).trim();const cc=cv==="HIGH"?C.up:cv==="MEDIUM"?C.amber:C.dn;return <div key={li} style={{display:"flex",alignItems:"center",gap:6,marginBottom:3}}><span style={{fontSize:11,color:C.txt1}}>{"CONFIDENCE: "}</span><span style={{fontSize:11,fontWeight:700,color:cc}}>{cv}</span></div>;}
+                          if(line.startsWith("DOMINANT REGIME: ")){const rv=line.slice(17).trim();return <div key={li} style={{display:"flex",alignItems:"center",gap:6,marginBottom:3,flexWrap:"wrap"}}><span style={{fontSize:11,color:C.txt1}}>{"DOMINANT REGIME: "}</span><span style={{fontSize:10,fontWeight:700,color:C.blue,background:"rgba(74,158,255,0.12)",border:"1px solid rgba(74,158,255,0.3)",borderRadius:20,padding:"2px 10px"}}>{rv}</span></div>;}
+                          if(line.startsWith("MACRO SCORE: ")){return <div key={li} style={{fontSize:12,fontWeight:700,color:C.txt0,marginBottom:3}}>{line}</div>;}
+                          if(!line.trim()){return <div key={li} style={{height:4}}/>;}
+                          const pts=line.split(/\*\*([^*]+)\*\*/);
+                          if(pts.length>1){return <div key={li} style={{fontSize:12,color:"#c2d4e8",lineHeight:1.7,fontFamily:"'IBM Plex Sans',sans-serif",marginBottom:2}}>{pts.map(function(p:string,pi:number){return pi%2===1?<span key={pi} style={{color:"#e8d5a3",fontWeight:600}}>{p}</span>:p;})}</div>;}
+                          return <div key={li} style={{fontSize:12,color:"#c2d4e8",lineHeight:1.7,fontFamily:"'IBM Plex Sans',sans-serif",marginBottom:2}}>{line}</div>;
+                        })}
+                      </div>;
+                    })}
                   </div>
                 )}
               </div>
