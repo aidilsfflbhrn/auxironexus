@@ -1581,7 +1581,7 @@ export default function Auxiron(){
                     <div style={{width:6,height:6,borderRadius:"50%",background:C.up,flexShrink:0}}/>
                     <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.up,fontWeight:700}}>READY</span>
                     {status?.generatedAt&&<span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.txt3}}>
-                      · {new Date(status.generatedAt).toLocaleString("en-SG",{timeZone:"Asia/Singapore",hour:"2-digit",minute:"2-digit",month:"short",day:"numeric"})} SGT
+                      · {(function(){try{return new Date(status.generatedAt).toLocaleString("en-SG",{timeZone:"Asia/Singapore",hour:"2-digit",minute:"2-digit",month:"short",day:"numeric"});}catch(e){return (status.generatedAt+"").slice(0,10);}})()}  SGT
                     </span>}
                   </div>}
                   {!isLoadingCard&&isScheduled&&<div style={{display:"flex",alignItems:"center",gap:5}}>
@@ -1625,7 +1625,7 @@ export default function Auxiron(){
                       <div style={{width:6,height:6,borderRadius:"50%",background:C.up,flexShrink:0}}/>
                       <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.up,fontWeight:700}}>READY</span>
                       {status?.generatedAt&&<span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.txt3}}>
-                        · {new Date(status.generatedAt).toLocaleString("en-SG",{timeZone:"Asia/Singapore",hour:"2-digit",minute:"2-digit",month:"short",day:"numeric"})} SGT
+                        · {(function(){try{return new Date(status.generatedAt).toLocaleString("en-SG",{timeZone:"Asia/Singapore",hour:"2-digit",minute:"2-digit",month:"short",day:"numeric"});}catch(e){return (status.generatedAt+"").slice(0,10);}})()}  SGT
                       </span>}
                     </div>}
                     {!isLoadingCard&&isScheduled&&<div style={{display:"flex",alignItems:"center",gap:5}}>
@@ -1664,16 +1664,16 @@ export default function Auxiron(){
                     </button>
                   </div>
                 )}
-                {!briefLoading&&(briefErr||(briefData?.error&&!briefData?.notReady))&&(
+                {!briefLoading&&(briefErr||(briefData?.error&&!briefData?.notReady))&&!briefData?.content&&(
                   <div style={{background:"rgba(240,64,64,0.07)",border:"1px solid rgba(240,64,64,0.2)",borderRadius:8,padding:"10px 12px",color:C.dn,fontSize:12,marginBottom:10}}>
-                    {"Brief unavailable — "+(briefErr||(briefData?.message??"Unknown error"))}
+                    {"Brief unavailable — tap to regenerate"}
                   </div>
                 )}
                 {!briefLoading&&briefData&&!briefData.error&&!briefData.notReady&&(
                   <div className="fu">
                     <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8,flexWrap:"wrap"}}>
                       <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:C.amber,letterSpacing:".06em"}}>
-                        {briefData.generatedAt?("Generated "+new Date(briefData.generatedAt).toLocaleString("en-SG",{timeZone:"Asia/Singapore",hour:"2-digit",minute:"2-digit",day:"numeric",month:"short"})+" SGT"):"Generated"}
+                        {(function(){try{return briefData.generatedAt?("Generated "+new Date(briefData.generatedAt).toLocaleString("en-SG",{timeZone:"Asia/Singapore",hour:"2-digit",minute:"2-digit",day:"numeric",month:"short"})+" SGT"):"Generated";}catch(e){return "Generated";}})()}
                       </div>
                       {briefData.goldPrice&&<div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,color:C.txt2}}>XAU/USD: {briefData.goldPrice}</div>}
                     </div>
