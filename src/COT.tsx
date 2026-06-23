@@ -89,15 +89,21 @@ export default function COT({ agentStatus }: { agentStatus?: any }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const controllers: AbortController[] = SYMS.map(() => new AbortController());
+    const timers: ReturnType<typeof setTimeout>[] = controllers.map((ctrl, i) =>
+      setTimeout(() => controllers[i].abort(), 10000)
+    );
     let cancelled = false;
+
     (async () => {
       const results = await Promise.allSettled(
-        SYMS.map(sym =>
-          fetch("/api/cot?symbol=" + encodeURIComponent(sym.s))
+        SYMS.map((sym, i) =>
+          fetch("/api/cot?symbol=" + encodeURIComponent(sym.s), { signal: controllers[i].signal })
             .then(r => r.json())
             .then((d: CotData) => ({ s: sym.s, d }))
         )
       );
+      timers.forEach(clearTimeout);
       if (cancelled) return;
       const map: Record<string, CotData> = {};
       for (const res of results) {
@@ -106,7 +112,12 @@ export default function COT({ agentStatus }: { agentStatus?: any }) {
       setData(map);
       setLoading(false);
     })();
-    return () => { cancelled = true; };
+
+    return () => {
+      cancelled = true;
+      timers.forEach(clearTimeout);
+      controllers.forEach(c => c.abort());
+    };
   }, []);
 
   const hasAny = Object.keys(data).length > 0;

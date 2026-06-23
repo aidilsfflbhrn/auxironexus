@@ -4,18 +4,33 @@
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
   res.setHeader("Access-Control-Max-Age", "86400");
   if (req.method === "OPTIONS") return res.status(200).end();
 
-  var TD_KEY = process.env.TWELVE_key;
-  var symbol = req.query.symbol;
-  var endpoint = req.query.endpoint;
-  var interval = req.query.interval || "30min";
-  var outputsize = req.query.outputsize || "48";
-
+  const urlParams = new URLSearchParams(req.url.split('?')[1] ?? '');
+  const symbol = urlParams.get('symbol');
   if (!symbol) return res.status(400).json({ error: "No symbol" });
+
+  try {
+    const result = await Promise.race([
+      run(req),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 20000))
+    ])
+    return res.json(result)
+  } catch(e) {
+    return res.status(200).json({ error: e.message, ts: Date.now() })
+  }
+}
+
+async function run(req) {
+  const urlParams = new URLSearchParams(req.url.split('?')[1] ?? '');
+  var TD_KEY = process.env.TWELVE_key;
+  var symbol = urlParams.get('symbol');
+  var endpoint = urlParams.get('endpoint');
+  var interval = urlParams.get('interval') || "30min";
+  var outputsize = urlParams.get('outputsize') || "48";
 
   // Upgraded plan: native symbols for indices and volatility
   var TD_MAP = {
@@ -74,30 +89,26 @@ export default async function handler(req, res) {
 
   // Timeseries endpoint
   if (endpoint === "timeseries") {
-    try {
-      var cfg = TD_MAP[symbol];
-      var tdSym = cfg ? cfg.td : symbol;
-      var url = "https://api.twelvedata.com/time_series?symbol=" +
-        encodeURIComponent(tdSym) + "&interval=" + interval +
-        "&outputsize=" + outputsize + "&apikey=" + TD_KEY;
-      var r = await fetch(url);
-      if (!r.ok) return res.status(502).json({ error: "TwelveData HTTP " + r.status });
-      var data = await r.json();
-      if (data.code && data.code !== 200) return res.status(200).json({ error: data.message || "TwelveData error", code: data.code });
-      if (cfg && cfg.scale && cfg.scale !== 1 && data.values) {
-        data.values = data.values.map(function(v) {
-          return Object.assign({}, v, {
-            open:  String(parseFloat(v.open)  * cfg.scale),
-            high:  String(parseFloat(v.high)  * cfg.scale),
-            low:   String(parseFloat(v.low)   * cfg.scale),
-            close: String(parseFloat(v.close) * cfg.scale),
-          });
+    var cfg = TD_MAP[symbol];
+    var tdSym = cfg ? cfg.td : symbol;
+    var url = "https://api.twelvedata.com/time_series?symbol=" +
+      encodeURIComponent(tdSym) + "&interval=" + interval +
+      "&outputsize=" + outputsize + "&apikey=" + TD_KEY;
+    var r = await fetch(url);
+    if (!r.ok) return { error: "TwelveData HTTP " + r.status };
+    var data = await r.json();
+    if (data.code && data.code !== 200) return { error: data.message || "TwelveData error", code: data.code };
+    if (cfg && cfg.scale && cfg.scale !== 1 && data.values) {
+      data.values = data.values.map(function(v) {
+        return Object.assign({}, v, {
+          open:  String(parseFloat(v.open)  * cfg.scale),
+          high:  String(parseFloat(v.high)  * cfg.scale),
+          low:   String(parseFloat(v.low)   * cfg.scale),
+          close: String(parseFloat(v.close) * cfg.scale),
         });
-      }
-      return res.status(200).json(data);
-    } catch(e) {
-      return res.status(500).json({ error: e.message });
+      });
     }
+    return data;
   }
 
   // Batch price fetch
@@ -155,7 +166,6 @@ export default async function handler(req, res) {
           if (!data) return;
           batch.forEach(function(orig, idx) {
             var tdSym = tdBatch[idx];
-            // Single-symbol responses return { price, ... } directly; batch returns { SYMBOL: { price, ... } }
             var entry = batch.length === 1 ? data : data[tdSym];
             if (entry && entry.price && !entry.code) {
               var cfg = TD_MAP[orig];
@@ -169,5 +179,5 @@ export default async function handler(req, res) {
     }));
   }
 
-  return res.status(200).json(result);
+  return result;
 }

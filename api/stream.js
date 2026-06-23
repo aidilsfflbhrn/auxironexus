@@ -22,6 +22,7 @@ export default async function handler(req, res) {
     body.tools = [{ type: 'web_search_20250305', name: 'web_search' }];
   }
 
+  let streamClosed = false;
   try {
     const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -37,22 +38,22 @@ export default async function handler(req, res) {
     if (!anthropicRes.ok) {
       const errText = await anthropicRes.text();
       res.write(`data: ${JSON.stringify({ error: errText })}\n\n`);
-      return res.end();
-    }
-
-    const reader = anthropicRes.body.getReader();
-    const decoder = new TextDecoder();
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      const chunk = decoder.decode(value, { stream: true });
-      res.write(chunk);
-      if (res.flush) res.flush();
+    } else {
+      const reader = anthropicRes.body.getReader();
+      const decoder = new TextDecoder();
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+        res.write(chunk);
+        if (res.flush) res.flush();
+      }
+      streamClosed = true;
     }
   } catch (err) {
     res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
+  } finally {
+    if (!streamClosed) res.write("data: [DONE]\n\n");
+    res.end();
   }
-
-  res.end();
 }

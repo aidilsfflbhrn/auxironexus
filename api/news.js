@@ -1,9 +1,21 @@
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   if (req.method === "OPTIONS") return res.status(200).end();
 
+  try {
+    const result = await Promise.race([
+      run(req),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 20000))
+    ])
+    return res.json(result)
+  } catch(e) {
+    return res.status(200).json({ error: e.message, ts: Date.now() })
+  }
+}
+
+async function run(req) {
   const urlParams = new URLSearchParams(req.url.split('?')[1] ?? '');
   const q = urlParams.get('q') ?? '';
   const symbols = urlParams.get('symbols') ?? '';
@@ -44,7 +56,7 @@ export default async function handler(req, res) {
             relevanceScore: article.relevance_score || null,
           };
         });
-        return res.status(200).json({ articles, source: 'marketaux' });
+        return { articles, source: 'marketaux' };
       }
     } catch (e) {
       // fall through to GNews
@@ -53,38 +65,34 @@ export default async function handler(req, res) {
 
   // GNews fallback
   if (!GNEWS_KEY || GNEWS_KEY === "YOUR_GNEWS_KEY") {
-    return res.status(200).json({ articles: [], source: 'gnews' });
+    return { articles: [], source: 'gnews' };
   }
 
   if (!q) {
-    return res.status(200).json({ articles: [], source: 'gnews' });
+    return { articles: [], source: 'gnews' };
   }
 
-  try {
-    const url = "https://gnews.io/api/v4/search?q=" +
-      encodeURIComponent(q) +
-      "&lang=en&max=6&sortby=publishedAt&apikey=" + GNEWS_KEY;
+  const url = "https://gnews.io/api/v4/search?q=" +
+    encodeURIComponent(q) +
+    "&lang=en&max=6&sortby=publishedAt&apikey=" + GNEWS_KEY;
 
-    const r = await fetch(url);
-    const data = await r.json();
+  const r = await fetch(url);
+  const data = await r.json();
 
-    if (data.errors) {
-      return res.status(200).json({ articles: [], source: 'gnews' });
-    }
-
-    const articles = (data.articles || []).map(function(a) {
-      return {
-        title: a.title,
-        description: a.description,
-        url: a.url,
-        publishedAt: a.publishedAt,
-        source: { name: a.source && a.source.name ? a.source.name : "Unknown" },
-        image: a.image || null,
-      };
-    });
-
-    return res.status(200).json({ articles, source: 'gnews' });
-  } catch (e) {
-    return res.status(200).json({ articles: [], source: 'gnews', error: e.message });
+  if (data.errors) {
+    return { articles: [], source: 'gnews' };
   }
+
+  const articles = (data.articles || []).map(function(a) {
+    return {
+      title: a.title,
+      description: a.description,
+      url: a.url,
+      publishedAt: a.publishedAt,
+      source: { name: a.source && a.source.name ? a.source.name : "Unknown" },
+      image: a.image || null,
+    };
+  });
+
+  return { articles, source: 'gnews' };
 }
