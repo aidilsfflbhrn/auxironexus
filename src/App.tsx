@@ -693,6 +693,15 @@ export default function Auxiron(){
       .then(function(r){return r.json();})
       .then(function(d:any){
         if(d.error){setBriefErr("Generate failed: "+(d.message??"Unknown error"));setBriefLoading(false);}
+        else if(d.content){
+          setBriefData(d);
+          setBriefLoading(false);
+          setBriefStatuses(function(prev:{[k:string]:{ready:boolean,generatedAt?:string,message?:string}}){
+            var n={...prev};
+            n[session]={ready:true,generatedAt:d.generatedAt??''};
+            return n;
+          });
+        }
         else{fetchBriefForCard(session);}
       })
       .catch(function(e:any){setBriefErr("Generate failed: "+(e?.message??"Network error"));setBriefLoading(false);});
@@ -1579,7 +1588,7 @@ export default function Auxiron(){
                   </div>}
                   {!isLoadingCard&&isReady&&<div style={{display:"flex",alignItems:"center",gap:5}}>
                     <div style={{width:6,height:6,borderRadius:"50%",background:C.up,flexShrink:0}}/>
-                    <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.up,fontWeight:700}}>READY</span>
+                    <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.up,fontWeight:700}}>GENERATED</span>
                     {status?.generatedAt&&<span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.txt3}}>
                       · {(function(){try{return new Date(status.generatedAt).toLocaleString("en-SG",{timeZone:"Asia/Singapore",hour:"2-digit",minute:"2-digit",month:"short",day:"numeric"});}catch(e){return (status.generatedAt+"").slice(0,10);}})()}  SGT
                     </span>}
@@ -1623,7 +1632,7 @@ export default function Auxiron(){
                     </div>}
                     {!isLoadingCard&&isReady&&<div style={{display:"flex",alignItems:"center",gap:5}}>
                       <div style={{width:6,height:6,borderRadius:"50%",background:C.up,flexShrink:0}}/>
-                      <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.up,fontWeight:700}}>READY</span>
+                      <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.up,fontWeight:700}}>GENERATED</span>
                       {status?.generatedAt&&<span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:8,color:C.txt3}}>
                         · {(function(){try{return new Date(status.generatedAt).toLocaleString("en-SG",{timeZone:"Asia/Singapore",hour:"2-digit",minute:"2-digit",month:"short",day:"numeric"});}catch(e){return (status.generatedAt+"").slice(0,10);}})()}  SGT
                       </span>}
