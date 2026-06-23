@@ -25,29 +25,26 @@ interface CotData {
 interface Sym { s: string; l: string; grp: string; }
 
 const SYMS: Sym[] = [
-  { s:"XAU/USD", l:"GOLD",      grp:"Commodities" },
-  { s:"XAG/USD", l:"SILVER",    grp:"Commodities" },
-  { s:"WTI/USD", l:"OIL",       grp:"Commodities" },
-  { s:"BRENT",   l:"BRENT",     grp:"Commodities" },
-  { s:"SPX",     l:"S&P 500",   grp:"Indices" },
-  { s:"NDX",     l:"NASDAQ",    grp:"Indices" },
-  { s:"DJI",     l:"DOW 30",    grp:"Indices" },
-  { s:"DX",      l:"DXY",       grp:"Indices" },
-  { s:"EUR/USD", l:"EUR/USD",   grp:"Forex" },
-  { s:"GBP/USD", l:"GBP/USD",   grp:"Forex" },
-  { s:"USD/JPY", l:"USD/JPY",   grp:"Forex" },
-  { s:"AUD/USD", l:"AUD/USD",   grp:"Forex" },
-  { s:"NZD/USD", l:"NZD/USD",   grp:"Forex" },
-  { s:"USD/CAD", l:"USD/CAD",   grp:"Forex" },
-  { s:"USD/CHF", l:"USD/CHF",   grp:"Forex" },
-  { s:"US10Y",   l:"US 10Y",    grp:"Bonds" },
-  { s:"US02Y",   l:"US 2Y",     grp:"Bonds" },
-  { s:"US30Y",   l:"US 30Y",    grp:"Bonds" },
-  { s:"BTC/USD", l:"BITCOIN",   grp:"Crypto" },
-  { s:"ETH/USD", l:"ETHEREUM",  grp:"Crypto" },
+  { s:"XAU/USD",  l:"GOLD",      grp:"Commodities" },
+  { s:"XAG/USD",  l:"SILVER",    grp:"Commodities" },
+  { s:"WTI/USD",  l:"OIL",       grp:"Commodities" },
+  { s:"COPPER",   l:"COPPER",    grp:"Commodities" },
+  { s:"PLATINUM", l:"PLATINUM",  grp:"Commodities" },
+  { s:"SPX",      l:"S&P 500",   grp:"Indices" },
+  { s:"NDX",      l:"NASDAQ",    grp:"Indices" },
+  { s:"DJI",      l:"DOW 30",    grp:"Indices" },
+  { s:"RUSSELL",  l:"RUSSELL",   grp:"Indices" },
+  { s:"DX",       l:"DXY",       grp:"Indices" },
+  { s:"EUR/USD",  l:"EUR/USD",   grp:"Forex" },
+  { s:"GBP/USD",  l:"GBP/USD",   grp:"Forex" },
+  { s:"USD/JPY",  l:"USD/JPY",   grp:"Forex" },
+  { s:"AUD/USD",  l:"AUD/USD",   grp:"Forex" },
+  { s:"NZD/USD",  l:"NZD/USD",   grp:"Forex" },
+  { s:"USD/CAD",  l:"USD/CAD",   grp:"Forex" },
+  { s:"USD/CHF",  l:"USD/CHF",   grp:"Forex" },
 ];
 
-const GRP_ORDER = ["Commodities", "Indices", "Forex", "Bonds", "Crypto"];
+const GRP_ORDER = ["Commodities", "Indices", "Forex"];
 
 const GRP_COLOR: Record<string, string> = {
   Commodities: "#f0a020",
@@ -89,34 +86,35 @@ export default function COT({ agentStatus }: { agentStatus?: any }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const controllers: AbortController[] = SYMS.map(() => new AbortController());
-    const timers: ReturnType<typeof setTimeout>[] = controllers.map((ctrl, i) =>
-      setTimeout(() => controllers[i].abort(), 10000)
-    );
     let cancelled = false;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 20000);
 
     (async () => {
-      const results = await Promise.allSettled(
-        SYMS.map((sym, i) =>
-          fetch("/api/cot?symbol=" + encodeURIComponent(sym.s), { signal: controllers[i].signal })
-            .then(r => r.json())
-            .then((d: CotData) => ({ s: sym.s, d }))
-        )
-      );
-      timers.forEach(clearTimeout);
-      if (cancelled) return;
-      const map: Record<string, CotData> = {};
-      for (const res of results) {
-        if (res.status === "fulfilled") map[res.value.s] = res.value.d;
+      try {
+        const r = await fetch("/api/cot?all=true", { signal: controller.signal });
+        const json = await r.json();
+        clearTimeout(timer);
+        if (cancelled) return;
+        const map: Record<string, CotData> = {};
+        if (Array.isArray(json?.symbols)) {
+          for (const item of json.symbols) {
+            const { symbol, ...d } = item as { symbol: string } & CotData;
+            if (symbol) map[symbol] = d;
+          }
+        }
+        setData(map);
+      } catch {
+        // silently fail, data stays empty
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-      setData(map);
-      setLoading(false);
     })();
 
     return () => {
       cancelled = true;
-      timers.forEach(clearTimeout);
-      controllers.forEach(c => c.abort());
+      clearTimeout(timer);
+      controller.abort();
     };
   }, []);
 
@@ -126,7 +124,7 @@ export default function COT({ agentStatus }: { agentStatus?: any }) {
     return (
       <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", minHeight:"40vh", gap:10, fontFamily:sans }}>
         <div style={{ fontSize:10, color:C.txt3, fontFamily:mono, letterSpacing:".1em" }}>LOADING COT DATA…</div>
-        <div style={{ fontSize:9, color:C.txt3, fontFamily:mono }}>Fetching CFTC data · 20 instruments</div>
+        <div style={{ fontSize:9, color:C.txt3, fontFamily:mono }}>Fetching 17 instruments in batches…</div>
       </div>
     );
   }

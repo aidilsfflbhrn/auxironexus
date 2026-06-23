@@ -20,6 +20,10 @@ async function run(req) {
   const q = urlParams.get('q') ?? '';
   const symbols = urlParams.get('symbols') ?? '';
 
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  const fromDate = sevenDaysAgo.toISOString().split('T')[0];
+
   const MARKETAUX_KEY = process.env.MARKETAUX_key;
   const GNEWS_KEY = process.env.GNEWS_key;
 
@@ -32,6 +36,9 @@ async function run(req) {
         limit: '10',
         sort: 'published_desc',
         filter_entities: 'true',
+        published_after: fromDate,
+        sort_by: 'published_at',
+        sort_order: 'desc',
       });
       if (symbols) {
         params.set('symbols', symbols);
@@ -44,19 +51,23 @@ async function run(req) {
       const data = await r.json();
 
       if (!data.error && Array.isArray(data.data) && data.data.length > 0) {
-        const articles = data.data.map(function(article) {
-          return {
-            title: article.title,
-            description: article.description,
-            url: article.url,
-            publishedAt: article.published_at,
-            source: { name: article.source },
-            image: article.image_url || null,
-            sentiment: article.entities?.[0]?.sentiment_score ?? null,
-            relevanceScore: article.relevance_score || null,
-          };
-        });
-        return { articles, source: 'marketaux' };
+        const articles = data.data
+          .filter(function(article) { return (article.relevance_score ?? 0) >= 50; })
+          .map(function(article) {
+            return {
+              title: article.title,
+              description: article.description,
+              url: article.url,
+              publishedAt: article.published_at,
+              source: { name: article.source },
+              image: article.image_url || null,
+              sentiment: article.entities?.[0]?.sentiment_score ?? null,
+              relevanceScore: article.relevance_score || null,
+            };
+          });
+        if (articles.length >= 2) {
+          return { articles, source: 'marketaux' };
+        }
       }
     } catch (e) {
       // fall through to GNews
@@ -74,7 +85,9 @@ async function run(req) {
 
   const url = "https://gnews.io/api/v4/search?q=" +
     encodeURIComponent(q) +
-    "&lang=en&max=6&sortby=publishedAt&apikey=" + GNEWS_KEY;
+    "&lang=en&max=6&sortby=publishedAt" +
+    "&from=" + encodeURIComponent(sevenDaysAgo.toISOString()) +
+    "&apikey=" + GNEWS_KEY;
 
   const r = await fetch(url);
   const data = await r.json();
