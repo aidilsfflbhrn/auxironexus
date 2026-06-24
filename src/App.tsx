@@ -676,6 +676,7 @@ export default function Auxiron(){
     fetch("/api/brief?session="+session)
       .then(function(r){return r.json();})
       .then(function(d:any){
+        console.log('BRIEF RAW RESPONSE:',JSON.stringify(d).slice(0,200));
         if(!d||typeof d!=='object'){setBriefErr('Brief not available — tap Generate');setBriefLoading(false);return;}
         setBriefData(d);setBriefLoading(false);
         setBriefStatuses(function(prev:{[k:string]:{ready:boolean,generatedAt?:string,message?:string}}){
@@ -692,6 +693,7 @@ export default function Auxiron(){
     fetch("/api/brief-generate?session="+session)
       .then(function(r){return r.json();})
       .then(function(d:any){
+        console.log('BRIEF RAW RESPONSE:',JSON.stringify(d).slice(0,200));
         if(d.error){setBriefErr("Generate failed: "+(d.message??"Unknown error"));setBriefLoading(false);}
         else if(d.content){
           setBriefData(d);
@@ -1673,7 +1675,8 @@ export default function Auxiron(){
                     </button>
                   </div>
                 )}
-                {!briefLoading&&(briefErr||(briefData?.error&&!briefData?.notReady))&&!briefData?.content&&(
+                {!briefLoading&&(()=>{console.log('BRIEF DEBUG:',JSON.stringify(briefData).slice(0,200));return null;})()}
+                {!briefLoading&&(function(){var hasBrief=briefData&&(briefData.content||briefData.headline||briefData.executiveSummary);return(!hasBrief&&!briefData?.notReady);})()&&(
                   <div style={{background:"rgba(240,64,64,0.07)",border:"1px solid rgba(240,64,64,0.2)",borderRadius:8,padding:"10px 12px",color:C.dn,fontSize:12,marginBottom:10}}>
                     {"Brief unavailable — tap to regenerate"}
                   </div>
