@@ -1,5 +1,8 @@
 export const config = { maxDuration: 30 };
 
+import { findOpenRecordForInstrument, kvGetJson } from './lib/track-record.js';
+import { classifyDxyPillar, classifyUsdJpyPillar, classifyEdgeFinderPillar, checkEdgeFinderStaleness, updatePillarSnapshot } from './lib/pillars.js';
+
 async function kvGet(baseUrl, token, key) {
   try {
     const r = await fetch(`${baseUrl}/get/${encodeURIComponent(key)}`, {
@@ -96,7 +99,7 @@ async function runAgent(kvUrl, kvToken) {
   try { if (latestAlertRaw) existingAlert = JSON.parse(latestAlertRaw); } catch (e) {}
 
   // ── STEP 2: FETCH FRESH DATA IN PARALLEL ──────────────────────
-  let currentGold = null, currentDxy = null, currentVix = null;
+  let currentGold = null, currentDxy = null, currentVix = null, currentUsdJpy = null;
   let cotDate = null, cotError = null;
   let newsHeadlines = [], newsHash = null, newsFetchError = null;
 
@@ -106,7 +109,7 @@ async function runAgent(kvUrl, kvToken) {
     // A) Prices via TwelveData batch
     (async () => {
       if (!tdKey) return null;
-      const syms = ['XAU/USD', 'DX', 'VIX'];
+      const syms = ['XAU/USD', 'DX', 'VIX', 'USD/JPY'];
       const url = `https://api.twelvedata.com/price?symbol=${encodeURIComponent(syms.join(','))}&apikey=${tdKey}`;
       const ctrl = new AbortController();
       const tid = setTimeout(() => ctrl.abort(), 8000);
@@ -166,6 +169,7 @@ async function runAgent(kvUrl, kvToken) {
     if (d['XAU/USD']?.price) currentGold = parseFloat(d['XAU/USD'].price);
     if (d['DX']?.price) currentDxy = parseFloat(d['DX'].price);
     if (d['VIX']?.price) currentVix = parseFloat(d['VIX'].price);
+    if (d['USD/JPY']?.price) currentUsdJpy = parseFloat(d['USD/JPY'].price);
   }
 
   // Parse COT
@@ -314,10 +318,39 @@ async function runAgent(kvUrl, kvToken) {
   stateWrites.push(kvSet(kvUrl, kvToken, 'agent:last_run', String(now), 600));
   await Promise.allSettled(stateWrites);
 
+  // ── STEP 6.5: THESIS-PILLAR CHECK (fast pillars only) ──────────
+  // DXY correlation and USD/JPY carry-risk are pure price ratios, so this
+  // 5-min cycle is the right cadence for them. Rate/data expectation and
+  // market structure only change at brief-generation cadence and are
+  // refreshed there instead (api/brief-generate.js) — see api/lib/pillars.js
+  // for the full division of labour. Skipped entirely if no thesis is open;
+  // there is nothing to monitor pillars for otherwise.
+  let pillarShifts = [];
+  try {
+    const openRecord = await findOpenRecordForInstrument(kvUrl, kvToken, 'XAU/USD');
+    if (openRecord) {
+      const snapshot = await kvGetJson(kvUrl, kvToken, 'pillars:XAU/USD:snapshot');
+      const ref = snapshot?.referencePrices;
+      const dxyChangePct = (ref?.dxy && currentDxy !== null) ? ((currentDxy - ref.dxy) / ref.dxy) * 100 : null;
+      const usdJpyChangePct = (ref?.usdJpy && currentUsdJpy !== null) ? ((currentUsdJpy - ref.usdJpy) / ref.usdJpy) * 100 : null;
+
+      const edgeFinderStored = await kvGetJson(kvUrl, kvToken, 'edgefinder:latest');
+      const edgeFinderState = checkEdgeFinderStaleness(edgeFinderStored?.receivedAt ?? null, edgeFinderStored?.read ?? null);
+
+      pillarShifts = await updatePillarSnapshot(kvUrl, kvToken, 'XAU/USD', {
+        dxyCorrelation: classifyDxyPillar(dxyChangePct),
+        usdJpyCarryRisk: classifyUsdJpyPillar(usdJpyChangePct),
+        edgeFinderRead: classifyEdgeFinderPillar(edgeFinderState),
+      });
+    }
+  } catch (e) {
+    // Pillar check failure must not crash the agent cycle.
+  }
+
   // ── STEP 7: RETURN ────────────────────────────────────────────
   return {
     timestamp: new Date().toISOString(),
-    prices: { gold: currentGold, dxy: currentDxy, vix: currentVix },
+    prices: { gold: currentGold, dxy: currentDxy, vix: currentVix, usdJpy: currentUsdJpy },
     flags: { PRICE_ALERT, NEWS_UPDATED, COT_UPDATED, COT_RETRY },
     diffs: { gold: goldDiff, dxy: dxyDiff, vixPct },
     action: {
@@ -327,6 +360,7 @@ async function runAgent(kvUrl, kvToken) {
       latest_alert: existingAlert,
       ...(triageError ? { error: triageError } : {}),
     },
+    pillarShifts,
     ...(cotError ? { cot_error: cotError } : {}),
     ...(newsFetchError ? { news_error: newsFetchError } : {}),
   };

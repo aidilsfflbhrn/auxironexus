@@ -19,7 +19,9 @@
     "api/agent.js": { "maxDuration": 30 },
     "api/accounts.js": { "maxDuration": 10 },
     "api/accounts/sync.js": { "maxDuration": 10 },
-    "api/redis-check.js": { "maxDuration": 10 }
+    "api/redis-check.js": { "maxDuration": 10 },
+    "api/score-calls.js": { "maxDuration": 30 },
+    "api/edgefinder-sync.js": { "maxDuration": 10 }
   },
   "crons": [
     {
@@ -41,6 +43,10 @@
     {
       "path": "/api/agent",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/score-calls",
+      "schedule": "15 22 * * *"
     }
   ]
 }

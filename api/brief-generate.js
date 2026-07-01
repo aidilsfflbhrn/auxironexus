@@ -5,6 +5,19 @@ import { getConfidenceCap, enforceConfidenceCap, buildDataIntegrityHeader } from
 import { buildFactorScorecard, summarizeScorecard } from './lib/factor-scorecard.js'
 import { parseBias, parseInvalidationLine, gradeBrief, buildAuthorizationBlock } from './lib/grading.js'
 import { assembleBrief } from './lib/assemble-brief.js'
+import { buildCallRecord, findOpenRecordForInstrument, storeCallRecord, kvGetJson } from './lib/track-record.js'
+import {
+  classifyRateExpectationPillar,
+  classifyStructurePillar,
+  classifyEdgeFinderPillar,
+  checkEdgeFinderStaleness,
+  parseDominantRegime,
+  parseRegimeConfidence,
+  buildPillarAlertBlock,
+  resetPillarSnapshot,
+  updatePillarSnapshot,
+  consumePendingPillarAlerts,
+} from './lib/pillars.js'
 
 const fetchWithTimeout = async (url, options = {}, timeoutMs = 8000) => {
   const controller = new AbortController()
@@ -88,7 +101,10 @@ export default async function handler(req, res) {
       fetchWithTimeout(`https://api.twelvedata.com/time_series?symbol=SPX&interval=1day&outputsize=10&apikey=${process.env.TWELVE_key}`),
       includesCOT ? fetchWithTimeout(`https://publicreporting.cftc.gov/resource/jun7-fc8e.json?$where=market_and_exchange_names=%27GOLD%20-%20COMMODITY%20EXCHANGE%20INC.%27&$order=report_date_as_yyyy_mm_dd%20DESC&$limit=2`) : Promise.resolve(null),
       fetchWithTimeout(`https://gnews.io/api/v4/search?q=gold+OR+iran+OR+federal+reserve+OR+oil&lang=en&max=5&token=${process.env.GNEWS_key}`),
-      includesM30 ? fetchWithTimeout(`https://api.twelvedata.com/time_series?symbol=XAU%2FUSD&interval=30min&outputsize=48&apikey=${process.env.TWELVE_key}`) : Promise.resolve(null)
+      includesM30 ? fetchWithTimeout(`https://api.twelvedata.com/time_series?symbol=XAU%2FUSD&interval=30min&outputsize=48&apikey=${process.env.TWELVE_key}`) : Promise.resolve(null),
+      // USD/JPY — used only as the thesis-pillar carry-risk reference price; kept
+      // out of validateFeeds() deliberately so it never affects confidence cap or grading.
+      fetchWithTimeout(`https://api.twelvedata.com/time_series?symbol=USD%2FJPY&interval=1day&outputsize=10&apikey=${process.env.TWELVE_key}`)
     ])
 
     const h4Data = await safeJson(results[0])
@@ -100,6 +116,9 @@ export default async function handler(req, res) {
     const cotData = await safeJson(results[6])
     const newsData = await safeJson(results[7])
     const m30Data = await safeJson(results[8])
+    const usdJpyData = await safeJson(results[9])
+    const usdJpyValues = usdJpyData?.values ?? []
+    const usdJpyCurrent = usdJpyValues[0]?.close != null ? parseFloat(usdJpyValues[0].close) : null
 
     const h4Values = h4Data?.values ?? []
     const dailyValues = dailyData?.values ?? []
@@ -469,6 +488,9 @@ BIAS: [LONG / SHORT / STAND ASIDE]
 GRADE: [A+ / A / B / NO TRADE]
 CONFIDENCE: [HIGH / MEDIUM / LOW — must not exceed the CONFIDENCE CEILING given above]
 ESTIMATED R:R: [X:1 — calculated from M15/M30 stop to Daily target]
+DECISION ZONE: [the specific price range this call is based on — the H4 entry zone for volume/presession sessions, or the key weekly zone for the week-ahead thesis. A single price range, e.g. 3180 - 3195. Never leave blank if BIAS is LONG or SHORT.]
+PRIMARY TARGET: [a single specific price — the nearest Daily structural high (for LONG) or Daily structural low (for SHORT) this thesis is aiming for. Never leave blank if BIAS is LONG or SHORT.]
+ALTERNATE: [if BIAS is STAND ASIDE write "N/A — no directional call this session". Otherwise start with the opposite direction of BIAS — write SHORT if BIAS is LONG, or LONG if BIAS is SHORT — followed by the specific Daily level that would confirm that opposite scenario instead, and one short sentence why, e.g. "SHORT if Daily closes below 3120 — DXY strength resuming would confirm the bearish case."]
 
 ${isMondayWeek ? `WEEKLY THESIS:
 [This is a week-ahead brief. Focus on the structural weekly bias and key levels to watch all week.]
@@ -616,7 +638,7 @@ Attack this thesis now.`
 
     // Render order: DATA INTEGRITY -> TRADE AUTHORIZATION + grade -> regime/thesis
     // -> BULL/BEAR/FLIPS -> structure/zones -> invalidation line.
-    const briefContent = assembleBrief({
+    let briefContent = assembleBrief({
       dataIntegrityHeader,
       authorizationBlock,
       thesisText: cappedBriefContent,
@@ -625,6 +647,79 @@ Attack this thesis now.`
     })
 
     const generatedAt = new Date().toISOString()
+
+    // Track-record scorer: open a call record the first time a session grades
+    // a real LONG/SHORT thesis for this instrument. Thesis-pillar monitor:
+    // establish or refresh the 5-pillar snapshot for whatever call is open,
+    // and surface any pillar shift the 5-min agent (or this brief itself)
+    // queued since the last brief. Wrapped in its own try/catch, separate
+    // from the main handler try/catch and from the brief-store try/catch
+    // below — a failure here must never block the brief itself from shipping.
+    const instrument = 'XAU/USD'
+    let pillarAlertBlock = null
+    try {
+      let openRecord = await findOpenRecordForInstrument(kvUrl, kvToken, instrument)
+
+      if (!openRecord) {
+        const dailyStructureHigh = dailyValues.length ? parseFloat(lastDailyHigh) : null
+        const dailyStructureLow = dailyValues.length ? parseFloat(lastDailyLow) : null
+        const newRecord = buildCallRecord({
+          instrument,
+          session,
+          bias,
+          grade: gradeResult.grade,
+          briefText: briefContent,
+          dailyStructureHigh,
+          dailyStructureLow,
+          generatedAt,
+        })
+        if (newRecord) {
+          await storeCallRecord(kvUrl, kvToken, newRecord)
+          openRecord = newRecord
+
+          // New thesis — establish the pillar baseline, including fresh
+          // reference prices for the two agent.js-driven pillars. No diff or
+          // alert fires against a baseline; it IS the baseline.
+          const dominantRegime = parseDominantRegime(briefContent)
+          const regimeConfidence = parseRegimeConfidence(briefContent)
+          const edgeFinderStored = await kvGetJson(kvUrl, kvToken, 'edgefinder:latest')
+          const edgeFinderState = checkEdgeFinderStaleness(edgeFinderStored?.receivedAt ?? null, edgeFinderStored?.read ?? null)
+          const dailyBiasLabel = dailyBias.includes('BULLISH') ? 'BULLISH' : 'BEARISH'
+          await resetPillarSnapshot(kvUrl, kvToken, instrument, {
+            rateExpectation: classifyRateExpectationPillar(dominantRegime, regimeConfidence),
+            marketStructure: classifyStructurePillar(dailyBiasLabel, includesWeeklyData ? weeklyBias : null),
+            dxyCorrelation: 'ABSENT',
+            usdJpyCarryRisk: 'ABSENT',
+            edgeFinderRead: classifyEdgeFinderPillar(edgeFinderState),
+            referencePrices: { dxy: numOrNull(dxyCurrent), usdJpy: usdJpyCurrent },
+          })
+        }
+      } else {
+        // Existing open thesis — refresh only the two slow pillars (regime +
+        // structure) that this brief actually has fresh data for. DXY/USD-JPY
+        // carry pillars are refreshed by the 5-min agent, not here.
+        const dominantRegime = parseDominantRegime(briefContent)
+        const regimeConfidence = parseRegimeConfidence(briefContent)
+        const dailyBiasLabel = dailyBias.includes('BULLISH') ? 'BULLISH' : 'BEARISH'
+        await updatePillarSnapshot(kvUrl, kvToken, instrument, {
+          rateExpectation: classifyRateExpectationPillar(dominantRegime, regimeConfidence),
+          marketStructure: classifyStructurePillar(dailyBiasLabel, includesWeeklyData ? weeklyBias : null),
+        })
+      }
+
+      if (openRecord) {
+        const pending = await consumePendingPillarAlerts(kvUrl, kvToken, instrument)
+        if (pending.length > 0) {
+          pillarAlertBlock = buildPillarAlertBlock(pending, instrument, openRecord.primaryBias)
+        }
+      }
+    } catch (trackRecordError) {
+      console.log('Track-record/pillar update failed:', trackRecordError.message)
+    }
+
+    if (pillarAlertBlock) {
+      briefContent = `${briefContent}\n\n${pillarAlertBlock}`
+    }
 
     try {
       await fetch(`${kvUrl}/set/brief:${session}`, {

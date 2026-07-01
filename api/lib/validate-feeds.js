@@ -40,6 +40,7 @@ const STALE_WINDOWS_MS = {
   cot:    9  * 24 * 3600 * 1000,  // 9 d  (Friday release + weekend)
   wgc:    35 * 24 * 3600 * 1000,  // 35 d (monthly)
   news:   24 * 3600 * 1000,       // 24 h
+  edgefinder: 8 * 24 * 3600 * 1000, // 8 d (weekly Sunday screenshot + 1 d grace)
 }
 
 function inRange(instrument, rawValue) {
@@ -53,7 +54,7 @@ function inRange(instrument, rawValue) {
   return { ok: true, value: v }
 }
 
-function notStale(datetimeStr, windowType) {
+export function notStale(datetimeStr, windowType) {
   if (!datetimeStr) return { ok: false, reason: 'no timestamp' }
   // TwelveData uses "YYYY-MM-DD HH:MM:SS"; ISO needs T separator
   const dt = new Date(String(datetimeStr).replace(' ', 'T'))
