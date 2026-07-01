@@ -1,5 +1,7 @@
 export const config = { maxDuration: 300 }
 
+import { validateFeeds } from './lib/validate-feeds.js'
+
 const fetchWithTimeout = async (url, options = {}, timeoutMs = 8000) => {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), timeoutMs)
@@ -102,6 +104,29 @@ export default async function handler(req, res) {
     const oilValues = oilData?.values ?? []
     const spxValues = spxData?.values ?? []
     const m30Values = m30Data?.values ?? []
+
+    // Validation layer — runs before any AI call.
+    // INVALID and STALE feeds are emptied here so they never reach the prompt as proxy readings.
+    const { manifest: validationManifest, validCount, totalCount } = validateFeeds({
+      h4Data,
+      dailyData,
+      weeklyData: includesWeeklyData ? weeklyData : undefined,
+      dxyData,
+      oilData,
+      spxData,
+      cotData:  includesCOT    ? cotData  : undefined,
+      newsData,
+      m30Data:  includesM30    ? m30Data  : undefined,
+    })
+    if (validationManifest.xau_h4?.status    !== 'VALID') h4Values.length = 0
+    if (validationManifest.xau_daily?.status !== 'VALID') dailyValues.length = 0
+    if (validationManifest.xau_weekly?.status !== 'VALID') weeklyValues.length = 0
+    if (validationManifest.dxy?.status       !== 'VALID') dxyValues.length = 0
+    if (validationManifest.wti?.status       !== 'VALID') oilValues.length = 0
+    if (validationManifest.spx?.status       !== 'VALID') spxValues.length = 0
+    if (validationManifest.m30?.status       !== 'VALID') m30Values.length = 0
+    if (validationManifest.cot?.status       !== 'VALID' && Array.isArray(cotData)) cotData.length = 0
+    if (validationManifest.news?.status      !== 'VALID' && newsData?.articles) newsData.articles = undefined
 
     const currentPrice = h4Values[0]?.close ?? 'unavailable'
 
@@ -502,7 +527,8 @@ STAND ASIDE IF: [single condition that invalidates the setup]` : ''}
           content: briefContent,
           generatedAt: new Date().toISOString(),
           session,
-          goldPrice: currentPrice
+          goldPrice: currentPrice,
+          validationManifest: { manifest: validationManifest, validCount, totalCount }
         })
       })
       await fetch(`${kvUrl}/expire/brief:${session}`, {
@@ -522,7 +548,8 @@ STAND ASIDE IF: [single condition that invalidates the setup]` : ''}
       generatedAt,
       session,
       goldPrice: currentPrice,
-      cached: false
+      cached: false,
+      validationManifest: { manifest: validationManifest, validCount, totalCount }
     })
 
   } catch (error) {
