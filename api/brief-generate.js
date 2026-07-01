@@ -1,6 +1,8 @@
 export const config = { maxDuration: 300 }
 
 import { validateFeeds } from './lib/validate-feeds.js'
+import { getConfidenceCap, enforceConfidenceCap, buildDataIntegrityHeader } from './lib/confidence.js'
+import { buildFactorScorecard, summarizeScorecard } from './lib/factor-scorecard.js'
 
 const fetchWithTimeout = async (url, options = {}, timeoutMs = 8000) => {
   const controller = new AbortController()
@@ -128,6 +130,11 @@ export default async function handler(req, res) {
     if (validationManifest.cot?.status       !== 'VALID' && Array.isArray(cotData)) cotData.length = 0
     if (validationManifest.news?.status      !== 'VALID' && newsData?.articles) newsData.articles = undefined
 
+    // Confidence cap + data-quality header — both derived purely from the manifest,
+    // computed before the AI call so the model never sees uncapped context.
+    const confidenceCap = getConfidenceCap(validationManifest, validCount, totalCount)
+    const dataIntegrityHeader = buildDataIntegrityHeader(validationManifest, validCount, totalCount)
+
     const currentPrice = h4Values[0]?.close ?? 'unavailable'
 
     const last20H4 = h4Values.slice(0, 20).map(v =>
@@ -247,6 +254,28 @@ export default async function handler(req, res) {
     const smNetStr = smNet !== null ? (smNet > 0 ? '+' : '') + smNet.toLocaleString() + ' contracts' : 'unavailable'
     const smChangeStr = smChange !== null ? (smChange > 0 ? '+' : '') + smChange.toLocaleString() + ' contracts vs last week' : 'unavailable'
 
+    // Factor scorecard — computed in code before the thesis call. The model
+    // receives these classifications as fixed evidence; it does not derive them.
+    const numOrNull = v => (typeof v === 'number' ? v : (v === 'unavailable' || v === undefined || v === null ? null : parseFloat(v)))
+    const factorScorecard = buildFactorScorecard({
+      manifest: validationManifest,
+      dxyChangePct: numOrNull(dxyChange),
+      oilChangePct: numOrNull(oilChange),
+      spxChangePct: numOrNull(spxChange),
+      cotNet: smNet,
+      cotChange: smChange,
+    })
+    const scorecardSummaryLine = summarizeScorecard(factorScorecard)
+    const factorLine = (label, classification, readingStr) => classification === 'ABSENT'
+      ? `${label}: ABSENT — feed invalid, missing, or stale this session. Do not reason about this factor.`
+      : `${label}: ${readingStr} → ${classification}`
+    const scorecardBlock = [
+      factorLine('DXY', factorScorecard.dxy, `${dxyCurrent}, 10-day change: ${dxyChange}%`),
+      factorLine('Oil (WTI)', factorScorecard.wti, `${oilCurrent}, 10-day change: ${oilChange}%`),
+      factorLine('SPX', factorScorecard.spx, `${spxCurrent}, 10-day change: ${spxChange}%`),
+      factorLine('COT Smart Money', factorScorecard.cot, `${smNetStr}, ${smChangeStr}`),
+    ].join('\n')
+
     const headlines = newsData?.articles
       ? newsData.articles.map((a, i) =>
           `${i+1}. ${a.title} — ${a.source?.name ?? 'Unknown'} — ${a.publishedAt}`
@@ -255,7 +284,7 @@ export default async function handler(req, res) {
 
     const sgtTime = new Date().toLocaleString('en-SG', { timeZone: 'Asia/Singapore' })
 
-    const systemPrompt = `You are Auxiron, a senior institutional macro trader and technical analyst specialising in Gold (XAU/USD). You have deep expertise in Supply and Demand zone analysis, Smart Money Concepts (SMC), and macro-driven swing trading. You think like a prop firm trader — disciplined, data-driven, and focused only on high-probability A+ setups. You never give generic analysis. Every output is specific, actionable, and tied directly to the data provided. You use professional trader terminology naturally mixed with clear English so the report is both precise and easy to act on. You do NOT use Fair Value Gaps (FVG) in your analysis. You DO use: Supply and Demand zones, Order Blocks, Break of Structure (BOS), Change of Character (CHoCH), liquidity sweeps, market structure highs and lows, and volume confirmation. The trader you are writing for is a Gold macro swing trader based in Singapore who trades the NY session. They hold positions for 20+ days. They use H4 Supply and Demand zones for entries, Daily and Weekly structure for bias, and H1/M15 for confirmation. They do NOT use FVG. They care about: regime, volume, market structure, zone quality, and news credibility. They want a clear actionable verdict — not generic commentary. The trader uses a Precision Entry to Swing Target approach. Entries are taken on M15/M30 timeframe supply and demand zones for intraday precision. Targets are Daily structure highs and lows which are much further away. Stop loss is placed at the last M15/M30 structural low for longs or structural high for shorts — intentionally tight because the entry is precise. Hold time varies from 1 day to 3 weeks. This creates naturally high R:R setups between 3:1 and 8:1. When generating the Setup Verdict: first identify the Daily target which is the nearest Daily high or low. Then identify the best unmitigated H4 zone between current price and that Daily target. Then identify the M15/M30 entry confirmation to watch for within that H4 zone. Calculate estimated R:R from M15/M30 stop to Daily target. Only grade A+ if R:R is 3:1 or better AND macro factors align. Never suggest entering at H4 zones without M15/M30 confirmation. Never target anything below a key Daily structural level. Always note whether volume supports the setup. There are 4 brief types: 1. monday_week: Full week-ahead brief. Generated Sunday 5am SGT. Covers weekend developments, week-ahead calendar, COT, WGC central bank demand, structural weekly bias, Fed rate outlook. No volume data. 2. monday_nyopen: Monday NY open brief. Generated 9:35pm SGT Monday. Covers Asia + London session recap, Monday headlines, first 5 minutes of NY volume, confirms or updates the week-ahead thesis. 3. presession: Tue-Fri pre-session brief. Generated 8pm SGT. Covers Asia + London session recap, day headlines, data that printed, key zones for tonight, setup grade. No volume yet. 4. nyopen: Tue-Fri NY open brief. Generated 9:35pm SGT. Covers first 5 minutes of NY volume, confirms or invalidates pre-session setup, specific M15/M30 entry to watch right now.`
+    const systemPrompt = `You are Auxiron, a senior institutional macro trader and technical analyst specialising in Gold (XAU/USD). You have deep expertise in Supply and Demand zone analysis, Smart Money Concepts (SMC), and macro-driven swing trading. You think like a prop firm trader — disciplined, data-driven, and focused only on high-probability A+ setups. You never give generic analysis. Every output is specific, actionable, and tied directly to the data provided. You use professional trader terminology naturally mixed with clear English so the report is both precise and easy to act on. You do NOT use Fair Value Gaps (FVG) in your analysis. You DO use: Supply and Demand zones, Order Blocks, Break of Structure (BOS), Change of Character (CHoCH), liquidity sweeps, market structure highs and lows, and volume confirmation. The trader you are writing for is a Gold macro swing trader based in Singapore who trades the NY session. They hold positions for 20+ days. They use H4 Supply and Demand zones for entries, Daily and Weekly structure for bias, and H1/M15 for confirmation. They do NOT use FVG. They care about: regime, volume, market structure, zone quality, and news credibility. They want a clear actionable verdict — not generic commentary. The trader uses a Precision Entry to Swing Target approach. Entries are taken on M15/M30 timeframe supply and demand zones for intraday precision. Targets are Daily structure highs and lows which are much further away. Stop loss is placed at the last M15/M30 structural low for longs or structural high for shorts — intentionally tight because the entry is precise. Hold time varies from 1 day to 3 weeks. This creates naturally high R:R setups between 3:1 and 8:1. When generating the Setup Verdict: first identify the Daily target which is the nearest Daily high or low. Then identify the best unmitigated H4 zone between current price and that Daily target. Then identify the M15/M30 entry confirmation to watch for within that H4 zone. Calculate estimated R:R from M15/M30 stop to Daily target. Only grade A+ if R:R is 3:1 or better AND macro factors align. Never suggest entering at H4 zones without M15/M30 confirmation. Never target anything below a key Daily structural level. Always note whether volume supports the setup. There are 4 brief types: 1. monday_week: Full week-ahead brief. Generated Sunday 5am SGT. Covers weekend developments, week-ahead calendar, COT, WGC central bank demand, structural weekly bias, Fed rate outlook. No volume data. 2. monday_nyopen: Monday NY open brief. Generated 9:35pm SGT Monday. Covers Asia + London session recap, Monday headlines, first 5 minutes of NY volume, confirms or updates the week-ahead thesis. 3. presession: Tue-Fri pre-session brief. Generated 8pm SGT. Covers Asia + London session recap, day headlines, data that printed, key zones for tonight, setup grade. No volume yet. 4. nyopen: Tue-Fri NY open brief. Generated 9:35pm SGT. Covers first 5 minutes of NY volume, confirms or invalidates pre-session setup, specific M15/M30 entry to watch right now. You are given a pre-computed MACRO FACTOR SCORECARD before every brief. Each factor is already classified as CONFIRMS-LONG, CONFIRMS-SHORT, CONFLICTS, or ABSENT — these classifications are computed from validated data and are final; you may not change, reinterpret, or second-guess them. A factor marked ABSENT means that feed failed validation or was unavailable this session — you may not reason from it, speculate about its likely reading, or mention what it would show if it were available. Only write supporting reasoning for factors that are NOT marked ABSENT, using the reading given to you. You must never write any sentence about what your regime confidence, macro score, or setup grade "would be" with more data, fuller data, additional feeds, or if an absent factor were available — state only what is present in the data given to you. Your CONFIDENCE rating in the SETUP VERDICT section may not exceed the ceiling given to you in the user prompt — you may rate it lower if your own analysis warrants, but never higher.`
 
     const sessionLabel = isMondayWeek ? 'Monday Week Ahead'
       : isMondayNYOpen ? 'Monday NY Open'
@@ -310,7 +339,14 @@ Smart Money net: ${smNetStr}
 ${smChangeStr}
 Stance: ${smStance}
 
-` : ''}${includesM30 ? `M30 CANDLE DATA (last 10 bars, newest first):
+` : ''}MACRO FACTOR SCORECARD (pre-computed evidence — classifications are final, do not override):
+${scorecardBlock}
+${scorecardSummaryLine}
+Any factor above marked ABSENT must not be reasoned about, guessed at, or referenced as something that would change the picture if it were present.
+
+CONFIDENCE CEILING FOR THIS BRIEF: ${confidenceCap} (data completeness: ${validCount}/${totalCount} feeds valid). State CONFIDENCE at or below this ceiling — never above it.
+
+${includesM30 ? `M30 CANDLE DATA (last 10 bars, newest first):
 ${last10M30}
 
 M30 STRUCTURE:
@@ -370,11 +406,11 @@ REGIME CONFIDENCE: [HIGH / MEDIUM / LOW]
 [One paragraph explaining which regime is winning and what it means for the trading bias today]
 
 ## MACRO ALIGNMENT
-DXY: [current reading + 10-day direction] → [SUPPORTS / CONFLICTS Gold long — one sentence why]
-Oil (WTI): [current reading + 10-day direction] → [SUPPORTS / CONFLICTS via geo premium — one sentence why]
-SPX: [current reading + direction] → [moving WITH Gold / AGAINST Gold — note if SPX-Gold correlation is breaking or holding]
-COT Smart Money: [net position + weekly change] → [SUPPORTS / NEUTRAL / CONFLICTS — one sentence why]
-MACRO SCORE: [X]/4 factors aligned for [LONG / SHORT]
+DXY: [reproduce the DXY scorecard line's reading and classification exactly, then add one sentence of reasoning — if ABSENT, write "DXY: ABSENT this session" and nothing else]
+Oil (WTI): [same pattern using the Oil (WTI) scorecard line]
+SPX: [same pattern using the SPX scorecard line]
+COT Smart Money: [same pattern using the COT Smart Money scorecard line]
+${scorecardSummaryLine}
 
 ## NEWS AND CREDIBILITY CHECK
 Headline: [most relevant headline from the data]
@@ -429,7 +465,7 @@ Year-end 2026: [if current regime and trajectory continues, projected Gold range
 APPROACH: Precision Entry to Daily Target
 BIAS: [LONG / SHORT / STAND ASIDE]
 GRADE: [A+ / A / B / NO TRADE]
-CONFIDENCE: [HIGH / MEDIUM / LOW]
+CONFIDENCE: [HIGH / MEDIUM / LOW — must not exceed the CONFIDENCE CEILING given above]
 ESTIMATED R:R: [X:1 — calculated from M15/M30 stop to Daily target]
 
 ${isMondayWeek ? `WEEKLY THESIS:
@@ -512,7 +548,13 @@ STAND ASIDE IF: [single condition that invalidates the setup]` : ''}
     })
 
     const anthropicData = await anthropicRes.json()
-    const briefContent = anthropicData.content?.[0]?.text ?? 'Brief generation failed'
+    const rawBriefContent = anthropicData.content?.[0]?.text ?? 'Brief generation failed'
+
+    // Structural enforcement — clamps the model's stated CONFIDENCE down to the
+    // cap regardless of what the prompt asked for, then prepends the manifest-
+    // derived data-quality header. Neither step depends on model cooperation.
+    const { content: cappedBriefContent, finalConfidence } = enforceConfidenceCap(rawBriefContent, confidenceCap)
+    const briefContent = `${dataIntegrityHeader}\n\n${cappedBriefContent}`
 
     const generatedAt = new Date().toISOString()
 
@@ -528,7 +570,10 @@ STAND ASIDE IF: [single condition that invalidates the setup]` : ''}
           generatedAt: new Date().toISOString(),
           session,
           goldPrice: currentPrice,
-          validationManifest: { manifest: validationManifest, validCount, totalCount }
+          validationManifest: { manifest: validationManifest, validCount, totalCount },
+          confidenceCap,
+          finalConfidence,
+          factorScorecard
         })
       })
       await fetch(`${kvUrl}/expire/brief:${session}`, {
@@ -549,7 +594,10 @@ STAND ASIDE IF: [single condition that invalidates the setup]` : ''}
       session,
       goldPrice: currentPrice,
       cached: false,
-      validationManifest: { manifest: validationManifest, validCount, totalCount }
+      validationManifest: { manifest: validationManifest, validCount, totalCount },
+      confidenceCap,
+      finalConfidence,
+      factorScorecard
     })
 
   } catch (error) {
