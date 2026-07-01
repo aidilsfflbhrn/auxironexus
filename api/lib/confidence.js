@@ -70,13 +70,20 @@ export function clampConfidence(stated, cap) {
  * @param {'HIGH'|'MEDIUM'|'LOW'} cap
  */
 export function enforceConfidenceCap(briefText, cap) {
-  const match = briefText.match(/CONFIDENCE:\s*([A-Za-z]+)/)
+  // Anchored to line-start so "REGIME CONFIDENCE: ..." (an earlier, unrelated
+  // field in the brief template) can never be mistaken for this line — a
+  // plain /CONFIDENCE:/ match is a substring of "REGIME CONFIDENCE:" too and
+  // would grab that line first since it appears earlier in the document.
+  const match = briefText.match(/^CONFIDENCE:\s*([A-Za-z]+)/m)
   if (!match) return { content: briefText, statedConfidence: null, finalConfidence: null }
   const stated = match[1].toUpperCase()
   const finalConfidence = clampConfidence(stated, cap)
+  // Splice by the match's exact position rather than briefText.replace(match[0], ...) —
+  // that does its own unanchored substring search and can still land on
+  // "REGIME CONFIDENCE: ..." if the stated values happen to coincide.
   const content = finalConfidence === stated
     ? briefText
-    : briefText.replace(match[0], `CONFIDENCE: ${finalConfidence}`)
+    : briefText.slice(0, match.index) + `CONFIDENCE: ${finalConfidence}` + briefText.slice(match.index + match[0].length)
   return { content, statedConfidence: stated, finalConfidence }
 }
 
